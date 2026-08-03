@@ -13,12 +13,25 @@
           "{projectRoot}/test-output/jest/coverage"
         ],
         "options": {
-          "jestConfig": "apps/backend-e2e/jest.config.cts",
+          "jestConfig": "apps/backend-e2e/jest.config.cjs",
           "passWithNoTests": true
         },
         "dependsOn": [
           "@org/backend:build",
           "@org/backend:serve"
+        ]
+      },
+      "e2e-ci": {
+        "executor": "@nx/jest:jest",
+        "outputs": [
+          "{projectRoot}/test-output/jest/coverage"
+        ],
+        "options": {
+          "jestConfig": "apps/backend-e2e/jest.config.cjs",
+          "passWithNoTests": true
+        },
+        "dependsOn": [
+          "@org/backend:build"
         ]
       }
     }

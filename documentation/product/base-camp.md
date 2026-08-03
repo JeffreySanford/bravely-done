@@ -2,6 +2,10 @@
 
 Base Camp is the emotional home and primary game surface. It shows the consequences of completed work without forcing the player to inspect dashboards.
 
+Base Camp is what the player lands in **after** choosing a character — see
+[Character select](character-select.md) for the actual landing page and onboarding sequence. Base Camp
+is not itself the app's first screen.
+
 ## Initial landmarks
 
 - Campfire: continuity, rest, and return

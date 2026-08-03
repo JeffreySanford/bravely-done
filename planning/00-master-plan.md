@@ -44,19 +44,47 @@
 - [ ] Monthly Campaign chapter.
 - [ ] Rest, shield, and Comeback mechanics.
 
-## Milestone 4: Companion intelligence
+## Milestone 3.5: Character select and onboarding
 
-- [ ] Deterministic companion.
+Milestone 1 prototypes Base Camp's rendering directly (a dev harness can bypass auth to iterate on the
+scene quickly); this milestone is when the production auth/character gate goes in front of it, making
+character select the actual app entry point rather than a scene prototype shortcut.
+
+- [ ] Auth/RBAC: signup, login, JWT + DB-backed refresh sessions.
+- [ ] Character data model (multiple characters per account) and creation flow.
+- [ ] Character select as the landing page (not Base Camp), mandatory character creation for new users.
+- [ ] Polished Three.js character-select screen, stylized sci-fi/cyber direction.
+
+See [Plan 16](16-character-select.md).
+
+## Milestone 4: Companion intelligence (Ember)
+
+- [ ] Remote, task-driven Ember LLM service via the NestJS API (in-scope, not on-device-first).
 - [ ] Editable Hero Profile.
-- [ ] Local ranking and on-device adapters.
-- [ ] Verify full game without AI.
+- [ ] Confidence-based autonomy for routine task execution.
+- [ ] Per-role coaching specialization.
+- [ ] Selectable avatar roster (personality-differentiated, shared engine).
+- [ ] Ember's parallel functional + cosmetic leveling track.
+- [ ] Verify core quest/sprint loop works with Ember disabled.
+
+See [Plan 05](05-ai-companion.md).
 
 ## Milestone 5: Community
 
-- [ ] Allies, parties, shared quests, guilds, and cooperative events.
+- [ ] Allies, parties (real-invited or matchmade), shared quests, guilds, and cooperative events.
+- [ ] Personal backlog + shared team backlog.
 - [ ] Privacy, moderation, blocking, and reporting.
 
-## Milestone 6: Complex work
+## Milestone 6: Agile/SAFe depth and complex work
+
+Dual-labeled Agile/SAFe vocabulary and the role/skill-tree system are core product goals, not deferred
+"complex work" polish — see [Agile/SAFe progression](../documentation/product/agile-safe-progression.md).
 
 - [ ] Questlines, dependencies, risks, milestones, campaigns.
-- [ ] Optional professional terminology and SAFe-inspired hierarchy.
+- [ ] Dual-labeled vocabulary shown by default (not an optional toggle).
+- [ ] Role/skill-tree system: Facilitator/Adventurer/Scout/etc., independent levels, full branching
+      trees, switchable.
+- [ ] Portfolio/community tier: cross-team dependency board + live scheduled ceremony events.
+- [ ] Portfolio-tier roles: level-gated and community-elected.
+
+See [Plan 08](08-agile-safe.md).

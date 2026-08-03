@@ -6,6 +6,7 @@ This folder is the durable source of truth for product and technical decisions. 
 
 - [Vision](product/vision.md)
 - [Game loop](product/game-loop.md)
+- [Character select and onboarding](product/character-select.md)
 - [Base Camp](product/base-camp.md)
 - [Rewards and retention](product/rewards-retention.md)
 - [AI companion](product/ai-companion.md)

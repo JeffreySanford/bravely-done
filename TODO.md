@@ -36,6 +36,16 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 - [ ] Add route shell for Camp, Quest Board, Sprint, Chronicle, and Settings.
 - [ ] Add design tokens and accessible shared UI primitives.
 
+## Next: Character select and onboarding
+
+- [ ] Build auth/RBAC endpoints (JWT + DB-backed refresh sessions) and tests.
+- [ ] Build the Character data model (multiple characters per account) and creation endpoint.
+- [ ] Build character select as the app's actual landing page, gated so new users must complete
+      character creation first.
+- [ ] Polish character select with Three.js, stylized sci-fi/cyber direction matching Ember.
+
+See [Plan 16](planning/16-character-select.md).
+
 ## Next: Base Camp Alive
 
 - [ ] Add Three.js and a renderer lifecycle service.
@@ -59,11 +69,11 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 ## Later milestones
 
 - [ ] Daily, weekly, and monthly reward loops.
-- [ ] Deterministic companion and editable Hero Profile.
+- [ ] Remote Ember LLM service (NestJS-connected), confidence-based autonomy, editable Hero Profile.
 - [ ] Capacitor Android and iOS packaging.
-- [ ] On-device AI adapters.
-- [ ] Parties, guilds, cooperative quests, and moderation.
-- [ ] Questlines, campaigns, dependencies, risks, and optional SAFe views.
+- [ ] Parties (real-invited or matchmade), guilds, cooperative quests, and moderation.
+- [ ] Questlines, campaigns, dependencies, risks, dual-labeled Agile/SAFe vocabulary by default, and the
+      role/skill-tree system.
 
 ## Quality rules
 
@@ -71,4 +81,6 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 - [ ] Every durable domain behavior has automated coverage.
 - [ ] Coverage exceptions are recorded in `documentation/quality-gates/testing-exceptions.md`.
 - [ ] Motion has reduced and minimal equivalents.
-- [ ] No feature may make basic productivity dependent on AI, a network, or social participation.
+- [ ] The core quest/sprint loop must not require AI, a network, or social participation — this scopes
+      to *basic productivity*, not a ban on Ember: Ember (the companion) is a deliberately remote,
+      network-dependent service by design, and enhances the loop rather than gating it.

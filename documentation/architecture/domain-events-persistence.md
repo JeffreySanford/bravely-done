@@ -29,6 +29,13 @@ Mutation responses return the authoritative changed aggregate and emitted presen
 
 Important economic and shared-team mutations should be reconstructable through immutable transaction records, while private task details remain appropriately protected.
 
+## Relationship to the unified event log
+
+These domain events are the primary content of the interceptor-driven unified event log described in
+[architecture.md](architecture.md#unified-event-logging) — the same events captured here feed both the
+admin observability view and user-facing features like the activity feed, rather than being logged
+separately for each purpose.
+
 ## Offline direction
 
 Later offline support uses a local outbox and conflict rules. It must not bypass validation or permit client-authoritative currency creation.

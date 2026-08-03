@@ -20,5 +20,6 @@ This folder contains executable checkbox plans. `TODO.md` is the root dashboard;
 - [13 Privacy and security](13-privacy-security.md)
 - [14 Testing and release](14-testing-release.md)
 - [15 Research and metrics](15-research-metrics.md)
+- [16 Character select and onboarding](16-character-select.md)
 
 A task becomes `[x]` only when its stated acceptance criteria are met.

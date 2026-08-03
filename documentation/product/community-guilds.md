@@ -16,6 +16,12 @@ Community unlocks after the player learns the solo loop. It should create suppor
 - Team success grants collective construction, story, or cosmetic progress.
 - Help, encouragement, and unblocking earn reputation.
 - Privacy controls determine which quest details, schedules, and results are shared.
+- A party forms from either real invited coworkers or in-game matchmaking with strangers — player's
+  choice. Once formed, members keep their individual real-task progress *and* can create/manage a
+  shared team backlog together. See
+  [Agile/SAFe progression](agile-safe-progression.md#role-skill-tree-system-team-tier) for the
+  role/skill-tree system (Facilitator, Adventurer, Scout, etc.) players assume within a party, and the
+  portfolio/community tier that guilds scale into.
 
 ## Safety requirements
 

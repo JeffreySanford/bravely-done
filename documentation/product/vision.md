@@ -14,6 +14,11 @@ Bravely Done presents a living game world in which useful actions create meaning
 
 > Return to camp, choose a quest, take one brave step, receive a satisfying response, and see the world become better because real work was completed.
 
+Companion AI ("Ember" and its roster of avatars — see [AI companion](ai-companion.md)) is a central,
+motivating part of that experience, not a bolted-on feature. It coaches, and — within a confidence-based
+trust boundary — can act on the player's behalf. The *core* quest/sprint loop still functions with
+Ember disabled, but the intended experience assumes Ember is present.
+
 ## Audiences
 
 1. Individuals completing personal, health, learning, household, or professional tasks.

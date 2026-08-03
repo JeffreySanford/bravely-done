@@ -73,5 +73,22 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps
 
-      - name: Run end-to-end tests
-        run: pnpm exec nx run-many -t e2e --parallel=1
+      - name: Run backend end-to-end tests
+        shell: bash
+        run: |
+          pnpm exec nx serve @org/backend > /tmp/bravely-backend.log 2>&1 &
+          backend_pid=$!
+          trap 'kill "$backend_pid" 2>/dev/null || true; cat /tmp/bravely-backend.log' EXIT
+
+          for attempt in {1..60}; do
+            if curl --silent --fail http://localhost:3000/api > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+
+          curl --fail http://localhost:3000/api
+          pnpm exec nx run @org/backend-e2e:e2e-ci
+
+      - name: Run frontend end-to-end tests
+        run: pnpm exec nx run frontend-e2e:e2e

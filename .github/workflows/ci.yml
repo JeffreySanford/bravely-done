@@ -62,6 +62,9 @@ jobs:
       - name: Apply database migrations
         run: pnpm --filter @org/backend exec prisma migrate deploy --config prisma.config.ts
 
+      - name: Generate OpenAPI contract and typed Angular client
+        run: pnpm exec nx run frontend:generate-api
+
       - name: Check formatting
         run: pnpm exec nx format:check --base=origin/master
 

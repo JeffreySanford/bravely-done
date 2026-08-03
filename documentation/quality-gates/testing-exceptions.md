@@ -35,25 +35,28 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
 
 ---
 
-## OPEN-002 — NestJS DI constructor synthetic branch (recurring pattern)
+## OPEN-002 — NestJS decorator-emission synthetic branch (recurring pattern)
 
-- **Area**: any NestJS class combining a class decorator (`@Controller`, `@Injectable`, etc.) with a
-  constructor using parameter-property DI (`constructor(private readonly x: Foo) {}`). First hit in
-  `apps/backend/src/app/app.controller.ts`.
-- **Reason**: TypeScript's legacy decorator emission (`__esDecorate`) for this combination compiles to
-  a branch in the output JS that only ever resolves one way at runtime. This project's coverage
-  collector (ts-jest via the Nx Jest preset) reports it as an uncovered branch regardless of test
-  coverage of the actual class logic. Confirmed not fixable via `/* istanbul ignore next */` — comments
-  don't suppress branches at this collector's instrumentation stage for this decorator-emission pattern.
-- **Mitigation**: Per-file `branches` threshold override in `jest.config.cts` for affected files (e.g.
-  `app.controller.ts` at 70% instead of the 98% global bar), rather than weakening the global threshold.
-  This is a recurring pattern — expect to add a similar override for every new Nest controller/provider
-  with constructor DI as the backend grows, not just this one file.
-- **Reviewed by / date**: Claude (scaffolding session), 2026-08-03.
+- **Area**: any NestJS class combining a class decorator (`@Controller`, `@Injectable`, etc.) with
+  either constructor parameter-property DI (`constructor(private readonly x: Foo) {}`) or a property
+  decorator like `@ApiProperty()`. Hit in `app.controller.ts`, `auth.controller.ts`, `auth.service.ts`,
+  `roles.guard.ts` (constructor DI), and `auth-user.dto.ts` (property decorator).
+- **Reason**: TypeScript's legacy decorator emission (`__esDecorate`) for these patterns compiles to a
+  branch in the output JS that only ever resolves one way at runtime. This project's coverage collector
+  (ts-jest via the Nx Jest preset) reports it as an uncovered branch regardless of test coverage of the
+  actual class logic. Confirmed not fixable via `/* istanbul ignore next */` — comments don't suppress
+  branches at this collector's instrumentation stage for this decorator-emission pattern.
+- **Mitigation**: Per-file `branches` threshold override in `jest.config.cts` for each affected file,
+  set close to its actual achievable percentage (so a real regression still fails the gate), rather than
+  weakening the global threshold.
+- **Reviewed by / date**: Claude (scaffolding session), 2026-08-03; extended to the auth module the same
+  day when it recurred exactly as predicted.
+- **Status**: five per-file overrides as of this writing — approaching the "unwieldy" threshold flagged
+  below. Next NestJS class added should prompt actually investigating the pipeline-swap fix rather than
+  adding a sixth override.
 - **Reopen condition**: Re-investigate if this project's Jest transform pipeline changes (e.g. swapping
   the coverage instrumenter/provider) — v8-based coverage collection handles decorator emission
-  differently and may not hit this issue. Not worth a pipeline change on its own; revisit if the number
-  of per-file overrides becomes unwieldy.
+  differently and may not hit this issue.
 
 ## OPEN-003 — PrismaService lifecycle hooks require a live database connection
 

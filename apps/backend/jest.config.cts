@@ -19,10 +19,23 @@ module.exports = {
       statements: 98,
     },
     // NestJS classes combining a class decorator (@Controller/@Injectable)
-    // with constructor-parameter-property DI compile to a synthetic branch
-    // this project's coverage collector can't fully hit. Recurring pattern,
-    // not unique to this file — see testing-exceptions.md OPEN-002.
+    // with constructor-parameter-property DI, or a property decorator like
+    // @ApiProperty, compile to a synthetic branch this project's coverage
+    // collector can't fully hit. Recurring pattern — see
+    // testing-exceptions.md OPEN-002.
     '**/app.controller.ts': {
+      branches: 70,
+    },
+    '**/auth.controller.ts': {
+      branches: 70,
+    },
+    '**/auth.service.ts': {
+      branches: 85,
+    },
+    '**/roles.guard.ts': {
+      branches: 85,
+    },
+    '**/auth-user.dto.ts': {
       branches: 70,
     },
     // onModuleInit/onModuleDestroy require a live Postgres connection —

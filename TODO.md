@@ -38,7 +38,7 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 
 ## Next: Character select and onboarding
 
-- [ ] Build auth/RBAC endpoints (JWT + DB-backed refresh sessions) and tests.
+- [x] Build auth/RBAC endpoints (JWT + DB-backed refresh sessions) and tests.
 - [ ] Build the Character data model (multiple characters per account) and creation endpoint.
 - [ ] Build character select as the app's actual landing page, gated so new users must complete
       character creation first.

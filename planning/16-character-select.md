@@ -6,7 +6,9 @@ decision this plan implements: character select, not Base Camp, is the app's lan
 ## Backend
 
 - [x] Add PostgreSQL + Prisma database layer.
-- [ ] Build auth/RBAC: signup, login, JWT access token, DB-backed refresh session table.
+- [x] Build auth/RBAC: signup, login, JWT access token, DB-backed refresh session table (httpOnly
+      cookies, RolesGuard, confidence-gated escalation not yet implemented — see
+      [Plan 05](05-ai-companion.md) for that).
 - [ ] Build Character data model (multiple characters per user account).
 - [ ] Build character creation endpoint, tied into the mandatory-first-step onboarding flow.
 

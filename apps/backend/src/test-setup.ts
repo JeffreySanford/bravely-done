@@ -3,3 +3,5 @@
 import { TextDecoder, TextEncoder } from 'node:util';
 
 Object.assign(globalThis, { TextEncoder, TextDecoder });
+
+process.env.JWT_SECRET ??= 'test-secret-do-not-use-in-real-environments';

@@ -70,6 +70,13 @@
         "tsConfig": "apps/frontend/tsconfig.spec.json"
       }
     },
+    "typecheck": {
+      "executor": "nx:run-commands",
+      "options": {
+        "command": "ngc -p tsconfig.typecheck.json",
+        "cwd": "apps/frontend"
+      }
+    },
     "serve-static": {
       "continuous": true,
       "executor": "@nx/web:file-server",

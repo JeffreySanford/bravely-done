@@ -1,5 +1,6 @@
 name: Bootstrap Bravely Done Foundation
 
+# This second commit intentionally triggers the workflow after registration.
 on:
   workflow_dispatch:
   push:

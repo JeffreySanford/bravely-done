@@ -38,6 +38,15 @@ module.exports = {
     '**/auth-user.dto.ts': {
       branches: 70,
     },
+    '**/character.controller.ts': {
+      branches: 70,
+    },
+    '**/character.service.ts': {
+      branches: 70,
+    },
+    '**/character.dto.ts': {
+      branches: 70,
+    },
     // onModuleInit/onModuleDestroy require a live Postgres connection —
     // deliberately exercised at the e2e tier (apps/backend-e2e), not here.
     // See testing-exceptions.md OPEN-003.

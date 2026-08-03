@@ -9,8 +9,9 @@ decision this plan implements: character select, not Base Camp, is the app's lan
 - [x] Build auth/RBAC: signup, login, JWT access token, DB-backed refresh session table (httpOnly
       cookies, RolesGuard, confidence-gated escalation not yet implemented — see
       [Plan 05](05-ai-companion.md) for that).
-- [ ] Build Character data model (multiple characters per user account).
-- [ ] Build character creation endpoint, tied into the mandatory-first-step onboarding flow.
+- [x] Build Character data model (multiple characters per user account).
+- [x] Build character creation/list endpoints (`POST/GET /characters`, JWT-guarded). Mandatory-first-
+      step *enforcement* is a frontend routing concern — see the Frontend section below, still open.
 
 ## Frontend
 

@@ -40,7 +40,8 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
 - **Area**: any NestJS class combining a class decorator (`@Controller`, `@Injectable`, etc.) with
   either constructor parameter-property DI (`constructor(private readonly x: Foo) {}`) or a property
   decorator like `@ApiProperty()`. Hit in `app.controller.ts`, `auth.controller.ts`, `auth.service.ts`,
-  `roles.guard.ts` (constructor DI), and `auth-user.dto.ts` (property decorator).
+  `roles.guard.ts`, `auth-user.dto.ts`, `character.controller.ts`, `character.service.ts`,
+  `character.dto.ts`.
 - **Reason**: TypeScript's legacy decorator emission (`__esDecorate`) for these patterns compiles to a
   branch in the output JS that only ever resolves one way at runtime. This project's coverage collector
   (ts-jest via the Nx Jest preset) reports it as an uncovered branch regardless of test coverage of the
@@ -50,13 +51,16 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
   set close to its actual achievable percentage (so a real regression still fails the gate), rather than
   weakening the global threshold.
 - **Reviewed by / date**: Claude (scaffolding session), 2026-08-03; extended to the auth module the same
-  day when it recurred exactly as predicted.
-- **Status**: five per-file overrides as of this writing — approaching the "unwieldy" threshold flagged
-  below. Next NestJS class added should prompt actually investigating the pipeline-swap fix rather than
-  adding a sixth override.
-- **Reopen condition**: Re-investigate if this project's Jest transform pipeline changes (e.g. swapping
-  the coverage instrumenter/provider) — v8-based coverage collection handles decorator emission
-  differently and may not hit this issue.
+  day, and again to the character module — both times recurring exactly as predicted.
+- **Pipeline-swap investigated and rejected (2026-08-03)**: Tried `coverageProvider: 'v8'` as the
+  reopen condition suggested. It did *not* fix the synthetic branches, and made overall coverage
+  reporting measurably worse — several previously-100% files (bare interfaces, simple DTOs) dropped to
+  0-40% because v8's bytecode-level instrumentation counts decorator/interface scaffolding differently
+  than istanbul does. Reverted. Per-file overrides remain the right tool for this project; not
+  revisiting this again without a concrete new instrumenter to try, not just "swap providers and see."
+- **Status**: eight per-file overrides as of this writing. Accepted as this project's steady-state
+  pattern for NestJS decorator-heavy files — add one per new file as needed, no further investigation
+  planned.
 
 ## OPEN-003 — PrismaService lifecycle hooks require a live database connection
 

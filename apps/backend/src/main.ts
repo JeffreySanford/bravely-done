@@ -38,6 +38,7 @@ async function bootstrap() {
       'OpenAPI contract for the Bravely Done backend. This is the single source of truth for request/response DTOs consumed by the Angular frontend codegen.',
     )
     .setVersion('0.0.1')
+    .addCookieAuth('access_token')
     .build();
   const document = SwaggerModule.createDocument(app, openApiConfig);
   SwaggerModule.setup('api-docs', app, document);

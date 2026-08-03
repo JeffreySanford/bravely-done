@@ -84,6 +84,13 @@
           "jestConfig": "apps/backend/jest.config.cts"
         }
       },
+      "typecheck": {
+        "executor": "nx:run-commands",
+        "options": {
+          "command": "tsc -p tsconfig.typecheck.json",
+          "cwd": "apps/backend"
+        }
+      },
       "generate-openapi": {
         "executor": "nx:run-commands",
         "options": {

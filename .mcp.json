@@ -18,6 +18,11 @@
       "headers": {
         "Authorization": "Bearer ${GITHUB_PERSONAL_ACCESS_TOKEN}"
       }
+    },
+    "prisma": {
+      "command": "npx",
+      "args": ["-y", "prisma", "mcp"],
+      "cwd": "apps/backend"
     }
   }
 }

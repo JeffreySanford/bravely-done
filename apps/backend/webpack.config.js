@@ -31,5 +31,10 @@ module.exports = {
         return resource === 'class-transformer/storage';
       },
     }),
+    // `pg` lazily requires the optional `pg-native` accelerator; we use the
+    // pure-JS driver, so this module is never actually loaded at runtime.
+    new webpack.IgnorePlugin({
+      resourceRegExp: /^pg-native$/,
+    }),
   ],
 };

@@ -64,3 +64,6 @@ storybook-static
 .env
 .env.*
 !.env.example
+
+# Prisma-generated client — regenerated via `prisma generate`, never committed.
+apps/backend/src/generated/

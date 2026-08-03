@@ -1,12 +1,15 @@
 module.exports = {
   displayName: '@org/backend',
   preset: '../../jest.preset.js',
+  setupFiles: ['<rootDir>/src/test-setup.ts'],
   coverageDirectory: 'test-output/jest/coverage',
   collectCoverageFrom: [
     'src/**/*.ts',
     '!src/**/*.spec.ts',
     '!src/main.ts',
     '!src/generate-openapi.ts',
+    '!src/generated/**',
+    '!src/test-setup.ts',
   ],
   coverageThreshold: {
     global: {
@@ -21,6 +24,14 @@ module.exports = {
     // not unique to this file — see testing-exceptions.md OPEN-002.
     '**/app.controller.ts': {
       branches: 70,
+    },
+    // onModuleInit/onModuleDestroy require a live Postgres connection —
+    // deliberately exercised at the e2e tier (apps/backend-e2e), not here.
+    // See testing-exceptions.md OPEN-003.
+    '**/prisma.service.ts': {
+      functions: 33,
+      lines: 70,
+      statements: 70,
     },
   },
 };

@@ -35,6 +35,45 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
 
 ---
 
+## OPEN-002 — NestJS DI constructor synthetic branch (recurring pattern)
+
+- **Area**: any NestJS class combining a class decorator (`@Controller`, `@Injectable`, etc.) with a
+  constructor using parameter-property DI (`constructor(private readonly x: Foo) {}`). First hit in
+  `apps/backend/src/app/app.controller.ts`.
+- **Reason**: TypeScript's legacy decorator emission (`__esDecorate`) for this combination compiles to
+  a branch in the output JS that only ever resolves one way at runtime. This project's coverage
+  collector (ts-jest via the Nx Jest preset) reports it as an uncovered branch regardless of test
+  coverage of the actual class logic. Confirmed not fixable via `/* istanbul ignore next */` — comments
+  don't suppress branches at this collector's instrumentation stage for this decorator-emission pattern.
+- **Mitigation**: Per-file `branches` threshold override in `jest.config.cts` for affected files (e.g.
+  `app.controller.ts` at 70% instead of the 98% global bar), rather than weakening the global threshold.
+  This is a recurring pattern — expect to add a similar override for every new Nest controller/provider
+  with constructor DI as the backend grows, not just this one file.
+- **Reviewed by / date**: Claude (scaffolding session), 2026-08-03.
+- **Reopen condition**: Re-investigate if this project's Jest transform pipeline changes (e.g. swapping
+  the coverage instrumenter/provider) — v8-based coverage collection handles decorator emission
+  differently and may not hit this issue. Not worth a pipeline change on its own; revisit if the number
+  of per-file overrides becomes unwieldy.
+
+## OPEN-003 — PrismaService lifecycle hooks require a live database connection
+
+- **Area**: `apps/backend/src/prisma/prisma.service.ts` — `onModuleInit`/`onModuleDestroy`.
+- **Reason**: These call `$connect()`/`$disconnect()` against a real Postgres instance. Exercising them
+  in the unit suite would make `nx test @org/backend` depend on live infrastructure being up, which
+  contradicts this project's own testing-gate philosophy (external-service dependencies belong at the
+  e2e tier, not unit). Deliberately not mocked into false coverage either — a mocked `$connect` proves
+  nothing real.
+- **Mitigation**: Per-file threshold override (`functions: 33`) in `jest.config.cts` for
+  `prisma.service.ts`, reflecting exactly the 1-of-3 methods (the constructor) unit tests can cover.
+  `onModuleInit`/`onModuleDestroy` should be exercised at `apps/backend-e2e` against the real local
+  Postgres (see `docker/docker-compose.yml`) once e2e coverage is built out.
+- **Reviewed by / date**: Claude (scaffolding session), 2026-08-03.
+- **Reopen condition**: Close this out once an e2e test exists that boots the real Nest app (`app.init()`
+  / `app.close()`, not just `.compile()`) against the docker-compose Postgres and asserts a successful
+  connect/disconnect cycle.
+
+---
+
 ## Standing exclusions (not incident-tracked, just documented)
 
 - **Generated OpenAPI client** (`apps/frontend/src/app/api/`) — regenerated from the backend's

@@ -1,107 +1,64 @@
-# New Nx Repository
+# Bravely Done
 
-<a alt="Nx logo" href="https://nx.dev" target="_blank" rel="noreferrer"><img src="https://raw.githubusercontent.com/nrwl/nx/master/images/nx-logo.png" width="45"></a>
+A gamified Agile/SAFe project-management coach — completing your real tasks *is* the gameplay.
+See [documentation/](./documentation) for the product/planning docs and
+[documentation/quality-gates/](./documentation/quality-gates) for the FUN-factor and testing quality
+gates this project holds itself to.
 
-✨ Your new, shiny [Nx workspace](https://nx.dev) is ready ✨.
+Nx monorepo: Angular frontend (`apps/frontend`), NestJS backend (`apps/backend`, Prisma + PostgreSQL,
+OpenAPI-driven contracts).
 
-[Learn more about this workspace setup and its capabilities](https://nx.dev/docs/technologies/typescript/introduction?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or run `npx nx graph` to visually explore what was created. Now, let's get you up to speed!
-🚀 If you haven't connected to Nx Cloud yet, [complete your setup here](https://cloud.nx.app/get-started). Get faster builds with remote caching, distributed task execution, and self-healing CI. [See how your workspace can benefit](#nx-cloud).
-## Generate a library
+## Local development setup
 
-```sh
-npx nx g @nx/js:lib packages/pkg1 --publishable --importPath=@my-org/pkg1
-```
+1. **Start Postgres** (Docker):
 
-## Run tasks
+   ```sh
+   docker compose -f docker/docker-compose.yml up -d
+   ```
 
-To build the library use:
+2. **Configure secrets**: copy `.env.example` to `.env` at the repo root and fill in real values
+   (GitHub PAT for the MCP server, etc.). The backend also has its own `apps/backend/.env` with
+   `DATABASE_URL` — already pointed at the docker-compose Postgres by default.
 
-```sh
-npx nx run pkg1:build
-```
+3. **Install dependencies and generate the Prisma client**:
 
-To run any task with Nx use:
+   ```sh
+   pnpm install
+   npx prisma generate --schema apps/backend/prisma/schema.prisma
+   ```
 
-```sh
-npx nx run <project-name>:<target>
-```
+4. **Run the apps**:
 
-These targets are either [inferred automatically](https://nx.dev/docs/concepts/inferred-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) or defined in the `project.json` or `package.json` files.
+   ```sh
+   npx nx serve @org/backend    # http://localhost:3000/api, docs at /api-docs
+   npx nx serve frontend        # http://localhost:4200
+   ```
 
-[More about running tasks in the docs &raquo;](https://nx.dev/docs/features/run-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
+## Contract pipeline (OpenAPI)
 
-## Versioning and releasing
-
-To version and release the library use
-
-```
-npx nx release
-```
-
-Pass `--dry-run` to see what would happen without actually releasing the library.
-
-[Learn more about Nx release &raquo;](https://nx.dev/docs/features/manage-releases?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Keep TypeScript project references up to date
-
-Nx automatically updates TypeScript [project references](https://www.typescriptlang.org/docs/handbook/project-references.html) in `tsconfig.json` files to ensure they remain accurate based on your project dependencies (`import` or `require` statements). This sync is automatically done when running tasks such as `build` or `typecheck`, which require updated references to function correctly.
-
-To manually trigger the process to sync the project graph dependencies information to the TypeScript project references, run the following command:
+The backend's `@nestjs/swagger` decorators are the single source of truth for the API contract. Never
+hand-edit the generated spec or client — regenerate both with:
 
 ```sh
-npx nx sync
+npx nx run frontend:generate-api
 ```
 
-You can enforce that the TypeScript project references are always in the correct state when running in CI by adding a step to your CI job configuration that runs the following command:
+See [packages/openapi/README.md](./packages/openapi/README.md) for details.
+
+## Quality gates
+
+Every change is expected to clear the [testing gate](./documentation/quality-gates/testing-gate.md)
+(98% coverage — unit/Jest, component/Storybook, e2e/Playwright) and, at milestones, the
+[FUN-factor gate](./documentation/quality-gates/fun-factor-gate.md). Legitimate gaps against either are
+recorded in [testing-exceptions.md](./documentation/quality-gates/testing-exceptions.md), not silently
+skipped.
 
 ```sh
-npx nx sync:check
+npx nx run-many -t build lint test
+npx nx run-many -t test --coverage
 ```
 
-[Learn more about nx sync](https://nx.dev/reference/nx-commands#sync)
+## MCP servers
 
-## Nx Cloud
-
-Nx Cloud ensures a [fast and scalable CI](https://nx.dev/nx-cloud?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects) pipeline. It includes features such as:
-
-- [Remote caching](https://nx.dev/docs/features/ci-features/remote-cache?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task distribution across multiple machines](https://nx.dev/docs/features/ci-features/distribute-task-execution?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Automated e2e test splitting](https://nx.dev/docs/features/ci-features/split-e2e-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-- [Task flakiness detection and rerunning](https://nx.dev/docs/features/ci-features/flaky-tasks?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-### Set up CI (non-Github Actions CI)
-
-**Note:** This is only required if your CI provider is not GitHub Actions.
-
-Use the following command to configure a CI workflow for your workspace:
-
-```sh
-npx nx g ci-workflow
-```
-
-[Learn more about Nx on CI](https://nx.dev/docs/features/ci-features?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## Install Nx Console
-
-Nx Console is an editor extension that enriches your developer experience. It lets you run tasks, generate code, and improves code autocompletion in your IDE. It is available for VSCode and IntelliJ.
-
-[Install Nx Console &raquo;](https://nx.dev/docs/getting-started/editor-setup?utm_source=nx_project&utm_medium=readme&utm_campaign=nx_projects)
-
-## 🔗 Learn More
-
-- [Nx Documentation](https://nx.dev/docs)
-- [Crafting Your Workspace Tutorial](https://nx.dev/docs/getting-started/tutorials/crafting-your-workspace)
-- [Module Boundaries](https://nx.dev/docs/features/enforce-module-boundaries)
-- [Releasing Packages](https://nx.dev/docs/features/manage-releases)
-- [Nx Plugins](https://nx.dev/docs/concepts/nx-plugins)
-- [Nx Cloud](https://nx.dev/nx-cloud)
-
-## 💬 Community
-
-Join the Nx community:
-
-- [Discord](https://go.nx.dev/community)
-- [X (Twitter)](https://twitter.com/nxdevtools)
-- [LinkedIn](https://www.linkedin.com/company/nrwl)
-- [YouTube](https://www.youtube.com/@nxdevtools)
-- [Blog](https://nx.dev/blog)
+`.mcp.json` wires up `nx-mcp`, Angular CLI's built-in `mcp` server, Playwright, GitHub (hosted remote,
+needs `GITHUB_PERSONAL_ACCESS_TOKEN` in `.env`), and Prisma's `mcp` server.

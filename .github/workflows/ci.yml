@@ -54,10 +54,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Generate Prisma client
-        run: pnpm exec prisma generate --config apps/backend/prisma.config.ts
+        run: pnpm --filter @org/backend exec prisma generate --config prisma.config.ts
 
       - name: Apply database migrations
-        run: pnpm exec prisma migrate deploy --config apps/backend/prisma.config.ts
+        run: pnpm --filter @org/backend exec prisma migrate deploy --config prisma.config.ts
 
       - name: Check formatting
         run: pnpm exec nx format:check --base=origin/master

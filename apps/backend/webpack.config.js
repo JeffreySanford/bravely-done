@@ -1,5 +1,6 @@
 const { NxAppWebpackPlugin } = require('@nx/webpack/app-plugin');
 const { join } = require('path');
+const webpack = require('webpack');
 
 module.exports = {
   output: {
@@ -20,6 +21,15 @@ module.exports = {
       outputHashing: 'none',
       generatePackageJson: false,
       sourceMap: true,
+    }),
+    // @nestjs/mapped-types tries `class-transformer/cjs/storage` then falls
+    // back to `class-transformer/storage` in a try/catch; webpack statically
+    // flags the unresolved fallback branch even though it's never reached at
+    // runtime. Both class-transformer and class-validator are real deps here.
+    new webpack.IgnorePlugin({
+      checkResource(resource) {
+        return resource === 'class-transformer/storage';
+      },
     }),
   ],
 };

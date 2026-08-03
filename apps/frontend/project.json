@@ -79,6 +79,14 @@
         "staticFilePath": "dist/apps/frontend/browser",
         "spa": true
       }
+    },
+    "generate-api": {
+      "executor": "nx:run-commands",
+      "dependsOn": ["@org/backend:generate-openapi"],
+      "options": {
+        "command": "ng-openapi-gen -c ng-openapi-gen.json",
+        "cwd": "apps/frontend"
+      }
     }
   }
 }

@@ -4,7 +4,14 @@
     "outDir": "./out-tsc/jest",
     "module": "commonjs",
     "moduleResolution": "bundler",
-    "types": ["jest", "node"]
+    "types": ["jest", "node"],
+    "rootDir": ".",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "emitDeclarationOnly": false
   },
   "include": [
     "jest.config.ts",

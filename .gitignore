@@ -51,3 +51,16 @@ Thumbs.db
 .angular
 
 test-output
+
+# OpenAPI-driven contract artifacts — regenerated via
+# `nx run frontend:generate-api`, never hand-edited or committed.
+packages/openapi/openapi.json
+apps/frontend/src/app/api/
+
+
+storybook-static
+
+# Secrets — never committed
+.env
+.env.*
+!.env.example

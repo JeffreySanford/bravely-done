@@ -18,6 +18,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://bravely:bravely_dev_only@localhost:5432/bravely_done?schema=public
+      # CI-only secret, unrelated to any real environment's signing key.
+      JWT_SECRET: ci-only-jwt-secret-not-used-anywhere-else
+      FRONTEND_ORIGIN: http://localhost:4200
     services:
       postgres:
         image: postgres:16-alpine

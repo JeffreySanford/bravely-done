@@ -24,6 +24,17 @@ The Prisma schema includes users, roles, and database-backed sessions so individ
 - Record security-relevant audit events without logging private task text.
 - Encrypt transport and use secure mobile storage for tokens.
 
+## Accepted risk: @fastify/static path-traversal advisories (GHSA route-guard-bypass, GHSA-8pvw-jcv7-9cmj)
+
+`@fastify/static` is installed only because `@nestjs/platform-fastify` eagerly probes for it at
+bootstrap (`FastifyAdapter.useStaticAssets()` support) — this backend never calls
+`useStaticAssets()` or serves any static files, confirmed by grep across `apps/backend/src`. The
+patched versions (10.1.1+) are outside `@nestjs/platform-fastify`'s peer range (`^8.0.0 || ^9.0.0`);
+no patched 9.x release exists. Since the vulnerable code path (serving files from a configured static
+root) is never reached, the path-traversal/authorization-bypass advisories are inert in this
+deployment. Left open and documented rather than silently dismissed in Dependabot — revisit once
+`@nestjs/platform-fastify` supports `@fastify/static` v10, or if `useStaticAssets()` is ever adopted.
+
 ## Privacy principles
 
 - Private by default

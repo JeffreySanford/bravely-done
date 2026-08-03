@@ -47,18 +47,18 @@ The game loop, NgRx state, Three.js Base Camp, Capacitor packaging, reward econo
 
 ## Planned architecture
 
-| Concern | Technology |
-|---|---|
-| Monorepo | Nx + pnpm |
-| Web/mobile application | Angular + TypeScript + RxJS + NgRx |
-| Native packaging | Capacitor |
-| 3D world | Three.js; Blender to glTF/GLB asset pipeline |
-| API | NestJS + OpenAPI |
-| Persistence | PostgreSQL + Prisma |
-| Local browser persistence | IndexedDB/Dexie, added with offline support |
-| Mobile persistence | SQLite adapter, added with Capacitor |
-| Tests | Jest, Playwright, Storybook when builder compatibility is resolved |
-| Local AI | Native iOS/Android adapters plus deterministic fallback |
+| Concern                   | Technology                                                         |
+| ------------------------- | ------------------------------------------------------------------ |
+| Monorepo                  | Nx + pnpm                                                          |
+| Web/mobile application    | Angular + TypeScript + RxJS + NgRx                                 |
+| Native packaging          | Capacitor                                                          |
+| 3D world                  | Three.js; Blender to glTF/GLB asset pipeline                       |
+| API                       | NestJS + OpenAPI                                                   |
+| Persistence               | PostgreSQL + Prisma                                                |
+| Local browser persistence | IndexedDB/Dexie, added with offline support                        |
+| Mobile persistence        | SQLite adapter, added with Capacitor                               |
+| Tests                     | Jest, Playwright, Storybook when builder compatibility is resolved |
+| Local AI                  | Native iOS/Android adapters plus deterministic fallback            |
 
 ## Repository layout
 

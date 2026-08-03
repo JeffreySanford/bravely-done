@@ -1,8 +1,9 @@
 import { test, expect } from '@playwright/test';
 
-test('has title', async ({ page }) => {
-  await page.goto('/');
+test('loads the Angular application shell', async ({ page }) => {
+  const response = await page.goto('/');
 
-  // Expect h1 to contain a substring.
-  expect(await page.locator('h1').innerText()).toContain('Welcome');
+  expect(response?.ok()).toBe(true);
+  await expect(page.locator('app-root')).toBeAttached();
+  await expect(page.locator('router-outlet')).toBeAttached();
 });

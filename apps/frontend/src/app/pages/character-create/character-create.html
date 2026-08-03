@@ -1,0 +1,35 @@
+<app-auth-shell title="Name your character" subtitle="Every account can hold several — this is your first.">
+  @if (created()) {
+    <div class="bd-success" role="status">
+      <span class="bd-success__glyph">✓</span>
+      Character created. Entering camp…
+    </div>
+  } @else {
+    @if (errorMessage()) {
+      <div class="bd-error-banner" role="alert">{{ errorMessage() }}</div>
+    }
+
+    <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+      <div class="bd-field">
+        <label for="name">Character name</label>
+        <input
+          id="name"
+          type="text"
+          formControlName="name"
+          autocomplete="off"
+          placeholder="e.g. Ember Scout"
+          [class.bd-invalid]="form.controls.name.invalid && form.controls.name.touched"
+        />
+        <span class="bd-field__hint">
+          @if (form.controls.name.invalid && form.controls.name.touched) {
+            2–40 characters.
+          }
+        </span>
+      </div>
+
+      <button type="submit" class="bd-button" [disabled]="submitting()">
+        {{ submitting() ? 'Creating…' : 'Create character' }}
+      </button>
+    </form>
+  }
+</app-auth-shell>

@@ -15,17 +15,31 @@ decision this plan implements: character select, not Base Camp, is the app's lan
 
 ## Frontend
 
-- [ ] Build signup/login UI wired to the auth API via the generated OpenAPI client.
-- [ ] Build character creation UI — functional first, styled plainly.
+- [x] Build signup/login UI wired to the auth API via the generated OpenAPI client. Styled to the
+      sci-fi/cyber direction from the start (glowing glassmorphic panels, animated grid veil, entrance
+      motion) rather than deferring polish — signals-based state (`AuthStateService`), reactive forms,
+      httpOnly-cookie auth via a `withCredentials` interceptor.
+- [x] Build character creation UI, same visual language, with a success-state animation before
+      advancing.
 - [ ] Build character-select landing screen with Three.js, stylized sci-fi/cyber direction matching
-      Ember's presentation.
-- [ ] Enforce mandatory character creation for brand-new users (no guest/preview browsing first).
-- [ ] Support switching between multiple characters from character select.
+      Ember's presentation. Current `/characters` page is a functional, styled placeholder (card grid,
+      not yet 3D) — this is the one remaining piece of this plan.
+- [x] Enforce mandatory character creation for brand-new users: `authGuard`/`guestGuard` route guards,
+      an app initializer (`restoreSessionInitializer`) that resolves the existing cookie session before
+      the router activates (so guards never run against unknown state), and post-login/signup routing
+      logic that sends a character-less user straight to `/characters/new`.
+- [x] Support switching between multiple characters from character select (list view + "New character"
+      entry point; full character-switching-into-a-session flow lands with Base Camp/Ember, not this
+      plan).
 
 ## Acceptance
 
-- [ ] A new user cannot reach Base Camp or any other screen without first completing signup and
-      character creation.
-- [ ] A returning user with one or more characters lands on character select, not Base Camp, on login.
-- [ ] Character select is visually polished (Three.js, stylized sci-fi/cyber) before this plan is
-      considered complete — this is explicitly not left as placeholder UI.
+- [x] A new user cannot reach the character list or any protected screen without first completing
+      signup and character creation — verified live (signup → forced through `/characters/new` →
+      character list), not just by guard code inspection.
+- [x] A returning user with one or more characters lands on character select, not character creation,
+      on login — verified live (login with an existing character routes straight to `/characters`).
+- [ ] Character select is visually polished **with Three.js** before this plan is considered fully
+      complete. The current CSS-only placeholder is deliberately styled to the same standard as the
+      auth pages, but the 3D treatment is still open — this is the one item carried into the next
+      milestone.

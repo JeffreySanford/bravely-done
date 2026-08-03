@@ -1,0 +1,33 @@
+<div class="stage">
+  <div class="grid-veil"></div>
+
+  <header class="stage__header">
+    <span class="stage__mark">BRAVELY DONE</span>
+    <h1>Choose your character</h1>
+    <p class="stage__subtitle">
+      This screen is a functional placeholder — the polished Three.js character-select experience
+      lands next.
+    </p>
+  </header>
+
+  @if (loading()) {
+    <p class="stage__status">Loading characters…</p>
+  } @else {
+    <div class="roster">
+      @for (character of items(); track character.id) {
+        <article class="card">
+          <div class="card__glow"></div>
+          <span class="card__glyph">◆</span>
+          <h2>{{ character.name }}</h2>
+        </article>
+      }
+
+      <a routerLink="/characters/new" class="card card--add">
+        <span class="card__glyph">+</span>
+        <h2>New character</h2>
+      </a>
+    </div>
+  }
+
+  <button type="button" class="bd-button bd-button--ghost stage__logout" (click)="logout()">Log out</button>
+</div>

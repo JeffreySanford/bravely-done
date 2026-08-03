@@ -1,0 +1,110 @@
+:host {
+  display: block;
+}
+
+.stage {
+  min-height: 100dvh;
+  padding: 56px 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.grid-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 0%, black, transparent 75%);
+}
+
+.stage__header {
+  position: relative;
+  text-align: center;
+  max-width: 520px;
+  margin-bottom: 44px;
+  animation: bd-rise-in 0.5s ease both;
+}
+
+.stage__mark {
+  display: inline-block;
+  font-family: var(--bd-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--bd-cyan);
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+.stage__header h1 {
+  margin: 0 0 10px;
+  font-size: 30px;
+}
+
+.stage__subtitle {
+  margin: 0;
+  color: var(--bd-text-muted);
+  font-size: 14px;
+}
+
+.stage__status {
+  color: var(--bd-text-muted);
+}
+
+.roster {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 20px;
+  width: 100%;
+  max-width: 720px;
+  animation: bd-rise-in 0.6s ease both;
+}
+
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  aspect-ratio: 3 / 4;
+  border-radius: var(--bd-radius);
+  background: var(--bd-surface);
+  border: 1px solid var(--bd-surface-border);
+  color: var(--bd-text);
+  text-decoration: none;
+  text-align: center;
+  padding: 16px;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--bd-cyan);
+  box-shadow: 0 0 28px var(--bd-cyan-soft);
+}
+
+.card__glyph {
+  font-size: 28px;
+  color: var(--bd-cyan);
+}
+
+.card h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+.card--add {
+  border-style: dashed;
+  color: var(--bd-text-muted);
+}
+
+.stage__logout {
+  margin-top: 48px;
+  max-width: 180px;
+}

@@ -101,10 +101,10 @@ describe('AuthController', () => {
     expect(auth.revokeSession).not.toHaveBeenCalled();
   });
 
-  it('me returns the current JWT payload', () => {
+  it('me returns the session shape derived from the JWT payload', () => {
     const { controller } = buildController();
     const payload = { sub: 'user-1', role: Role.PLAYER, iat: 0, exp: 0 };
 
-    expect(controller.me(payload)).toBe(payload);
+    expect(controller.me(payload)).toEqual({ sub: 'user-1', role: Role.PLAYER });
   });
 });

@@ -1,0 +1,27 @@
+:host {
+  display: contents;
+}
+
+.bd-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 14px;
+  border-radius: 10px;
+  background: rgba(53, 224, 161, 0.12);
+  border: 1px solid rgba(53, 224, 161, 0.4);
+  color: var(--bd-success);
+  animation: bd-rise-in 0.35s ease both;
+}
+
+.bd-success__glyph {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--bd-success);
+  color: #04241a;
+  font-weight: 700;
+}

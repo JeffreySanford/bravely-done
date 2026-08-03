@@ -1,0 +1,14 @@
+<div class="shell">
+  <div class="grid-veil"></div>
+  <div class="panel">
+    <div class="panel__glow"></div>
+    <header class="panel__header">
+      <span class="panel__mark">BRAVELY DONE</span>
+      <h1>{{ title() }}</h1>
+      @if (subtitle()) {
+        <p class="panel__subtitle">{{ subtitle() }}</p>
+      }
+    </header>
+    <ng-content></ng-content>
+  </div>
+</div>

@@ -1,1 +1,165 @@
-/* You can add global styles to this file, and also import other style files */
+/* Global design tokens: stylized sci-fi/cyber direction (matches Ember's
+   presentation — holographic, control-room-style, not fantasy). */
+:root {
+  --bd-bg: #05070d;
+  --bd-bg-elevated: #0b0f1a;
+  --bd-surface: rgba(18, 24, 38, 0.72);
+  --bd-surface-border: rgba(0, 229, 255, 0.18);
+  --bd-cyan: #00e5ff;
+  --bd-cyan-soft: rgba(0, 229, 255, 0.35);
+  --bd-violet: #8b5cf6;
+  --bd-violet-soft: rgba(139, 92, 246, 0.35);
+  --bd-text: #e6f1ff;
+  --bd-text-muted: #8fa3c0;
+  --bd-danger: #ff5470;
+  --bd-danger-soft: rgba(255, 84, 112, 0.16);
+  --bd-success: #35e0a1;
+  --bd-radius: 14px;
+  --bd-font: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --bd-font-mono: 'JetBrains Mono', 'Consolas', monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--bd-font);
+  color: var(--bd-text);
+  background: radial-gradient(circle at 20% -10%, rgba(0, 229, 255, 0.12), transparent 45%),
+    radial-gradient(circle at 85% 10%, rgba(139, 92, 246, 0.14), transparent 40%), var(--bd-bg);
+  background-attachment: fixed;
+  -webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: var(--bd-cyan);
+}
+
+::selection {
+  background: var(--bd-cyan-soft);
+}
+
+/* Entrance animation for panels/cards — plain CSS, no animation library
+   needed. Plays automatically on mount since it's tied to element creation,
+   not a JS-driven trigger. */
+@keyframes bd-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bd-pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 24px var(--bd-cyan-soft);
+  }
+  50% {
+    box-shadow: 0 0 40px var(--bd-cyan-soft);
+  }
+}
+
+/* Shared form primitives, used across signup/login/character-creation. */
+.bd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.bd-field label {
+  font-size: 13px;
+  color: var(--bd-text-muted);
+  letter-spacing: 0.02em;
+}
+
+.bd-field input {
+  font: inherit;
+  color: var(--bd-text);
+  background: var(--bd-bg-elevated);
+  border: 1px solid var(--bd-surface-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.bd-field input:focus {
+  border-color: var(--bd-cyan);
+  box-shadow: 0 0 0 3px var(--bd-cyan-soft);
+}
+
+.bd-field input.bd-invalid {
+  border-color: var(--bd-danger);
+}
+
+.bd-field__hint {
+  font-size: 12px;
+  color: var(--bd-danger);
+  min-height: 16px;
+}
+
+.bd-button {
+  width: 100%;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #04121a;
+  background: linear-gradient(135deg, var(--bd-cyan), var(--bd-violet));
+  border: none;
+  border-radius: 10px;
+  padding: 13px 16px;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, opacity 0.12s ease;
+}
+
+.bd-button:hover:not(:disabled) {
+  box-shadow: 0 0 24px var(--bd-cyan-soft);
+  transform: translateY(-1px);
+}
+
+.bd-button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.bd-button--ghost {
+  background: transparent;
+  color: var(--bd-cyan);
+  border: 1px solid var(--bd-surface-border);
+}
+
+.bd-error-banner {
+  background: var(--bd-danger-soft);
+  border: 1px solid rgba(255, 84, 112, 0.4);
+  color: #ffd7de;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 13px;
+  margin-bottom: 18px;
+}
+
+.bd-footer-link {
+  margin-top: 22px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--bd-text-muted);
+}

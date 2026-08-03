@@ -8,11 +8,13 @@ import {
   UnauthorizedException,
   UseGuards,
 } from '@nestjs/common';
-import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { ApiCookieAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AuthService } from './auth.service';
 import { AuthUserDto } from './dto/auth-user.dto';
 import { LoginDto } from './dto/login.dto';
+import { LogoutResponseDto } from './dto/logout-response.dto';
+import { SessionDto } from './dto/session.dto';
 import { SignupDto } from './dto/signup.dto';
 import { clearAuthCookies, setAuthCookies } from './cookie.util';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
@@ -35,6 +37,7 @@ export class AuthController {
 
   @Post('signup')
   @ApiOperation({ summary: 'Create an account and start a session' })
+  @ApiCreatedResponse({ type: AuthUserDto })
   async signup(
     @Body() dto: SignupDto,
     @Req() req: FastifyRequest,
@@ -47,6 +50,7 @@ export class AuthController {
 
   @Post('login')
   @ApiOperation({ summary: 'Authenticate and start a session' })
+  @ApiOkResponse({ type: AuthUserDto })
   async login(
     @Body() dto: LoginDto,
     @Req() req: FastifyRequest,
@@ -59,6 +63,7 @@ export class AuthController {
 
   @Post('refresh')
   @ApiOperation({ summary: 'Rotate the refresh session and issue a new access token' })
+  @ApiOkResponse({ type: AuthUserDto })
   async refresh(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
@@ -74,23 +79,30 @@ export class AuthController {
 
   @Post('logout')
   @ApiOperation({ summary: 'Revoke the current refresh session' })
+  @ApiOkResponse({ type: LogoutResponseDto })
   async logout(
     @Req() req: FastifyRequest,
     @Res({ passthrough: true }) res: FastifyReply,
-  ): Promise<{ success: true }> {
+  ): Promise<LogoutResponseDto> {
     const rawRefreshToken = req.cookies?.['refresh_token'];
     if (rawRefreshToken) {
       await this.auth.revokeSession(rawRefreshToken);
     }
     clearAuthCookies(res);
-    return { success: true };
+    const dto = new LogoutResponseDto();
+    dto.success = true;
+    return dto;
   }
 
   @Get('me')
   @ApiCookieAuth()
   @ApiOperation({ summary: "Return the current session's user" })
+  @ApiOkResponse({ type: SessionDto })
   @UseGuards(JwtAuthGuard)
-  me(@CurrentUser() user: JwtPayload): JwtPayload {
-    return user;
+  me(@CurrentUser() user: JwtPayload): SessionDto {
+    const dto = new SessionDto();
+    dto.sub = user.sub;
+    dto.role = user.role;
+    return dto;
   }
 }

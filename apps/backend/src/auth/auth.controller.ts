@@ -17,7 +17,7 @@ import { SignupDto } from './dto/signup.dto';
 import { clearAuthCookies, setAuthCookies } from './cookie.util';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
-import { JwtPayload } from './jwt-payload.interface';
+import type { JwtPayload } from './jwt-payload.interface';
 import { User } from '../generated/prisma/client';
 
 function toAuthUserDto(user: User): AuthUserDto {

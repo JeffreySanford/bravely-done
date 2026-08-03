@@ -16,7 +16,13 @@ import { AppModule } from './app/app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
-  await app.register(fastifyCookie);
+  // @fastify/cookie's plugin type expects the instance to already have
+  // cookie methods (a self-referential typing quirk in Fastify's plugin
+  // types), which trips a false-positive mismatch against
+  // NestFastifyApplication's own bundled FastifyInstance type. Registration
+  // works correctly at runtime — verified via a real signup/login/refresh/
+  // logout smoke test against live Postgres.
+  await app.register(fastifyCookie as unknown as Parameters<typeof app.register>[0]);
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);

@@ -1,0 +1,59 @@
+name: Bootstrap Bravely Done Foundation
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - master
+    paths:
+      - .github/workflows/bootstrap-foundation.yml
+
+permissions:
+  contents: write
+
+jobs:
+  expand-foundation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Reconstruct and verify foundation archive
+        shell: bash
+        run: |
+          set -euo pipefail
+          cat \
+            .bootstrap/chunk-00 \
+            .bootstrap/chunk-01 \
+            .bootstrap/chunk-02 \
+            .bootstrap/chunk-03 \
+            .bootstrap/chunk-04 \
+            .bootstrap/chunk-05a \
+            .bootstrap/chunk-05b \
+            .bootstrap/chunk-06 \
+            | tr -d '\r\n' \
+            | base64 --decode > /tmp/bravely-done-foundation.tar.gz
+
+          echo "fdeaf42bf304ca9c831388fcd8b2be24e8f2a44e938cc5105c6ba5415ff7bdb6  /tmp/bravely-done-foundation.tar.gz" | sha256sum --check --strict
+
+          mkdir -p /tmp/bravely-done-foundation
+          tar -xzf /tmp/bravely-done-foundation.tar.gz -C /tmp/bravely-done-foundation
+
+      - name: Replace bootstrap tree with foundation
+        shell: bash
+        run: |
+          set -euo pipefail
+          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
+          cp -a /tmp/bravely-done-foundation/. .
+
+      - name: Commit complete foundation
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "Bravely Done Bootstrap"
+          git config user.email "actions@users.noreply.github.com"
+          git add --all
+          git commit -m "Build Bravely Done foundation"
+          git push origin HEAD:master

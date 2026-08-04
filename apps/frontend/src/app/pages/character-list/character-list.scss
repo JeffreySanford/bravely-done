@@ -9,8 +9,20 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow: hidden;
 }
 
+.stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* CSS fallback when WebGL isn't available — same visual family as the
+   canvas, just static. */
 .grid-veil {
   position: absolute;
   inset: 0;
@@ -75,6 +87,7 @@
   border-radius: var(--bd-radius);
   background: var(--bd-surface);
   border: 1px solid var(--bd-surface-border);
+  backdrop-filter: blur(14px);
   color: var(--bd-text);
   text-decoration: none;
   text-align: center;

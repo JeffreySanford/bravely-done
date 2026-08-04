@@ -79,6 +79,32 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
   / `app.close()`, not just `.compile()`) against the docker-compose Postgres and asserts a successful
   connect/disconnect cycle.
 
+## OPEN-004 — Three.js/WebGL scene code can't be unit-tested in jsdom
+
+- **Area**: `apps/frontend/src/app/game-rendering/renderer-lifecycle.ts` (real `THREE.WebGLRenderer`,
+  `ResizeObserver`, render-loop construction) and `apps/frontend/src/app/pages/character-list/
+  character-select-scene.ts` (real Three.js scene-graph object construction: geometries, materials,
+  lights).
+- **Reason**: jsdom has no WebGL implementation. Constructing a real `THREE.WebGLRenderer` against a
+  jsdom canvas either throws or silently no-ops depending on the mock shape, and there's no way to
+  meaningfully assert "the scene looks right" without an actual GPU-backed rendering context. Everything
+  *around* this — motion-mode detection, WebGL-availability detection, and the component-level wiring
+  that constructs `RendererLifecycle` and calls `.start()`/`.dispose()` — **is** unit-tested (via
+  `jest.mock` on these two modules; see `character-list.webgl-available.spec.ts`). Only the actual
+  WebGL/Three.js internals are excluded.
+- **Mitigation**: Real, automated compensating evidence, not just a documented gap — `apps/frontend-e2e/
+  src/character-select.spec.ts` runs a full signup → character-creation → character-select journey
+  through three actual browser engines (Chromium, Firefox, WebKit, all of which do implement WebGL),
+  asserting the canvas actually mounts with non-zero dimensions and that no unexpected console errors
+  occur. This is the same "e2e for what can't be meaningfully faked with mocks" principle the testing
+  gate already states, applied to rendering specifically. Per-file `jest.config.cts` overrides set to the
+  files' actual achievable percentage (the wiring code coverage that leaks through from other tests),
+  not zero.
+- **Reviewed by / date**: Claude (scaffolding session), 2026-08-03.
+- **Reopen condition**: Revisit if a headless-WebGL jsdom shim becomes standard practice for this project
+  (not planned — e2e is the more honest signal for actual rendering correctness than a mocked WebGL
+  context would be) or if Nx/Angular gains an officially-supported approach for this.
+
 ---
 
 ## Standing exclusions (not incident-tracked, just documented)

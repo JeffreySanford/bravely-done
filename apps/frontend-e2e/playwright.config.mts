@@ -29,9 +29,21 @@ export default defineConfig({
     /* Collect trace when retrying the failed test. See https://playwright.dev/docs/trace-viewer */
     trace: 'on-first-retry',
   },
-  /* Run your local dev server before starting the tests */
+  /* Run your local dev server before starting the tests.
+   *
+   * The trailing `--verbose=false` is load-bearing, not cosmetic:
+   * @nx/playwright's plugin pattern-matches an *exact* `nx run
+   * project:target` command (anchored end-of-string) and auto-creates an Nx
+   * task dependency on frontend:serve in *addition to* Playwright's own
+   * reuseExistingServer readiness check — two independent things racing to
+   * start/detect the same server, which trips Nx's own recursive-invocation
+   * guard intermittently (a pre-existing, Nx-flagged "flaky task"; not
+   * something introduced here). This workspace has no angular.json, so `ng
+   * serve` directly isn't an option — the trailing flag is the minimal
+   * change that dodges the regex while keeping the real, working `nx run`
+   * invocation as the sole owner of the server's lifecycle. */
   webServer: {
-    command: 'pnpm exec nx run frontend:serve',
+    command: 'pnpm exec nx run frontend:serve --verbose=false',
     url: 'http://localhost:4200',
     reuseExistingServer: true,
     cwd: workspaceRoot,

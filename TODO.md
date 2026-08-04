@@ -42,9 +42,12 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 - [x] Build the Character data model (multiple characters per account) and creation endpoint.
 - [x] Build character select as the app's actual landing page, gated so new users must complete
       character creation first. (Functional, styled placeholder — Three.js is the item below.)
-- [ ] Polish character select with Three.js, stylized sci-fi/cyber direction matching Ember.
+- [x] Polish character select with Three.js, stylized sci-fi/cyber direction matching Ember. Ambient
+      particle-field/orbit-ring WebGL backdrop behind the real interactive character cards, with
+      motion-mode detection and a CSS fallback for no-WebGL browsers; verified live in-browser and via
+      a 3-engine Playwright e2e test.
 
-See [Plan 16](planning/16-character-select.md).
+Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 
 ## Next: Base Camp Alive
 

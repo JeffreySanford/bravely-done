@@ -2,7 +2,14 @@
   "name": "@org/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "db:up": "docker compose -f docker/docker-compose.yml up -d",
+    "db:down": "docker compose -f docker/docker-compose.yml down",
+    "db:generate": "pnpm --filter @org/backend exec prisma generate --config prisma.config.ts",
+    "db:migrate": "pnpm --filter @org/backend exec prisma migrate deploy --config prisma.config.ts",
+    "serve:apps": "nx run-many -t serve --projects=frontend,@org/backend --parallel=2",
+    "start:all": "pnpm run db:up && pnpm run db:generate && pnpm run db:migrate && pnpm run serve:apps"
+  },
   "private": true,
   "devDependencies": {
     "@angular-devkit/core": "~22.0.4",
@@ -34,6 +41,7 @@
     "@swc/helpers": "0.5.18",
     "@types/jest": "~30.0.0",
     "@types/node": "^24.0.0",
+    "@types/three": "^0.185.3",
     "@typescript-eslint/utils": "^8.58.0",
     "angular-eslint": "^22.0.0",
     "eslint": "^9.8.0",
@@ -69,6 +77,7 @@
     "@nestjs/platform-express": "^11.0.0",
     "axios": "^1.6.0",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "~7.8.0"
+    "rxjs": "~7.8.0",
+    "three": "^0.185.1"
   }
 }

@@ -51,4 +51,19 @@ describe('CharacterList', () => {
     expect(logout).toHaveBeenCalled();
     expect(router.navigateByUrl).toHaveBeenCalledWith('/login');
   });
+
+  it('does not mount a renderer when WebGL is unavailable (e.g. jsdom)', () => {
+    const list = jest.fn().mockReturnValue(of([]));
+    const { component } = setup({ list });
+
+    expect(component.renderScene).toBe(false);
+    expect(() => component.ngAfterViewInit()).not.toThrow();
+  });
+
+  it('disposing is a no-op when no renderer was ever mounted', () => {
+    const list = jest.fn().mockReturnValue(of([]));
+    const { component } = setup({ list });
+
+    expect(() => component.ngOnDestroy()).not.toThrow();
+  });
 });

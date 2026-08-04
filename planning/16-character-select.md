@@ -21,9 +21,13 @@ decision this plan implements: character select, not Base Camp, is the app's lan
       httpOnly-cookie auth via a `withCredentials` interceptor.
 - [x] Build character creation UI, same visual language, with a success-state animation before
       advancing.
-- [ ] Build character-select landing screen with Three.js, stylized sci-fi/cyber direction matching
-      Ember's presentation. Current `/characters` page is a functional, styled placeholder (card grid,
-      not yet 3D) — this is the one remaining piece of this plan.
+- [x] Build character-select landing screen with Three.js, stylized sci-fi/cyber direction matching
+      Ember's presentation. Real character cards stay the interactive surface; the Three.js scene
+      (particle field + orbit rings, cyan/violet palette) is an ambient WebGL backdrop behind them, per
+      `documentation/product/base-camp.md`'s interaction rule. Full/reduced/minimal motion mode
+      detection and a CSS grid-veil fallback for browsers without WebGL are both wired through
+      `apps/frontend/src/app/game-rendering/` (`RendererLifecycle`, `isWebglAvailable`,
+      `detectMotionMode`), a reusable module carried forward into Base Camp.
 - [x] Enforce mandatory character creation for brand-new users: `authGuard`/`guestGuard` route guards,
       an app initializer (`restoreSessionInitializer`) that resolves the existing cookie session before
       the router activates (so guards never run against unknown state), and post-login/signup routing
@@ -39,7 +43,9 @@ decision this plan implements: character select, not Base Camp, is the app's lan
       character list), not just by guard code inspection.
 - [x] A returning user with one or more characters lands on character select, not character creation,
       on login — verified live (login with an existing character routes straight to `/characters`).
-- [ ] Character select is visually polished **with Three.js** before this plan is considered fully
-      complete. The current CSS-only placeholder is deliberately styled to the same standard as the
-      auth pages, but the 3D treatment is still open — this is the one item carried into the next
-      milestone.
+- [x] Character select is visually polished **with Three.js** — verified live in a real browser
+      (signup → character creation → character select), confirming the WebGL canvas actually mounts
+      (not the CSS fallback) and real character cards remain interactive above it. Compensating
+      automated evidence is `apps/frontend-e2e/src/character-select.spec.ts`, which runs the same
+      journey across Chromium, Firefox, and WebKit. This plan is complete; Base Camp is next
+      (see [Plan 02](02-base-camp-animations.md) and [Plan 10](10-now-base-camp.md)).

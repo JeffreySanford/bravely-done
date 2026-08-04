@@ -1,13 +1,14 @@
 <div class="stage">
-  <div class="grid-veil"></div>
+  @if (renderScene) {
+    <canvas #sceneCanvas class="stage__canvas" aria-hidden="true"></canvas>
+  } @else {
+    <div class="grid-veil" aria-hidden="true"></div>
+  }
 
   <header class="stage__header">
     <span class="stage__mark">BRAVELY DONE</span>
     <h1>Choose your character</h1>
-    <p class="stage__subtitle">
-      This screen is a functional placeholder — the polished Three.js character-select experience
-      lands next.
-    </p>
+    <p class="stage__subtitle">Return to the world you're building, or begin again.</p>
   </header>
 
   @if (loading()) {

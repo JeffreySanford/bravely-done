@@ -115,11 +115,12 @@ describe('BaseCamp (WebGL available)', () => {
     expect(mockDispose).toHaveBeenCalledTimes(1);
   });
 
-  it('passes the current firewood count into the scene', () => {
+  it('passes the current firewood and forage counts into the scene', () => {
     const fixture = TestBed.createComponent(BaseCamp);
     fixture.detectChanges();
 
     expect(lastSceneOptions?.initialFirewoodCount).toBe(2);
+    expect(lastSceneOptions?.initialForageCount).toBe(1);
   });
 
   it('dispatches chopTree when the scene reports a chop, and firewoodGathered back once it succeeds', () => {
@@ -133,7 +134,7 @@ describe('BaseCamp (WebGL available)', () => {
     dispatchSpy.mockRestore();
   });
 
-  it('dispatches forage when the scene reports a harvest, and forage back once it succeeds', () => {
+  it('dispatches forage and forageGathered when the scene reports a harvest that succeeds', () => {
     const dispatchSpy = jest.spyOn(mockDirector, 'dispatch');
     const fixture = TestBed.createComponent(BaseCamp);
     fixture.detectChanges();
@@ -141,6 +142,7 @@ describe('BaseCamp (WebGL available)', () => {
     lastSceneOptions?.onForage();
 
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'forage' });
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'forageGathered', totalForage: 2 });
     dispatchSpy.mockRestore();
   });
 

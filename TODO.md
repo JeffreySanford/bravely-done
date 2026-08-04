@@ -79,8 +79,11 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       (`apps/frontend/src/app/state/camp/`); the resulting firewood count drives the campfire's fuel
       reserve for real. Verified live end to end — both the backend contract (direct API calls) and
       the actual in-browser click, using the character's real projected screen position computed from
-      the live camera matrices, not a guessed coordinate. Wandering-animal interaction is still open;
-      forage is tracked but not yet spent on anything.
+      the live camera matrices, not a guessed coordinate.
+- [x] Give forage a real sink: the companion's glow and idle-bob liveliness now scale with total
+      forage gathered ("upkeep" — matches documentation/product/base-camp.md's resource loop).
+      Verified live with a real before/after screenshot comparison (forage 1 → 9 visibly brightens the
+      companion). Wandering-animal interaction is still open.
 - [x] Complete a quest and visibly upgrade the camp: a real Quest domain (create/list/complete,
       `apps/backend/src/quest/`) replaces the earlier mock-quest stub. `POST /quests/:id/complete`
       advances `Character.campConstructionStage`, and the bridge visibly repairs one plank per

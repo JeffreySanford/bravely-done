@@ -27,7 +27,8 @@
       another tree. Every arrival also gets `INITIAL_FREE_FUEL_SECONDS` of free burn regardless of
       firewoodCount, so a brand-new character (0 firewood) still finds a lit fire — see "Visual
       verification" below for the bug this fixes.
-- [x] Companion placeholder: an idle, bobbing, slowly-rotating landmark near the fire.
+- [x] Companion placeholder: an idle, bobbing, slowly-rotating landmark near the fire, whose glow and
+      liveliness now scale with forage gathered ("upkeep" — see "Resource loop" below).
 - [x] Quest Board, chest, treasury, and bridge landmarks. Workbench still open.
 - [x] Per-character tent gated to true first-ever arrival: `Character.hasArrivedAtCamp` (backend,
       `POST /characters/:id/arrive`) is checked before the scene is built, and the erect animation only
@@ -53,9 +54,13 @@
 
 - [x] Chop a tree → firewood pickup (`Character.firewoodCount`, atomic backend increment) → feeds the
       campfire's fuel state for real.
-- [x] Harvest the foraging bush → forage pickup (`Character.forageCount`, atomic backend increment).
-      Not yet spent on anything (no consumption sink exists) — tracked but not used, mirroring
-      firewood before the campfire consumed it. Wandering animals are not built.
+- [x] Harvest the foraging bush → forage pickup (`Character.forageCount`, atomic backend increment) →
+      feeds companion upkeep for real: the companion's glow intensity and idle-bob liveliness scale
+      with total forage gathered (capped at `COMPANION_UPKEEP_CAP`), matching the resource loop
+      documented in documentation/product/base-camp.md ("foraged plants... feed future systems
+      (companion upkeep...)"). Verified live: forage from 1 → 9 visibly brightens the companion in a
+      real screenshot comparison, the same technique used for the campfire fix. Wandering animals are
+      not built.
 - [x] Persist harvested/gathered resources per character — firewood and forage are both real
       Postgres-backed fields, verified live via direct API calls (harvest, then a fresh unrelated
       fetch confirms the count).
@@ -74,9 +79,9 @@
       [Plan 03](03-first-brave-step.md)), not a mock stub.
 - [ ] XP, coins, loot reveal.
 - [x] Resource gathering: `chopTree` (per-tree, reacted to by that tree's own sequence),
-      `firewoodGathered` (campfire reacts by recomputing its fuel reserve), and `forage` (the bush's
-      own sequence plays a harvest pulse) are all wired. Catch animal is not — no animal interaction
-      exists yet.
+      `firewoodGathered` (campfire reacts by recomputing its fuel reserve), `forage` (the bush's own
+      sequence plays a harvest pulse), and `forageGathered` (the companion reacts by updating its
+      upkeep-driven glow) are all wired. Catch animal is not — no animal interaction exists yet.
 - [ ] Continue, split, retreat, and comeback.
 - [ ] Skip safely to final state.
 

@@ -86,8 +86,9 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
 
     this.actions$
       .pipe(ofType(CampActions.forageSuccess), takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => {
+      .subscribe(({ forageCount }) => {
         this.director?.dispatch({ type: 'forage' });
+        this.director?.dispatch({ type: 'forageGathered', totalForage: forageCount });
       });
   }
 
@@ -155,6 +156,7 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       firstArrival: this.firstArrival,
       constructionStage: this.constructionStage(),
       initialFirewoodCount: this.firewoodCount(),
+      initialForageCount: this.forageCount(),
       onChopTree: () => this.store.dispatch(CampActions.chopTree({ characterId })),
       onForage: () => this.store.dispatch(CampActions.forage({ characterId })),
     });

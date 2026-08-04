@@ -39,10 +39,10 @@ character's camp visibly *sustains itself* moment to moment:
 - Firewood (from chopped trees) fuels the campfire; an unfed fire visibly dims/goes to embers over
   time, and is relit by returning with more firewood — this is deliberately a light ambient-state
   loop, not a punishing survival-game timer.
-- Foraged plants and harvested animals represent food/supply resources tracked per-account, feeding
-  future systems (companion upkeep, expedition provisioning) without blocking the core Agile/SAFe
-  teaching loop — resource gathering is flavor and texture on top of the quest system, never a gate
-  in front of it.
+- Foraged plants and harvested animals represent food/supply resources tracked per-account. Companion
+  upkeep is built: the companion's visible glow and liveliness scale with forage gathered. Expedition
+  provisioning and other future systems are not — resource gathering is flavor and texture on top of
+  the quest system, never a gate in front of it.
 - The stream/lake is the resource loop's visual anchor and does not currently have a harvestable
   yield of its own (no fishing at this stage) — it establishes the camp's sense of place and is a
   natural home for future systems (fishing, camp expansion toward the water) without committing to
@@ -94,9 +94,9 @@ character select (return visits):
   persisting across reloads. Quest, construction-stage, and camp-resource (firewood/forage) state all
   live in this project's NgRx store (`apps/frontend/src/app/state/quests/`,
   `apps/frontend/src/app/state/camp/`), not local component state.
-- **Not yet built**: wandering-animal interaction, spending forage on anything (it's tracked but not
-  consumed by any system yet), the workbench, encounters/sprints/rewards on top of quests (see
-  [Plan 03](../../planning/03-first-brave-step.md)), and the animation director's fuller event set
-  (quest accepted, sprint states, loot reveal, etc. — arrival, quest-completion, tree-chopping, and
-  foraging are wired so far). See [Plan 02](../../planning/02-base-camp-animations.md) for the
+- **Not yet built**: wandering-animal interaction, the workbench, encounters/sprints/rewards on top of
+  quests (see [Plan 03](../../planning/03-first-brave-step.md)), and the animation director's fuller
+  event set (quest accepted, sprint states, loot reveal, etc. — arrival, quest-completion,
+  tree-chopping, foraging, and companion upkeep are wired so far). See
+  [Plan 02](../../planning/02-base-camp-animations.md) for the
   itemized build sequencing.

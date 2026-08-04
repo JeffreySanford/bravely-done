@@ -12,7 +12,8 @@ export type BaseCampAnimationEvent =
   | { type: 'questCompleted'; constructionStage: number }
   | { type: 'chopTree'; treeIndex: number }
   | { type: 'firewoodGathered'; totalFirewood: number }
-  | { type: 'forage' };
+  | { type: 'forage' }
+  | { type: 'forageGathered'; totalForage: number };
 
 export interface AnimationSequence {
   onEvent(event: BaseCampAnimationEvent): void;

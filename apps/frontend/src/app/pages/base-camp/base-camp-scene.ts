@@ -22,11 +22,17 @@ const SECONDS_PER_LOG = 25;
 const INITIAL_FREE_FUEL_SECONDS = 45;
 const CHOP_WOBBLE_SECONDS = 0.4;
 const FORAGE_PULSE_SECONDS = 0.5;
+/** Companion "upkeep" reads as brighter glow / livelier bob, scaling with
+ * forage gathered — see documentation/product/base-camp.md's resource
+ * loop: "foraged plants... feed future systems (companion upkeep...)".
+ * Caps out at this many units so upkeep doesn't scale unboundedly. */
+const COMPANION_UPKEEP_CAP = 10;
 
 export interface BaseCampSceneOptions {
   firstArrival: boolean;
   constructionStage: number;
   initialFirewoodCount: number;
+  initialForageCount: number;
   /** Called synchronously the moment a tree is clicked, before the backend
    * confirms — the scene plays its own optimistic wobble regardless; this
    * is purely so the caller can dispatch the real chop request. */
@@ -61,7 +67,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
   const director = new AnimationDirector();
 
   let stream: THREE.Mesh;
-  let companion: THREE.Mesh;
+  let companionSequence: CompanionSequence;
   let raycaster: THREE.Raycaster;
   let camera: THREE.PerspectiveCamera;
   let treeMeshes: THREE.Object3D[] = [];
@@ -106,9 +112,10 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       ctx.scene.add(tentSequence.mesh);
       director.register(tentSequence);
 
-      companion = buildCompanion();
-      companion.position.set(-1.8, 0.55, -1.6);
-      ctx.scene.add(companion);
+      companionSequence = new CompanionSequence(options.initialForageCount);
+      companionSequence.mesh.position.set(-1.8, 0.55, -1.6);
+      ctx.scene.add(companionSequence.mesh);
+      director.register(companionSequence);
 
       TREE_POSITIONS.forEach((position, index) => {
         const treeSequence = new TreeSequence(index);
@@ -184,8 +191,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       treeSequences.forEach((tree) => tree.onFrame(deltaSeconds));
       bushSequence.onFrame(deltaSeconds);
 
-      companion.position.y = 0.55 + Math.sin(elapsed * 1.6) * 0.08;
-      companion.rotation.y = elapsed * 0.3;
+      companionSequence.onFrame(elapsed);
 
       if (motionMode !== 'minimal') {
         const streamPositions = stream.geometry.attributes['position'] as THREE.BufferAttribute;
@@ -331,6 +337,34 @@ class TreeSequence implements AnimationSequence {
     this.wobbleRemaining = Math.max(this.wobbleRemaining - deltaSeconds, 0);
     const progress = this.wobbleRemaining / CHOP_WOBBLE_SECONDS;
     this.group.rotation.z = Math.sin(progress * Math.PI * 3) * 0.08 * progress;
+  }
+}
+
+/** The companion's glow and idle bob liveliness scale with forage
+ * gathered — "upkeep" (see documentation/product/base-camp.md's resource
+ * loop) made visible, not just a tracked number. Not fed by firewood —
+ * that goes to the campfire instead, keeping each resource's purpose
+ * distinct. */
+class CompanionSequence implements AnimationSequence {
+  readonly mesh = buildCompanion();
+  private totalForage: number;
+
+  constructor(initialForage: number) {
+    this.totalForage = initialForage;
+  }
+
+  onEvent(event: BaseCampAnimationEvent): void {
+    if (event.type === 'forageGathered') {
+      this.totalForage = event.totalForage;
+    }
+  }
+
+  onFrame(elapsed: number): void {
+    const upkeep = Math.min(this.totalForage, COMPANION_UPKEEP_CAP) / COMPANION_UPKEEP_CAP;
+    const bobAmplitude = 0.06 + upkeep * 0.06;
+    this.mesh.position.y = 0.55 + Math.sin(elapsed * 1.6) * bobAmplitude;
+    this.mesh.rotation.y = elapsed * (0.3 + upkeep * 0.3);
+    (this.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + upkeep * 0.6;
   }
 }
 

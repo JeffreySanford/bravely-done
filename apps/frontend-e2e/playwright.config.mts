@@ -56,7 +56,22 @@ export default defineConfig({
 
     {
       name: 'firefox',
-      use: { ...devices['Desktop Firefox'] },
+      use: {
+        ...devices['Desktop Firefox'],
+        // Headless Firefox on a GPU-less CI runner blocks hardware WebGL
+        // and, unlike Chromium (bundled SwiftShader) and WebKit, doesn't
+        // fall back to software rendering on its own — isWebglAvailable()
+        // then correctly reports false and character-select.spec.ts's
+        // canvas.stage__canvas assertion fails, even though the app itself
+        // is working correctly. This forces Firefox's WebGL context
+        // creation past the hardware-acceleration blocklist so it uses its
+        // software rasterizer instead, matching the other two engines.
+        launchOptions: {
+          firefoxUserPrefs: {
+            'webgl.force-enabled': true,
+          },
+        },
+      },
     },
 
     {

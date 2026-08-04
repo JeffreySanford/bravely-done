@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { AnimationDirector, AnimationSequence } from '../../game-rendering/animation-director';
+import { AnimationDirector, AnimationSequence, BaseCampAnimationEvent } from '../../game-rendering/animation-director';
 import { MotionMode } from '../../game-rendering/motion-mode';
 import { SceneHandlers } from '../../game-rendering/renderer-lifecycle';
 import { MAX_CONSTRUCTION_STAGE } from './construction-stage';
@@ -11,14 +11,20 @@ const EMBER = 0xffb066;
 const WATER = 0x1c5c8a;
 
 const TENT_ERECT_SECONDS = 1.1;
-/** Seconds of full flame before the campfire fuel starts dimming toward embers-only.
- * Client-side only for now — no backend firewood system yet (see Plan 02). */
-const FUEL_FULL_SECONDS = 45;
-const FUEL_DECAY_SECONDS = 30;
+/** Seconds of full flame one chopped log buys. Real firewood (see
+ * planning/02-base-camp-animations.md's resource loop) now drives the
+ * campfire's fuel state — not a pure time-based loop. */
+const SECONDS_PER_LOG = 25;
+const CHOP_WOBBLE_SECONDS = 0.4;
 
 export interface BaseCampSceneOptions {
   firstArrival: boolean;
   constructionStage: number;
+  initialFirewoodCount: number;
+  /** Called synchronously the moment a tree is clicked, before the backend
+   * confirms — the scene plays its own optimistic wobble regardless; this
+   * is purely so the caller can dispatch the real chop request. */
+  onChopTree: () => void;
 }
 
 export interface BaseCampScene {
@@ -26,113 +32,127 @@ export interface BaseCampScene {
   director: AnimationDirector;
 }
 
+const TREE_POSITIONS = [
+  [-6, 0, -2],
+  [-5.5, 0, 3.5],
+  [6, 0, -3],
+] as const;
+
 /**
- * The full first-pass Base Camp scene: ground, campfire (with a decaying
- * fuel state), the arriving character's tent, a companion placeholder, a
- * few resource-loop landmarks (trees, a foraging bush, an animated
- * stream), and the quest-loop landmarks (quest board, chest, treasury,
- * and a bridge that visibly repairs as campConstructionStage advances).
- * See documentation/product/base-camp.md and planning/02-base-camp-
- * animations.md. Interaction (chopping, harvesting, quest board clicks)
- * is out of scope for this pass — these are visual landmarks; the bridge
- * is the one landmark actually wired to real backend state via
- * AnimationDirector's 'questCompleted' event.
+ * The full first-pass Base Camp scene: ground, campfire (fuel now driven
+ * by real chopped firewood), the arriving character's tent, a companion
+ * placeholder, resource-loop landmarks (clickable trees, a foraging bush,
+ * an animated stream), and the quest-loop landmarks (quest board, chest,
+ * treasury, and a bridge that visibly repairs as campConstructionStage
+ * advances). See documentation/product/base-camp.md and planning/02-base-
+ * camp-animations.md. Foraging/animal harvesting interaction is still out
+ * of scope for this pass — only tree-chopping is wired to real state.
  */
 export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampSceneOptions): BaseCampScene {
   const director = new AnimationDirector();
 
-  let fireLight: THREE.PointLight;
-  let flame: THREE.Mesh;
-  let embers: THREE.Points;
   let stream: THREE.Mesh;
   let companion: THREE.Mesh;
+  let raycaster: THREE.Raycaster;
+  let camera: THREE.PerspectiveCamera;
+  let treeMeshes: THREE.Object3D[] = [];
+  let canvasRef: HTMLCanvasElement;
+  let clickListener: (event: MouseEvent) => void;
 
   let tentSequence: TentSequence;
   let bridgeSequence: BridgeSequence;
+  let campfireSequence: CampfireSequence;
+  const treeSequences: TreeSequence[] = [];
 
   const handlers: SceneHandlers = {
-    onInit({ scene, camera }) {
+    onInit(ctx) {
+      camera = ctx.camera;
+      canvasRef = ctx.canvas;
       camera.position.set(0, 4.2, 12);
       camera.lookAt(0, 0.6, -1);
 
-      scene.add(new THREE.AmbientLight(0x141c33, 1.1));
+      ctx.scene.add(new THREE.AmbientLight(0x141c33, 1.1));
       const moon = new THREE.PointLight(VIOLET, 2, 40);
       moon.position.set(-6, 8, -4);
-      scene.add(moon);
+      ctx.scene.add(moon);
 
-      scene.add(buildGround());
+      ctx.scene.add(buildGround());
 
-      const campfire = buildCampfire();
-      fireLight = campfire.light;
-      flame = campfire.flame;
-      embers = campfire.embers;
-      scene.add(campfire.group);
+      campfireSequence = new CampfireSequence(options.initialFirewoodCount);
+      ctx.scene.add(campfireSequence.group);
+      director.register(campfireSequence);
 
       tentSequence = new TentSequence(options.firstArrival);
       tentSequence.mesh.position.set(2.6, 0, -0.6);
-      scene.add(tentSequence.mesh);
+      ctx.scene.add(tentSequence.mesh);
       director.register(tentSequence);
 
       companion = buildCompanion();
       companion.position.set(-1.8, 0.55, -1.6);
-      scene.add(companion);
+      ctx.scene.add(companion);
 
-      for (const position of [
-        [-6, 0, -2],
-        [-5.5, 0, 3.5],
-        [6, 0, -3],
-      ] as const) {
-        const tree = buildTree();
-        tree.position.set(position[0], position[1], position[2]);
-        scene.add(tree);
-      }
+      TREE_POSITIONS.forEach((position, index) => {
+        const treeSequence = new TreeSequence(index);
+        treeSequence.group.position.set(position[0], position[1], position[2]);
+        ctx.scene.add(treeSequence.group);
+        director.register(treeSequence);
+        treeSequences.push(treeSequence);
+      });
+      treeMeshes = treeSequences.map((t) => t.group);
 
       const bush = buildForagingBush();
       bush.position.set(-3, 0, -4.5);
-      scene.add(bush);
+      ctx.scene.add(bush);
 
       stream = buildStream();
       stream.position.set(0, 0.01, -7.5);
-      scene.add(stream);
+      ctx.scene.add(stream);
 
       const questBoard = buildQuestBoard();
       questBoard.position.set(5.5, 0, 0.5);
-      scene.add(questBoard);
+      ctx.scene.add(questBoard);
 
       const chest = buildChest();
       chest.position.set(4.5, 0, 3);
-      scene.add(chest);
+      ctx.scene.add(chest);
 
       const treasury = buildTreasury();
       treasury.position.set(-4.5, 0, 2.8);
-      scene.add(treasury);
+      ctx.scene.add(treasury);
 
       bridgeSequence = new BridgeSequence(options.constructionStage);
       bridgeSequence.group.position.set(0, 0, -6.8);
-      scene.add(bridgeSequence.group);
+      ctx.scene.add(bridgeSequence.group);
       director.register(bridgeSequence);
+
+      raycaster = new THREE.Raycaster();
+      clickListener = (event: MouseEvent) => {
+        const rect = canvasRef.getBoundingClientRect();
+        const pointer = new THREE.Vector2(
+          ((event.clientX - rect.left) / rect.width) * 2 - 1,
+          -((event.clientY - rect.top) / rect.height) * 2 + 1,
+        );
+        raycaster.setFromCamera(pointer, camera);
+        const hit = raycaster.intersectObjects(treeMeshes, true)[0];
+        if (!hit) {
+          return;
+        }
+        const treeIndex = treeMeshes.findIndex((mesh) => mesh === hit.object || isDescendantOf(hit.object, mesh));
+        if (treeIndex === -1) {
+          return;
+        }
+        director.dispatch({ type: 'chopTree', treeIndex });
+        options.onChopTree();
+      };
+      canvasRef.style.pointerEvents = 'auto';
+      canvasRef.addEventListener('click', clickListener);
     },
 
     onFrame(elapsed, deltaSeconds) {
-      const flicker = motionMode === 'full' ? Math.sin(elapsed * 11) * 0.4 + Math.sin(elapsed * 23) * 0.2 : 0;
-      const fuel = fuelLevel(elapsed);
-      fireLight.intensity = (2 + fuel * 2.5) + flicker * fuel;
-      flame.scale.y = fuel * (1 + Math.sin(elapsed * 9) * (motionMode === 'minimal' ? 0 : 0.12));
-      (flame.material as THREE.MeshBasicMaterial).opacity = 0.85 * fuel;
-
-      if (motionMode !== 'minimal') {
-        embers.visible = fuel > 0.15;
-        embers.rotation.y = elapsed * 0.4;
-        const positions = embers.geometry.attributes['position'] as THREE.BufferAttribute;
-        for (let i = 0; i < positions.count; i++) {
-          const y = positions.getY(i) + 0.01;
-          positions.setY(i, y > 2.2 ? 0 : y);
-        }
-        positions.needsUpdate = true;
-      }
-
+      campfireSequence.onFrame(elapsed, deltaSeconds, motionMode);
       tentSequence.onFrame(elapsed);
       bridgeSequence.onFrame(deltaSeconds);
+      treeSequences.forEach((tree) => tree.onFrame(deltaSeconds));
 
       companion.position.y = 0.55 + Math.sin(elapsed * 1.6) * 0.08;
       companion.rotation.y = elapsed * 0.3;
@@ -149,6 +169,8 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
     },
 
     onDispose() {
+      canvasRef.removeEventListener('click', clickListener);
+      canvasRef.style.pointerEvents = 'none';
       // Geometry/material disposal for everything still in the scene graph
       // is handled centrally by RendererLifecycle.dispose().
     },
@@ -157,17 +179,15 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
   return { handlers, director };
 }
 
-/** Ramps from 1 (full flame) down to a low ember-only floor, then loops —
- * an ambient stand-in for a real firewood/fuel system (see FUEL_FULL_SECONDS
- * doc comment above). */
-function fuelLevel(elapsed: number): number {
-  const cycle = FUEL_FULL_SECONDS + FUEL_DECAY_SECONDS;
-  const t = elapsed % cycle;
-  if (t < FUEL_FULL_SECONDS) {
-    return 1;
+function isDescendantOf(node: THREE.Object3D, ancestor: THREE.Object3D): boolean {
+  let current: THREE.Object3D | null = node;
+  while (current) {
+    if (current === ancestor) {
+      return true;
+    }
+    current = current.parent;
   }
-  const decayT = (t - FUEL_FULL_SECONDS) / FUEL_DECAY_SECONDS;
-  return Math.max(1 - decayT, 0.2);
+  return false;
 }
 
 class TentSequence implements AnimationSequence {
@@ -193,6 +213,98 @@ class TentSequence implements AnimationSequence {
   }
 }
 
+/** Fuel is a real reserve, not a forever-looping timer: each chopped log
+ * (see BaseCampSceneOptions.onChopTree / the 'firewoodGathered' event)
+ * buys SECONDS_PER_LOG of full flame. Once the reserve runs out and no
+ * more logs are available, the fire settles to embers-only until the
+ * player chops another tree. */
+class CampfireSequence implements AnimationSequence {
+  readonly group: THREE.Group;
+  private readonly light: THREE.PointLight;
+  private readonly flame: THREE.Mesh;
+  private readonly embers: THREE.Points;
+
+  private consumedFirewood = 0;
+  private availableFirewood: number;
+  private fuelSecondsRemaining = 0;
+
+  constructor(initialFirewood: number) {
+    const built = buildCampfire();
+    this.group = built.group;
+    this.light = built.light;
+    this.flame = built.flame;
+    this.embers = built.embers;
+    this.availableFirewood = initialFirewood;
+    this.restockIfPossible();
+  }
+
+  onEvent(event: BaseCampAnimationEvent): void {
+    if (event.type === 'firewoodGathered') {
+      this.availableFirewood = event.totalFirewood;
+    }
+  }
+
+  onFrame(elapsed: number, deltaSeconds: number, motionMode: MotionMode): void {
+    if (this.fuelSecondsRemaining <= 0) {
+      this.restockIfPossible();
+    }
+    this.fuelSecondsRemaining = Math.max(this.fuelSecondsRemaining - deltaSeconds, 0);
+
+    const lit = this.fuelSecondsRemaining > 0;
+    const fuel = lit ? 1 : 0.2;
+    const flicker = motionMode === 'full' ? Math.sin(elapsed * 11) * 0.4 + Math.sin(elapsed * 23) * 0.2 : 0;
+
+    this.light.intensity = 2 + fuel * 2.5 + flicker * fuel;
+    this.flame.scale.y = fuel * (1 + Math.sin(elapsed * 9) * (motionMode === 'minimal' ? 0 : 0.12));
+    (this.flame.material as THREE.MeshBasicMaterial).opacity = 0.85 * fuel;
+
+    if (motionMode !== 'minimal') {
+      this.embers.visible = lit;
+      this.embers.rotation.y = elapsed * 0.4;
+      const positions = this.embers.geometry.attributes['position'] as THREE.BufferAttribute;
+      for (let i = 0; i < positions.count; i++) {
+        const y = positions.getY(i) + 0.01;
+        positions.setY(i, y > 2.2 ? 0 : y);
+      }
+      positions.needsUpdate = true;
+    }
+  }
+
+  private restockIfPossible(): boolean {
+    if (this.consumedFirewood >= this.availableFirewood) {
+      return false;
+    }
+    this.consumedFirewood += 1;
+    this.fuelSecondsRemaining += SECONDS_PER_LOG;
+    return true;
+  }
+}
+
+/** A clickable tree: chopping plays a brief wobble (optimistic — it
+ * doesn't wait for the backend) each time this specific tree is targeted. */
+class TreeSequence implements AnimationSequence {
+  readonly group = buildTree();
+  private wobbleRemaining = 0;
+
+  constructor(private readonly index: number) {}
+
+  onEvent(event: BaseCampAnimationEvent): void {
+    if (event.type === 'chopTree' && event.treeIndex === this.index) {
+      this.wobbleRemaining = CHOP_WOBBLE_SECONDS;
+    }
+  }
+
+  onFrame(deltaSeconds: number): void {
+    if (this.wobbleRemaining <= 0) {
+      this.group.rotation.z = 0;
+      return;
+    }
+    this.wobbleRemaining = Math.max(this.wobbleRemaining - deltaSeconds, 0);
+    const progress = this.wobbleRemaining / CHOP_WOBBLE_SECONDS;
+    this.group.rotation.z = Math.sin(progress * Math.PI * 3) * 0.08 * progress;
+  }
+}
+
 class BridgeSequence implements AnimationSequence {
   readonly group = new THREE.Group();
   private readonly planks: THREE.Mesh[] = [];
@@ -214,8 +326,8 @@ class BridgeSequence implements AnimationSequence {
     }
   }
 
-  onEvent(event: { type: string; constructionStage?: number }): void {
-    if (event.type !== 'questCompleted' || event.constructionStage === undefined) {
+  onEvent(event: BaseCampAnimationEvent): void {
+    if (event.type !== 'questCompleted') {
       return;
     }
     const nextStage = event.constructionStage;

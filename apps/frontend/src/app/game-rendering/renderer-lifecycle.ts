@@ -4,8 +4,11 @@ import { MotionMode } from './motion-mode';
 const MAX_PIXEL_RATIO = 2;
 
 export interface SceneHandlers {
-  /** Called once after the renderer/camera exist, before the first frame. */
-  onInit?(ctx: { scene: THREE.Scene; camera: THREE.PerspectiveCamera; motionMode: MotionMode }): void;
+  /** Called once after the renderer/camera exist, before the first frame.
+   * `canvas` is provided for scenes that need real DOM interaction (e.g.
+   * raycasting clicks) — attach any listeners in onInit and remove them in
+   * onDispose. */
+  onInit?(ctx: { scene: THREE.Scene; camera: THREE.PerspectiveCamera; motionMode: MotionMode; canvas: HTMLCanvasElement }): void;
   /** Called every frame while running. `elapsed` is seconds since start. */
   onFrame?(elapsed: number, deltaSeconds: number): void;
   /** Called on dispose, before the renderer/scene are torn down. */
@@ -35,9 +38,12 @@ export class RendererLifecycle {
   private startTime = 0;
   private lastFrameTime = 0;
 
+  private readonly canvas: HTMLCanvasElement;
+
   constructor(canvas: HTMLCanvasElement, motionMode: MotionMode, handlers: SceneHandlers = {}) {
     this.motionMode = motionMode;
     this.handlers = handlers;
+    this.canvas = canvas;
 
     this.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, MAX_PIXEL_RATIO));
@@ -65,7 +71,7 @@ export class RendererLifecycle {
     };
     document.addEventListener('visibilitychange', this.visibilityListener);
 
-    this.handlers.onInit?.({ scene: this.scene, camera: this.camera, motionMode: this.motionMode });
+    this.handlers.onInit?.({ scene: this.scene, camera: this.camera, motionMode: this.motionMode, canvas: this.canvas });
   }
 
   start(): void {

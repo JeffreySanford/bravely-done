@@ -1,11 +1,14 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { provideEffects } from '@ngrx/effects';
-import { provideStore } from '@ngrx/store';
+import { provideStore, Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { BaseCamp } from './base-camp';
 import { CharacterApiService } from '../../core/character-api.service';
 import { QuestApiService } from '../../core/quest-api.service';
+import { CampActions } from '../../state/camp/camp.actions';
+import { CampEffects } from '../../state/camp/camp.effects';
+import { campFeature } from '../../state/camp/camp.reducer';
 import { QuestsEffects } from '../../state/quests/quests.effects';
 import { questsFeature } from '../../state/quests/quests.reducer';
 
@@ -16,6 +19,7 @@ function buildCharacter(overrides: Record<string, unknown> = {}) {
     createdAt: '2026-01-01',
     hasArrivedAtCamp: true,
     campConstructionStage: 0,
+    firewoodCount: 0,
     ...overrides,
   };
 }
@@ -30,8 +34,11 @@ describe('BaseCamp', () => {
       imports: [BaseCamp],
       providers: [
         provideRouter([]),
-        provideStore({ [questsFeature.name]: questsFeature.reducer }),
-        provideEffects(QuestsEffects),
+        provideStore({
+          [questsFeature.name]: questsFeature.reducer,
+          [campFeature.name]: campFeature.reducer,
+        }),
+        provideEffects(QuestsEffects, CampEffects),
         { provide: CharacterApiService, useValue: characterApi },
         { provide: QuestApiService, useValue: { list: jest.fn().mockReturnValue(of([])), ...questApi } },
         {
@@ -70,6 +77,17 @@ describe('BaseCamp', () => {
     ]);
   });
 
+  it('seeds firewood count from the arrive response', () => {
+    const arrive = jest
+      .fn()
+      .mockReturnValue(of({ firstArrival: true, character: buildCharacter({ firewoodCount: 4 }) }));
+    const { component } = setup({ arrive });
+
+    component.ngOnInit();
+
+    expect(component.firewoodCount()).toBe(4);
+  });
+
   it('does not call the API when the route has no characterId', () => {
     const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
     const { component } = setup({ arrive }, {}, null);
@@ -86,6 +104,16 @@ describe('BaseCamp', () => {
     expect(component.renderScene).toBe(false);
     component.ngOnInit();
     expect(() => component.ngAfterViewInit()).not.toThrow();
+  });
+
+  it('a chopTreeSuccess dispatched with no scene mounted is a safe no-op', () => {
+    const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+    const { component, fixture } = setup({ arrive });
+    component.ngOnInit();
+
+    const store = TestBed.inject(Store);
+    expect(() => store.dispatch(CampActions.chopTreeSuccess({ firewoodCount: 1 }))).not.toThrow();
+    fixture.destroy();
   });
 
   it('disposing is a no-op when no renderer was ever mounted', () => {

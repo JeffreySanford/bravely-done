@@ -8,5 +8,6 @@ export function toCharacterDto(character: Character): CharacterDto {
   dto.createdAt = character.createdAt;
   dto.hasArrivedAtCamp = character.hasArrivedAtCamp;
   dto.campConstructionStage = character.campConstructionStage;
+  dto.firewoodCount = character.firewoodCount;
   return dto;
 }

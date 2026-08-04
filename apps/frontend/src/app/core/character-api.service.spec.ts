@@ -62,4 +62,23 @@ describe('CharacterApiService', () => {
 
     expect(result).toEqual({ firstArrival: true, character });
   });
+
+  it('chopTree posts to /characters/:id/chop-tree', () => {
+    let result: unknown;
+    service.chopTree('c1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('http://test/characters/c1/chop-tree');
+    expect(req.request.method).toBe('POST');
+    const character = {
+      id: 'c1',
+      name: 'Ember Scout',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      hasArrivedAtCamp: true,
+      campConstructionStage: 0,
+      firewoodCount: 1,
+    };
+    req.flush(character);
+
+    expect(result).toEqual(character);
+  });
 });

@@ -13,6 +13,9 @@
     } @else {
       <p class="stage__subtitle">Welcome back.</p>
     }
+    @if (renderScene) {
+      <p class="stage__hint">Firewood: {{ firewoodCount() }} — click a tree to chop one.</p>
+    }
   </header>
 
   <div class="stage__footer">

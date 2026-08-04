@@ -78,18 +78,20 @@ A first real pass of Base Camp exists at `/basecamp/:characterId`
 (`apps/frontend/src/app/pages/base-camp/`), reached from character creation (first arrival) and from
 character select (return visits):
 
-- **Built**: ground and lighting, an animated campfire with a client-side fuel decay loop, a
-  companion placeholder, tree/foraging-bush/stream landmarks (visual only — no chopping/harvesting
-  interaction yet), and the quest board/chest/treasury/bridge landmarks. The tent-erect animation is
-  correctly gated to a character's true first-ever arrival via a backend flag
+- **Built**: ground and lighting, an animated campfire with a real fuel reserve (each chopped log buys
+  a fixed number of seconds of flame; it settles to embers-only once the reserve runs out), a
+  companion placeholder, clickable trees (real raycasting; chopping is backed by
+  `POST /characters/:id/chop-tree`, an atomic Postgres-backed increment), a foraging-bush/stream
+  landmark pair (still visual only), and the quest board/chest/treasury/bridge landmarks. The tent-
+  erect animation is correctly gated to a character's true first-ever arrival via a backend flag
   (`Character.hasArrivedAtCamp`), not just client state. A real quest board lets a player create and
   complete quests (`apps/backend/src/quest/`); completing one advances real backend progress
   (`Character.campConstructionStage`) and the bridge visibly repairs, persisting across reloads. Quest
-  and construction-stage state live in this project's first NgRx store
-  (`apps/frontend/src/app/state/quests/`), not local component state.
-- **Not yet built**: chopping/harvesting interaction and a real firewood/resource-tracking system (the
-  campfire fuel and resource nodes are ambient/visual only for now), the workbench, encounters/sprints/
-  rewards on top of quests (see [Plan 03](../../planning/03-first-brave-step.md)), and the animation
-  director's fuller event set (quest accepted, sprint states, loot reveal, etc. — only arrival and
-  quest-completion are wired so far). See [Plan 02](../../planning/02-base-camp-animations.md) for the
-  itemized build sequencing.
+  and construction-stage state, and now firewood/camp-resource state, live in this project's NgRx
+  store (`apps/frontend/src/app/state/quests/`, `apps/frontend/src/app/state/camp/`), not local
+  component state.
+- **Not yet built**: foraging/animal harvesting interaction and its resource tracking, the workbench,
+  encounters/sprints/rewards on top of quests (see [Plan 03](../../planning/03-first-brave-step.md)),
+  and the animation director's fuller event set (quest accepted, sprint states, loot reveal, etc. —
+  arrival, quest-completion, and tree-chopping are wired so far). See
+  [Plan 02](../../planning/02-base-camp-animations.md) for the itemized build sequencing.

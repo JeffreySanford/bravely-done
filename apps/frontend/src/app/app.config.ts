@@ -13,6 +13,8 @@ import { AuthStateService } from './core/auth-state.service';
 import { credentialsInterceptor } from './core/credentials.interceptor';
 import { environment } from '../environments/environment';
 import { appRoutes } from './app.routes';
+import { campFeature } from './state/camp/camp.reducer';
+import { CampEffects } from './state/camp/camp.effects';
 import { questsFeature } from './state/quests/quests.reducer';
 import { QuestsEffects } from './state/quests/quests.effects';
 
@@ -29,7 +31,10 @@ export const appConfig: ApplicationConfig = {
     // Resolve the existing cookie session (if any) before the router
     // activates, so auth guards never run against unknown state.
     provideAppInitializer(restoreSessionInitializer),
-    provideStore({ [questsFeature.name]: questsFeature.reducer }),
-    provideEffects(QuestsEffects),
+    provideStore({
+      [questsFeature.name]: questsFeature.reducer,
+      [campFeature.name]: campFeature.reducer,
+    }),
+    provideEffects(QuestsEffects, CampEffects),
   ],
 };

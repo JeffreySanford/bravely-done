@@ -12,6 +12,7 @@ describe('CharacterController', () => {
     updatedAt: new Date(),
     hasArrivedAtCamp: false,
     campConstructionStage: 0,
+    firewoodCount: 0,
   };
 
   function buildController() {
@@ -19,6 +20,7 @@ describe('CharacterController', () => {
       create: jest.fn().mockResolvedValue(character),
       listForUser: jest.fn().mockResolvedValue([character]),
       arrive: jest.fn().mockResolvedValue({ firstArrival: true, character }),
+      chopTree: jest.fn().mockResolvedValue({ ...character, firewoodCount: 1 }),
     } as unknown as CharacterService;
     return { controller: new CharacterController(characters), characters };
   }
@@ -29,6 +31,7 @@ describe('CharacterController', () => {
     createdAt: character.createdAt,
     hasArrivedAtCamp: character.hasArrivedAtCamp,
     campConstructionStage: character.campConstructionStage,
+    firewoodCount: character.firewoodCount,
   };
 
   it('create delegates to the service with the current user and returns the public shape', async () => {
@@ -56,5 +59,14 @@ describe('CharacterController', () => {
 
     expect(characters.arrive).toHaveBeenCalledWith('user-1', 'char-1');
     expect(result).toEqual({ firstArrival: true, character: publicShape });
+  });
+
+  it('chopTree delegates to the service and returns the public shape', async () => {
+    const { controller, characters } = buildController();
+
+    const result = await controller.chopTree(user, 'char-1');
+
+    expect(characters.chopTree).toHaveBeenCalledWith('user-1', 'char-1');
+    expect(result).toEqual({ ...publicShape, firewoodCount: 1 });
   });
 });

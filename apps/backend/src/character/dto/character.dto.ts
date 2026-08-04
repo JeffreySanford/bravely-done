@@ -15,4 +15,7 @@ export class CharacterDto {
 
   @ApiProperty()
   campConstructionStage!: number;
+
+  @ApiProperty()
+  firewoodCount!: number;
 }

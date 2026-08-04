@@ -42,4 +42,12 @@ export class CharacterController {
     dto.character = toCharacterDto(character);
     return dto;
   }
+
+  @Post(':id/chop-tree')
+  @ApiOperation({ summary: 'Chop a tree at Base Camp for one unit of firewood' })
+  @ApiOkResponse({ type: CharacterDto })
+  async chopTree(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<CharacterDto> {
+    const character = await this.characters.chopTree(user.sub, id);
+    return toCharacterDto(character);
+  }
 }

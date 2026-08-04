@@ -6,8 +6,11 @@ import { of } from 'rxjs';
 import { CharacterApiService } from '../../core/character-api.service';
 import { QuestApiService } from '../../core/quest-api.service';
 import { AnimationDirector } from '../../game-rendering/animation-director';
+import { CampEffects } from '../../state/camp/camp.effects';
+import { campFeature } from '../../state/camp/camp.reducer';
 import { QuestsEffects } from '../../state/quests/quests.effects';
 import { questsFeature } from '../../state/quests/quests.reducer';
+import type { BaseCampSceneOptions } from './base-camp-scene';
 
 // Module-level mocks so `isWebglAvailable()` (evaluated at class-field
 // initialization time) reports true here, letting us verify the renderer
@@ -26,26 +29,48 @@ jest.mock('../../game-rendering/renderer-lifecycle', () => ({
   })),
 }));
 
+// Also mock the scene builder itself (rather than letting the real,
+// WebGL-dependent implementation run) so this spec can inspect exactly
+// what options.ts passes in (initialFirewoodCount, onChopTree) and drive
+// the returned director directly — real Three.js scene-graph construction
+// is covered by base-camp-scene.ts's own OPEN-004 exception and the
+// Playwright e2e suite instead.
+let lastSceneOptions: BaseCampSceneOptions | undefined;
+const mockDirector = new AnimationDirector();
+jest.mock('./base-camp-scene', () => ({
+  buildBaseCampScene: jest.fn((_motionMode: unknown, options: BaseCampSceneOptions) => {
+    lastSceneOptions = options;
+    return { handlers: {}, director: mockDirector };
+  }),
+}));
+
 const { BaseCamp } = require('./base-camp');
 const { RendererLifecycle } = require('../../game-rendering/renderer-lifecycle');
 
 describe('BaseCamp (WebGL available)', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    lastSceneOptions = undefined;
     TestBed.configureTestingModule({
       imports: [BaseCamp],
       providers: [
         provideRouter([]),
-        provideStore({ [questsFeature.name]: questsFeature.reducer }),
-        provideEffects(QuestsEffects),
+        provideStore({
+          [questsFeature.name]: questsFeature.reducer,
+          [campFeature.name]: campFeature.reducer,
+        }),
+        provideEffects(QuestsEffects, CampEffects),
         {
           provide: CharacterApiService,
           useValue: {
             arrive: jest.fn().mockReturnValue(
               of({
                 firstArrival: true,
-                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0 },
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2 },
               }),
+            ),
+            chopTree: jest.fn().mockReturnValue(
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 3 }),
             ),
           },
         },
@@ -56,7 +81,7 @@ describe('BaseCamp (WebGL available)', () => {
             complete: jest.fn().mockReturnValue(
               of({
                 quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
-                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1 },
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, firewoodCount: 2 },
               }),
             ),
           },
@@ -87,8 +112,26 @@ describe('BaseCamp (WebGL available)', () => {
     expect(mockDispose).toHaveBeenCalledTimes(1);
   });
 
+  it('passes the current firewood count into the scene', () => {
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+
+    expect(lastSceneOptions?.initialFirewoodCount).toBe(2);
+  });
+
+  it('dispatches chopTree when the scene reports a chop, and firewoodGathered back once it succeeds', () => {
+    const dispatchSpy = jest.spyOn(mockDirector, 'dispatch');
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+
+    lastSceneOptions?.onChopTree();
+
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'firewoodGathered', totalFirewood: 3 });
+    dispatchSpy.mockRestore();
+  });
+
   it('dispatches a questCompleted event to the scene director when a quest completes', () => {
-    const dispatchSpy = jest.spyOn(AnimationDirector.prototype, 'dispatch');
+    const dispatchSpy = jest.spyOn(mockDirector, 'dispatch');
     const fixture = TestBed.createComponent(BaseCamp);
     fixture.detectChanges();
 

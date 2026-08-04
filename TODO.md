@@ -29,14 +29,14 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 
 ## Next: application shell
 
-- [x] Add NgRx Store and Effects using feature boundaries — the quests feature
-      (`apps/frontend/src/app/state/quests/`) is the first real slice: actions, a reducer, and effects
-      backed by the actual Quest API, not local component signals. Camp/character state and other
-      domains (encounters, sprints) aren't in the store yet — this establishes the pattern, not full
-      coverage.
-- [x] Define durable domain state separately from render state — quests/construction-stage now live in
-      the NgRx store (durable), while scene rendering state (camera, mesh references) stays local to
-      `base-camp-scene.ts`, never mixed into the store.
+- [x] Add NgRx Store and Effects using feature boundaries — two real slices now:
+      `apps/frontend/src/app/state/quests/` and `apps/frontend/src/app/state/camp/` (firewood/resource
+      state), each with its own actions, reducer, and effects backed by real APIs, not local component
+      signals. Other domains (encounters, sprints) aren't in the store yet — this establishes the
+      pattern, not full coverage.
+- [x] Define durable domain state separately from render state — quests, construction-stage, and
+      firewood now live in the NgRx store (durable), while scene rendering state (camera, mesh
+      references) stays local to `base-camp-scene.ts`, never mixed into the store.
 - [ ] Add responsive phone-frame development harness.
 - [ ] Add viewport, safe-area, reduced-motion, offline, and performance controls.
 - [ ] Add route shell for Camp, Quest Board, Sprint, Chronicle, and Settings.
@@ -59,7 +59,7 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 
 - [x] Add Three.js and a renderer lifecycle service (shared with character select).
 - [x] Render a primitive Base Camp: ground, lighting, an animated campfire (flame, embers, flickering
-      light, client-side fuel decay), and a tent that erects on arrival. Reachable at
+      light, now fueled by real chopped firewood), and a tent that erects on arrival. Reachable at
       `/basecamp/:characterId` — clicking a character on character select, or finishing character
       creation, lands the character's avatar in Base Camp. Verified via a 3-engine Playwright e2e
       journey covering both entry paths.
@@ -68,14 +68,17 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [x] Add ambient animation and full/reduced/minimal motion modes (reuses the character-select scene's
       motion-mode plumbing).
 - [x] Add a minimal animation director (`AnimationDirector`/`AnimationSequence`) driven by domain
-      events — arrival and quest-completion are wired; more events (quest accepted, sprint states,
-      loot) are still open.
+      events — arrival, quest-completion, and tree-chopping are wired; more events (quest accepted,
+      sprint states, loot) are still open.
 - [x] Gate the tent-erect animation to a character's true first-ever arrival: backend
       `Character.hasArrivedAtCamp` (`POST /characters/:id/arrive`) is the source of truth, not client
       state — verified live (arrive, reload, confirm no replay).
-- [ ] Add chopping/harvesting interaction and real firewood/resource tracking for the tree, foraging,
-      and stream landmarks (they exist visually now — see
-      [Plan 02](planning/02-base-camp-animations.md)'s resource loop; interaction is the next slice).
+- [x] Add chopping interaction and real firewood tracking for the tree landmarks: clicking a tree
+      (real raycasting) dispatches `POST /characters/:id/chop-tree` (atomic Postgres increment) through
+      this project's second NgRx feature (`apps/frontend/src/app/state/camp/`), and the resulting
+      firewood count drives the campfire's fuel reserve for real. Verified: backend increment +
+      persistence confirmed live via direct API calls; full frontend dispatch chain has complete unit
+      coverage. Foraging/animal harvesting interaction is still open — only tree-chopping is wired.
 - [x] Complete a quest and visibly upgrade the camp: a real Quest domain (create/list/complete,
       `apps/backend/src/quest/`) replaces the earlier mock-quest stub. `POST /quests/:id/complete`
       advances `Character.campConstructionStage`, and the bridge visibly repairs one plank per

@@ -36,6 +36,18 @@ export class CharacterService {
     return { firstArrival: true, character: updated };
   }
 
+  /** Chopping is an infinite ambient action (no per-tree depletion tracked
+   * yet) — each call adds one unit of firewood. Uses an atomic increment
+   * rather than read-then-write so rapid clicks can't race and drop a
+   * chop. */
+  async chopTree(userId: string, characterId: string): Promise<Character> {
+    await this.findOwned(userId, characterId);
+    return this.prisma.character.update({
+      where: { id: characterId },
+      data: { firewoodCount: { increment: 1 } },
+    });
+  }
+
   private async findOwned(userId: string, characterId: string): Promise<Character> {
     const character = await this.prisma.character.findFirst({
       where: { id: characterId, userId },

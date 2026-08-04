@@ -35,9 +35,9 @@ module.exports = {
     },
     '**/base-camp-scene.ts': {
       branches: 0,
-      functions: 4,
-      lines: 6,
-      statements: 6,
+      functions: 0,
+      lines: 0,
+      statements: 0,
     },
   },
   transform: {

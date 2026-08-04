@@ -87,6 +87,14 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expectSceneMounted(page);
   await expect(page.getByText('Bridge repair: 0 / 3')).toBeVisible();
 
+  // The firewood hint only renders when the WebGL scene actually mounted
+  // (see expectSceneMounted's Firefox/CI note above) — where it does, it
+  // reflects the character's real backend firewoodCount, not a placeholder.
+  const canvasMounted = await page.locator('canvas.stage__canvas').isVisible().catch(() => false);
+  if (canvasMounted) {
+    await expect(page.getByText('Firewood: 0 — click a tree to chop one.')).toBeVisible();
+  }
+
   // Creating and completing real quests advances and persists the bridge
   // construction stage — the vertical slice from planning/02-base-camp-
   // animations.md's acceptance criterion, now driven by the real quest

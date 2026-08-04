@@ -44,6 +44,11 @@ model Character {
   /// Bridge repair progress from the first construction arc (see planning/
   /// 02-base-camp-animations.md). Advanced by completing quests.
   campConstructionStage Int @default(0)
+  /// Resource gathered by chopping trees at Base Camp — feeds the
+  /// campfire's fuel state for real (see planning/02-base-camp-
+  /// animations.md's resource loop). Deliberately simple: one resource
+  /// type, no depletion per tree, chopping is an infinite ambient action.
+  firewoodCount Int @default(0)
   quests    Quest[]
 
   @@map("characters")

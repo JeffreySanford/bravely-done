@@ -21,6 +21,8 @@ import { RendererLifecycle } from '../../game-rendering/renderer-lifecycle';
 import { isWebglAvailable } from '../../game-rendering/webgl-support';
 import { buildBaseCampScene } from './base-camp-scene';
 import { MAX_CONSTRUCTION_STAGE } from './construction-stage';
+import { CampActions } from '../../state/camp/camp.actions';
+import { selectFirewoodCount } from '../../state/camp/camp.reducer';
 import { QuestsActions } from '../../state/quests/quests.actions';
 import {
   selectCompletingQuestId,
@@ -57,6 +59,7 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly constructionStage = this.store.selectSignal(selectConstructionStage);
   readonly questsLoading = this.store.selectSignal(selectLoading);
   readonly completingQuestId = this.store.selectSignal(selectCompletingQuestId);
+  readonly firewoodCount = this.store.selectSignal(selectFirewoodCount);
 
   readonly newQuestForm = new FormGroup({
     title: new FormControl('', {
@@ -72,6 +75,12 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       .pipe(ofType(QuestsActions.completeQuestSuccess), takeUntilDestroyed(this.destroyRef))
       .subscribe(({ constructionStage }) => {
         this.director?.dispatch({ type: 'questCompleted', constructionStage });
+      });
+
+    this.actions$
+      .pipe(ofType(CampActions.chopTreeSuccess), takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ firewoodCount }) => {
+        this.director?.dispatch({ type: 'firewoodGathered', totalFirewood: firewoodCount });
       });
   }
 
@@ -91,6 +100,12 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
           }),
         );
         this.store.dispatch(QuestsActions.loadQuests({ characterId: character.id }));
+        this.store.dispatch(
+          CampActions.setCharacterContext({
+            characterId: character.id,
+            firewoodCount: character.firewoodCount,
+          }),
+        );
         this.mountRendererIfReady();
       },
     });
@@ -123,10 +138,16 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     if (!this.renderScene || !this.canvasRef || this.renderer || this.characterName() === null) {
       return;
     }
+    // Non-null: mountRendererIfReady only proceeds once characterName() is
+    // set, which ngOnInit only does after this.characterId was already
+    // confirmed non-null.
+    const characterId = this.characterId as string;
     const motionMode = detectMotionMode();
     const scene = buildBaseCampScene(motionMode, {
       firstArrival: this.firstArrival,
       constructionStage: this.constructionStage(),
+      initialFirewoodCount: this.firewoodCount(),
+      onChopTree: () => this.store.dispatch(CampActions.chopTree({ characterId })),
     });
     this.director = scene.director;
     this.renderer = new RendererLifecycle(this.canvasRef.nativeElement, motionMode, scene.handlers);

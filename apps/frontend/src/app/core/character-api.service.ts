@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiConfiguration } from '../api/api-configuration';
 import { characterControllerArrive } from '../api/fn/characters/character-controller-arrive';
+import { characterControllerChopTree } from '../api/fn/characters/character-controller-chop-tree';
 import { characterControllerCreate } from '../api/fn/characters/character-controller-create';
 import { characterControllerList } from '../api/fn/characters/character-controller-list';
 import { ArriveResponseDto } from '../api/models/arrive-response-dto';
@@ -26,6 +27,12 @@ export class CharacterApiService {
 
   arrive(id: string): Observable<ArriveResponseDto> {
     return characterControllerArrive(this.http, this.config.rootUrl, { id }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  chopTree(id: string): Observable<CharacterDto> {
+    return characterControllerChopTree(this.http, this.config.rootUrl, { id }).pipe(
       map((res) => res.body),
     );
   }

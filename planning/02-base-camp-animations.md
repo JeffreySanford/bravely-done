@@ -17,9 +17,10 @@
 
 - [x] Camera and safe UI zones for the real HTML header/back-link (see the interaction rule).
 - [x] Ground and simple lighting (`apps/frontend/src/app/pages/base-camp/base-camp-scene.ts`).
-- [x] Campfire: animated fire (flame flicker, rising embers, warm flickering point light) with a
-      client-side fuel state that ramps down toward embers-only over time and loops. Not yet backed by
-      a real firewood system — see "Resource loop" below.
+- [x] Campfire: animated fire (flame flicker, rising embers, warm flickering point light) with a real
+      fuel reserve — each chopped log buys a fixed number of seconds of full flame; once the reserve
+      runs out and no more logs are available, the fire settles to embers-only until the player chops
+      another tree. Replaces the earlier client-only time-loop entirely.
 - [x] Companion placeholder: an idle, bobbing, slowly-rotating landmark near the fire.
 - [x] Quest Board, chest, treasury, and bridge landmarks. Workbench still open.
 - [x] Per-character tent gated to true first-ever arrival: `Character.hasArrivedAtCamp` (backend,
@@ -27,23 +28,27 @@
       plays when this is the character's first arrival. Returning visits render the tent already
       erected. Verified live via a 3-engine Playwright e2e run (arrive once, reload, confirm no replay
       of the erect animation logic — the backend flag, not client state, is authoritative).
-- [ ] Choppable trees: visual tree landmarks exist; chopping interaction and firewood pickups are not
-      built yet (see "Resource loop").
+- [x] Choppable trees: clicking a tree (real raycasting against the tree meshes, not a flat button)
+      plays an optimistic chop wobble and dispatches a real backend chop (`POST /characters/:id/
+      chop-tree`, atomic increment); the resulting firewood count feeds the campfire, see above.
+      Verified: backend increment + persistence confirmed live via direct API calls (signup → arrive →
+      chop x3 → fresh fetch confirms firewoodCount survives), and the full frontend dispatch chain
+      (click → store action → effect → success → AnimationDirector event) has complete unit coverage.
+      The literal in-browser click gesture was not observed live this session (the browser pane wasn't
+      rendering frames) — flagged here rather than silently claimed.
 - [ ] Foraging spots and wandering animals: a static foraging-bush landmark exists; harvesting
       interaction and wandering-animal spawns are not built yet.
 - [x] Animated freshwater stream: a rippling vertex-displaced water plane. Not yet a lake shape or a
       harvestable resource — visual anchor only, as scoped in the product doc.
 - [ ] Render a serialized CampSnapshot.
 
-## Resource loop (visual landmarks only, this pass)
+## Resource loop
 
-Trees, the foraging bush, and the stream currently exist as static/ambient scene landmarks with no
-interaction or backend resource tracking — that's the next slice of this plan, not yet started:
-
-- [ ] Chop a tree → firewood pickup → feeds the campfire's fuel state for real (replacing the current
-      client-only decay loop).
-- [ ] Harvest the foraging bush / wandering animals → tracked resource yield.
-- [ ] Persist harvested/gathered resources per character.
+- [x] Chop a tree → firewood pickup (`Character.firewoodCount`, atomic backend increment) → feeds the
+      campfire's fuel state for real.
+- [ ] Harvest the foraging bush / wandering animals → tracked resource yield. Not started.
+- [x] Persist harvested/gathered resources per character — firewood is a real Postgres-backed field,
+      verified live via direct API calls (chop, then a fresh unrelated fetch confirms the count).
 
 ## Animation director
 
@@ -58,7 +63,9 @@ interaction or backend resource tracking — that's the next slice of this plan,
       plank, and pulses it — driven by the real Quest domain (`POST /quests/:id/complete`, see
       [Plan 03](03-first-brave-step.md)), not a mock stub.
 - [ ] XP, coins, loot reveal.
-- [ ] Resource gathering: chop tree, harvest plant, catch animal.
+- [x] Resource gathering: `chopTree` (per-tree, reacted to by that tree's own sequence) and
+      `firewoodGathered` (campfire reacts by recomputing its fuel reserve) are both wired. Harvest
+      plant / catch animal are not — no foraging/animal interaction exists yet.
 - [ ] Continue, split, retreat, and comeback.
 - [ ] Skip safely to final state.
 

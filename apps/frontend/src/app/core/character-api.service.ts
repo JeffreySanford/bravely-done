@@ -3,7 +3,6 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiConfiguration } from '../api/api-configuration';
 import { characterControllerArrive } from '../api/fn/characters/character-controller-arrive';
-import { characterControllerCompleteMockQuest } from '../api/fn/characters/character-controller-complete-mock-quest';
 import { characterControllerCreate } from '../api/fn/characters/character-controller-create';
 import { characterControllerList } from '../api/fn/characters/character-controller-list';
 import { ArriveResponseDto } from '../api/models/arrive-response-dto';
@@ -27,12 +26,6 @@ export class CharacterApiService {
 
   arrive(id: string): Observable<ArriveResponseDto> {
     return characterControllerArrive(this.http, this.config.rootUrl, { id }).pipe(
-      map((res) => res.body),
-    );
-  }
-
-  completeMockQuest(id: string): Observable<CharacterDto> {
-    return characterControllerCompleteMockQuest(this.http, this.config.rootUrl, { id }).pipe(
       map((res) => res.body),
     );
   }

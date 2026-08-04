@@ -1,8 +1,13 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
+import { provideEffects } from '@ngrx/effects';
+import { provideStore } from '@ngrx/store';
 import { of } from 'rxjs';
 import { CharacterApiService } from '../../core/character-api.service';
+import { QuestApiService } from '../../core/quest-api.service';
 import { AnimationDirector } from '../../game-rendering/animation-director';
+import { QuestsEffects } from '../../state/quests/quests.effects';
+import { questsFeature } from '../../state/quests/quests.reducer';
 
 // Module-level mocks so `isWebglAvailable()` (evaluated at class-field
 // initialization time) reports true here, letting us verify the renderer
@@ -31,6 +36,8 @@ describe('BaseCamp (WebGL available)', () => {
       imports: [BaseCamp],
       providers: [
         provideRouter([]),
+        provideStore({ [questsFeature.name]: questsFeature.reducer }),
+        provideEffects(QuestsEffects),
         {
           provide: CharacterApiService,
           useValue: {
@@ -40,8 +47,17 @@ describe('BaseCamp (WebGL available)', () => {
                 character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0 },
               }),
             ),
-            completeMockQuest: jest.fn().mockReturnValue(
-              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1 }),
+          },
+        },
+        {
+          provide: QuestApiService,
+          useValue: {
+            list: jest.fn().mockReturnValue(of([])),
+            complete: jest.fn().mockReturnValue(
+              of({
+                quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1 },
+              }),
             ),
           },
         },
@@ -71,12 +87,12 @@ describe('BaseCamp (WebGL available)', () => {
     expect(mockDispose).toHaveBeenCalledTimes(1);
   });
 
-  it('dispatches a questCompleted event to the scene director on completeMockQuest', () => {
+  it('dispatches a questCompleted event to the scene director when a quest completes', () => {
     const dispatchSpy = jest.spyOn(AnimationDirector.prototype, 'dispatch');
     const fixture = TestBed.createComponent(BaseCamp);
     fixture.detectChanges();
 
-    fixture.componentInstance.completeMockQuest();
+    fixture.componentInstance.completeQuest('q1');
 
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'questCompleted', constructionStage: 1 });
     dispatchSpy.mockRestore();

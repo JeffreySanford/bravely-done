@@ -53,6 +53,18 @@ module.exports = {
     '**/arrive-response.dto.ts': {
       branches: 70,
     },
+    '**/quest.controller.ts': {
+      branches: 70,
+    },
+    '**/quest.service.ts': {
+      branches: 85,
+    },
+    '**/quest.dto.ts': {
+      branches: 70,
+    },
+    '**/complete-quest-response.dto.ts': {
+      branches: 70,
+    },
     // onModuleInit/onModuleDestroy require a live Postgres connection —
     // deliberately exercised at the e2e tier (apps/backend-e2e), not here.
     // See testing-exceptions.md OPEN-003.

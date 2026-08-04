@@ -29,8 +29,14 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 
 ## Next: application shell
 
-- [ ] Add NgRx Store and Effects using feature boundaries.
-- [ ] Define durable domain state separately from render state.
+- [x] Add NgRx Store and Effects using feature boundaries — the quests feature
+      (`apps/frontend/src/app/state/quests/`) is the first real slice: actions, a reducer, and effects
+      backed by the actual Quest API, not local component signals. Camp/character state and other
+      domains (encounters, sprints) aren't in the store yet — this establishes the pattern, not full
+      coverage.
+- [x] Define durable domain state separately from render state — quests/construction-stage now live in
+      the NgRx store (durable), while scene rendering state (camera, mesh references) stays local to
+      `base-camp-scene.ts`, never mixed into the store.
 - [ ] Add responsive phone-frame development harness.
 - [ ] Add viewport, safe-area, reduced-motion, offline, and performance controls.
 - [ ] Add route shell for Camp, Quest Board, Sprint, Chronicle, and Settings.
@@ -62,7 +68,7 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [x] Add ambient animation and full/reduced/minimal motion modes (reuses the character-select scene's
       motion-mode plumbing).
 - [x] Add a minimal animation director (`AnimationDirector`/`AnimationSequence`) driven by domain
-      events — arrival and mock-quest-completion are wired; more events (quest accepted, sprint states,
+      events — arrival and quest-completion are wired; more events (quest accepted, sprint states,
       loot) are still open.
 - [x] Gate the tent-erect animation to a character's true first-ever arrival: backend
       `Character.hasArrivedAtCamp` (`POST /characters/:id/arrive`) is the source of truth, not client
@@ -70,21 +76,25 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [ ] Add chopping/harvesting interaction and real firewood/resource tracking for the tree, foraging,
       and stream landmarks (they exist visually now — see
       [Plan 02](planning/02-base-camp-animations.md)'s resource loop; interaction is the next slice).
-- [x] Complete one mock quest and visibly upgrade the camp: `POST /characters/:id/complete-mock-quest`
+- [x] Complete a quest and visibly upgrade the camp: a real Quest domain (create/list/complete,
+      `apps/backend/src/quest/`) replaces the earlier mock-quest stub. `POST /quests/:id/complete`
       advances `Character.campConstructionStage`, and the bridge visibly repairs one plank per
       completion up to fully repaired.
-- [x] Persist and restore the upgrade through the API/PostgreSQL — verified live (complete quests,
-      reload the page, confirm the repaired stage survives).
+- [x] Persist and restore the upgrade through the API/PostgreSQL — verified live (create and complete
+      quests, reload the page, confirm the quest list and repaired stage both survive).
 - [ ] Establish Android performance budgets before adding complex assets.
 
 ## Next: First Brave Step
 
-- [ ] Create a quest in under 20 seconds.
+- [x] Create a quest in under 20 seconds — a real quest (title + status), not an encounter/sprint yet.
+      See [Plan 03](planning/03-first-brave-step.md) for exactly what this first slice does and doesn't
+      cover.
 - [ ] Run a resilient Adventure Sprint.
-- [ ] Resolve complete, continue, split, or retreat.
+- [ ] Resolve complete, continue, split, or retreat — only "complete" exists today.
 - [ ] Grant deterministic XP, coins, and materials.
 - [ ] Make reward application transactional and idempotent.
-- [ ] Verify the complete loop through unit, API integration, and Playwright tests.
+- [x] Verify quest creation/completion through unit and Playwright tests (backend + NgRx unit tests, a
+      3-engine e2e run). No API integration test tier exists yet — still open.
 
 ## Later milestones
 

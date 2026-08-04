@@ -16,20 +16,43 @@
   </header>
 
   <div class="stage__footer">
-    <div class="bridge-status">
-      <p class="bridge-status__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
-      <button
-        type="button"
-        class="bd-button"
-        [disabled]="advancingBridge() || constructionStage() >= maxConstructionStage"
-        (click)="completeMockQuest()"
-      >
-        @if (constructionStage() >= maxConstructionStage) {
-          Bridge repaired
-        } @else {
-          Complete a mock quest
-        }
-      </button>
+    <div class="quest-board">
+      <p class="quest-board__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
+
+      <form class="quest-board__form" [formGroup]="newQuestForm" (ngSubmit)="createQuest()">
+        <input
+          type="text"
+          class="bd-field"
+          formControlName="title"
+          placeholder="Quest title, e.g. Answer three emails"
+          aria-label="Quest title"
+        />
+        <button type="submit" class="bd-button" [disabled]="questsLoading()">Add quest</button>
+      </form>
+
+      @if (quests().length > 0) {
+        <ul class="quest-board__list">
+          @for (quest of quests(); track quest.id) {
+            <li class="quest-board__item" [class.quest-board__item--completed]="quest.status === 'COMPLETED'">
+              <span>{{ quest.title }}</span>
+              @if (quest.status === 'COMPLETED') {
+                <span class="quest-board__done">Done</span>
+              } @else {
+                <button
+                  type="button"
+                  class="bd-button bd-button--ghost"
+                  [disabled]="completingQuestId() === quest.id"
+                  (click)="completeQuest(quest.id)"
+                >
+                  Complete
+                </button>
+              }
+            </li>
+          }
+        </ul>
+      } @else if (!questsLoading()) {
+        <p class="quest-board__empty">No quests yet — add one above.</p>
+      }
     </div>
 
     <a routerLink="/characters" class="bd-button bd-button--ghost stage__back">Back to characters</a>

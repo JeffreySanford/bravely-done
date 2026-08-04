@@ -42,11 +42,32 @@ model Character {
   /// one-time tent-erect animation (see documentation/product/base-camp.md).
   hasArrivedAtCamp Boolean @default(false)
   /// Bridge repair progress from the first construction arc (see planning/
-  /// 02-base-camp-animations.md). Advanced by completing mock quests until
-  /// the mock-quest system exists for real.
+  /// 02-base-camp-animations.md). Advanced by completing quests.
   campConstructionStage Int @default(0)
+  quests    Quest[]
 
   @@map("characters")
+}
+
+enum QuestStatus {
+  OPEN
+  COMPLETED
+}
+
+/// Deliberately minimal first slice of the real quest system (see planning/
+/// 03-first-brave-step.md): a title and a status. Sprint scheduling, XP/coin
+/// rewards, and split/retreat resolution are later milestones layered on
+/// top of this, not built yet.
+model Quest {
+  id          String      @id @default(uuid())
+  characterId String
+  character   Character   @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  title       String
+  status      QuestStatus @default(OPEN)
+  createdAt   DateTime    @default(now())
+  completedAt DateTime?
+
+  @@map("quests")
 }
 
 /// One row per refresh-token session. Refresh tokens are DB-backed (not

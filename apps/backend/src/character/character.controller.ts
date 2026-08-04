@@ -3,21 +3,11 @@ import { ApiCookieAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/jwt-payload.interface';
-import { Character } from '../generated/prisma/client';
+import { toCharacterDto } from './character.mapper';
 import { CharacterService } from './character.service';
 import { ArriveResponseDto } from './dto/arrive-response.dto';
 import { CharacterDto } from './dto/character.dto';
 import { CreateCharacterDto } from './dto/create-character.dto';
-
-function toCharacterDto(character: Character): CharacterDto {
-  const dto = new CharacterDto();
-  dto.id = character.id;
-  dto.name = character.name;
-  dto.createdAt = character.createdAt;
-  dto.hasArrivedAtCamp = character.hasArrivedAtCamp;
-  dto.campConstructionStage = character.campConstructionStage;
-  return dto;
-}
 
 @ApiTags('characters')
 @ApiCookieAuth()
@@ -51,13 +41,5 @@ export class CharacterController {
     dto.firstArrival = firstArrival;
     dto.character = toCharacterDto(character);
     return dto;
-  }
-
-  @Post(':id/complete-mock-quest')
-  @ApiOperation({ summary: "Advance a character's Base Camp bridge construction stage" })
-  @ApiOkResponse({ type: CharacterDto })
-  async completeMockQuest(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<CharacterDto> {
-    const character = await this.characters.completeMockQuest(user.sub, id);
-    return toCharacterDto(character);
   }
 }

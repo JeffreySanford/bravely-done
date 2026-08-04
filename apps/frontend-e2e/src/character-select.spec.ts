@@ -53,7 +53,10 @@ test('signup through to a rendered Base Camp, and back again via character selec
     }
   });
 
-  const email = `e2e-${Date.now()}@example.com`;
+  // Random suffix, not just Date.now(): the 3 browser projects run this
+  // test concurrently and can start within the same millisecond, which
+  // produced a real, reproduced-once 409 email collision.
+  const email = `e2e-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
 
   await page.goto('/signup');
   await page.getByLabel('Email').fill(email);
@@ -84,21 +87,31 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expectSceneMounted(page);
   await expect(page.getByText('Bridge repair: 0 / 3')).toBeVisible();
 
-  // Completing mock quests advances and persists the bridge construction
-  // stage — the vertical slice from planning/02-base-camp-animations.md's
-  // acceptance criterion.
-  const completeQuestButton = page.getByRole('button', { name: 'Complete a mock quest' });
-  await completeQuestButton.click();
-  await expect(page.getByText('Bridge repair: 1 / 3')).toBeVisible();
-  await completeQuestButton.click();
-  await expect(page.getByText('Bridge repair: 2 / 3')).toBeVisible();
-  await completeQuestButton.click();
-  await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Bridge repaired' })).toBeDisabled();
+  // Creating and completing real quests advances and persists the bridge
+  // construction stage — the vertical slice from planning/02-base-camp-
+  // animations.md's acceptance criterion, now driven by the real quest
+  // system (create -> list -> complete), not a mock stub.
+  const questTitleInput = page.getByLabel('Quest title');
+  const addQuestButton = page.getByRole('button', { name: 'Add quest' });
+
+  for (const title of ['Chop firewood', 'Answer three emails', 'Forage berries']) {
+    await questTitleInput.fill(title);
+    await addQuestButton.click();
+    await expect(page.getByText(title)).toBeVisible();
+  }
+
+  for (const [index, title] of ['Chop firewood', 'Answer three emails', 'Forage berries'].entries()) {
+    const questItem = page.locator('.quest-board__item', { hasText: title });
+    await questItem.getByRole('button', { name: 'Complete' }).click();
+    await expect(page.getByText(`Bridge repair: ${index + 1} / 3`)).toBeVisible();
+    await expect(questItem.getByText('Done')).toBeVisible();
+  }
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
+  await expect(page.getByText('Chop firewood')).toBeVisible();
+  await expect(page.locator('.quest-board__item', { hasText: 'Chop firewood' }).getByText('Done')).toBeVisible();
 
   // A returning character does not replay the tent-erect animation — the
   // subtitle still reads "has arrived", but this is a repeat, not the

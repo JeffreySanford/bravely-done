@@ -19,7 +19,6 @@ describe('CharacterController', () => {
       create: jest.fn().mockResolvedValue(character),
       listForUser: jest.fn().mockResolvedValue([character]),
       arrive: jest.fn().mockResolvedValue({ firstArrival: true, character }),
-      completeMockQuest: jest.fn().mockResolvedValue({ ...character, campConstructionStage: 1 }),
     } as unknown as CharacterService;
     return { controller: new CharacterController(characters), characters };
   }
@@ -57,14 +56,5 @@ describe('CharacterController', () => {
 
     expect(characters.arrive).toHaveBeenCalledWith('user-1', 'char-1');
     expect(result).toEqual({ firstArrival: true, character: publicShape });
-  });
-
-  it('completeMockQuest delegates to the service and returns the public shape', async () => {
-    const { controller, characters } = buildController();
-
-    const result = await controller.completeMockQuest(user, 'char-1');
-
-    expect(characters.completeMockQuest).toHaveBeenCalledWith('user-1', 'char-1');
-    expect(result).toEqual({ ...publicShape, campConstructionStage: 1 });
   });
 });

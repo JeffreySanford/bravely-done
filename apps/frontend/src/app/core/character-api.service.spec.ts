@@ -62,22 +62,4 @@ describe('CharacterApiService', () => {
 
     expect(result).toEqual({ firstArrival: true, character });
   });
-
-  it('completeMockQuest posts to /characters/:id/complete-mock-quest', () => {
-    let result: unknown;
-    service.completeMockQuest('c1').subscribe((res) => (result = res));
-
-    const req = httpMock.expectOne('http://test/characters/c1/complete-mock-quest');
-    expect(req.request.method).toBe('POST');
-    const character = {
-      id: 'c1',
-      name: 'Ember Scout',
-      createdAt: '2026-01-01T00:00:00.000Z',
-      hasArrivedAtCamp: true,
-      campConstructionStage: 1,
-    };
-    req.flush(character);
-
-    expect(result).toEqual(character);
-  });
 });

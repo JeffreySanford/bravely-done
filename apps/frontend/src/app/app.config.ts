@@ -6,11 +6,15 @@ import {
 } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter } from '@angular/router';
+import { provideEffects } from '@ngrx/effects';
+import { provideStore } from '@ngrx/store';
 import { provideApiConfiguration } from './api/api-configuration';
 import { AuthStateService } from './core/auth-state.service';
 import { credentialsInterceptor } from './core/credentials.interceptor';
 import { environment } from '../environments/environment';
 import { appRoutes } from './app.routes';
+import { questsFeature } from './state/quests/quests.reducer';
+import { QuestsEffects } from './state/quests/quests.effects';
 
 export function restoreSessionInitializer(): Promise<void> {
   return inject(AuthStateService).restoreSession();
@@ -25,5 +29,7 @@ export const appConfig: ApplicationConfig = {
     // Resolve the existing cookie session (if any) before the router
     // activates, so auth guards never run against unknown state.
     provideAppInitializer(restoreSessionInitializer),
+    provideStore({ [questsFeature.name]: questsFeature.reducer }),
+    provideEffects(QuestsEffects),
   ],
 };

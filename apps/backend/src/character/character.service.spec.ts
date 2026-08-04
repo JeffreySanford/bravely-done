@@ -1,6 +1,6 @@
 import { NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CharacterService, MAX_CONSTRUCTION_STAGE } from './character.service';
+import { CharacterService } from './character.service';
 
 function buildPrismaMock() {
   return {
@@ -95,42 +95,6 @@ describe('CharacterService', () => {
       prisma.character.findFirst.mockResolvedValue(null);
 
       await expect(service.arrive('user-1', 'char-1')).rejects.toThrow(NotFoundException);
-    });
-  });
-
-  describe('completeMockQuest', () => {
-    it('advances the construction stage by one', async () => {
-      const existing = buildCharacter({ campConstructionStage: 1 });
-      const updated = buildCharacter({ campConstructionStage: 2 });
-      prisma.character.findFirst.mockResolvedValue(existing);
-      prisma.character.update.mockResolvedValue(updated);
-
-      const result = await service.completeMockQuest('user-1', 'char-1');
-
-      expect(prisma.character.update).toHaveBeenCalledWith({
-        where: { id: 'char-1' },
-        data: { campConstructionStage: 2 },
-      });
-      expect(result).toEqual(updated);
-    });
-
-    it('caps the construction stage at MAX_CONSTRUCTION_STAGE', async () => {
-      const existing = buildCharacter({ campConstructionStage: MAX_CONSTRUCTION_STAGE });
-      prisma.character.findFirst.mockResolvedValue(existing);
-      prisma.character.update.mockResolvedValue(existing);
-
-      await service.completeMockQuest('user-1', 'char-1');
-
-      expect(prisma.character.update).toHaveBeenCalledWith({
-        where: { id: 'char-1' },
-        data: { campConstructionStage: MAX_CONSTRUCTION_STAGE },
-      });
-    });
-
-    it('throws NotFoundException when the character is not owned by the user', async () => {
-      prisma.character.findFirst.mockResolvedValue(null);
-
-      await expect(service.completeMockQuest('user-1', 'char-1')).rejects.toThrow(NotFoundException);
     });
   });
 });

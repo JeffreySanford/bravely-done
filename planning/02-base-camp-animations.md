@@ -54,9 +54,9 @@ interaction or backend resource tracking — that's the next slice of this plan,
 - [x] Tent erection (first arrival for a given character only — gated by backend state, see above).
 - [ ] Quest accepted.
 - [ ] Sprint started and calm focus.
-- [x] Quest completed (mock): `BridgeSequence` reacts to a `questCompleted` event, reveals the next
-      bridge plank, and pulses it — driven by real backend state
-      (`POST /characters/:id/complete-mock-quest`), not a fake trigger.
+- [x] Quest completed: `BridgeSequence` reacts to a `questCompleted` event, reveals the next bridge
+      plank, and pulses it — driven by the real Quest domain (`POST /quests/:id/complete`, see
+      [Plan 03](03-first-brave-step.md)), not a mock stub.
 - [ ] XP, coins, loot reveal.
 - [ ] Resource gathering: chop tree, harvest plant, catch animal.
 - [ ] Continue, split, retreat, and comeback.
@@ -73,9 +73,9 @@ interaction or backend resource tracking — that's the next slice of this plan,
 
 ## Acceptance
 
-- [x] Completing one mock quest permanently advances one camp construction state in browser, with
-      equivalent rewards in all motion modes — verified live: a real Playwright e2e run completes three
-      mock quests via `/characters/:id/complete-mock-quest`, confirms the bridge-repair counter advances
-      and the "Bridge repaired" state is reached, then reloads the page and confirms the stage persisted
-      (backed by Postgres, not client state). Android verification is not yet done — no Capacitor
-      packaging exists yet (see later milestones in `TODO.md`).
+- [x] Completing one quest permanently advances one camp construction state in browser, with equivalent
+      rewards in all motion modes — verified live: a real Playwright e2e run creates and completes three
+      real quests via the quest board (`POST /quests/:id/complete`), confirms the bridge-repair counter
+      advances and the "Bridge repaired" state is reached, then reloads the page and confirms the stage
+      and quest list persisted (backed by Postgres, not client state). Android verification is not yet
+      done — no Capacitor packaging exists yet (see later milestones in `TODO.md`).

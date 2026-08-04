@@ -67,3 +67,7 @@ storybook-static
 
 # Prisma-generated client — regenerated via `prisma generate`, never committed.
 apps/backend/src/generated/
+
+# Local debug output from the Playwright MCP tool (screenshots/snapshots/logs
+# captured ad hoc while investigating an issue) — never intentional repo content.
+.playwright-mcp/

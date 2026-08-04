@@ -70,13 +70,25 @@
   opacity: 0.85;
 }
 
+/* Docked to a corner (not centered in the flex flow) so it never sits on
+   top of the 3D scene's focal point (the campfire, at world origin, reads
+   as roughly screen-center) — the quest board is a real, always-available
+   HTML control (see the interaction rule in documentation/product/
+   base-camp.md) but shouldn't visually smother the landmark it sits over. */
 .stage__footer {
-  position: relative;
-  margin-top: auto;
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  left: 24px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 16px;
+  align-items: flex-end;
+  gap: 12px;
+  pointer-events: none;
+}
+
+.stage__footer > * {
+  pointer-events: auto;
 }
 
 .quest-board {
@@ -85,7 +97,9 @@
   align-items: center;
   gap: 12px;
   padding: 16px 20px;
-  width: min(360px, 90vw);
+  width: min(300px, 80vw);
+  max-height: min(280px, 40vh);
+  overflow-y: auto;
   border-radius: var(--bd-radius);
   background: var(--bd-surface);
   border: 1px solid var(--bd-surface-border);

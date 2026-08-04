@@ -15,6 +15,11 @@ const TENT_ERECT_SECONDS = 1.1;
  * planning/02-base-camp-animations.md's resource loop) now drives the
  * campfire's fuel state — not a pure time-based loop. */
 const SECONDS_PER_LOG = 25;
+/** Every arrival finds the fire already going — "continuity, rest, and
+ * return" (documentation/product/base-camp.md) — regardless of whether
+ * this character has ever chopped a tree. Only once this free burn runs
+ * out does the fire actually start drawing down real chopped firewood. */
+const INITIAL_FREE_FUEL_SECONDS = 45;
 const CHOP_WOBBLE_SECONDS = 0.4;
 
 export interface BaseCampSceneOptions {
@@ -226,7 +231,7 @@ class CampfireSequence implements AnimationSequence {
 
   private consumedFirewood = 0;
   private availableFirewood: number;
-  private fuelSecondsRemaining = 0;
+  private fuelSecondsRemaining = INITIAL_FREE_FUEL_SECONDS;
 
   constructor(initialFirewood: number) {
     const built = buildCampfire();
@@ -235,7 +240,6 @@ class CampfireSequence implements AnimationSequence {
     this.flame = built.flame;
     this.embers = built.embers;
     this.availableFirewood = initialFirewood;
-    this.restockIfPossible();
   }
 
   onEvent(event: BaseCampAnimationEvent): void {

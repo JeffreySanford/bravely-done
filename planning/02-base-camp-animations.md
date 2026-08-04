@@ -20,7 +20,9 @@
 - [x] Campfire: animated fire (flame flicker, rising embers, warm flickering point light) with a real
       fuel reserve — each chopped log buys a fixed number of seconds of full flame; once the reserve
       runs out and no more logs are available, the fire settles to embers-only until the player chops
-      another tree. Replaces the earlier client-only time-loop entirely.
+      another tree. Every arrival also gets `INITIAL_FREE_FUEL_SECONDS` of free burn regardless of
+      firewoodCount, so a brand-new character (0 firewood) still finds a lit fire — see "Visual
+      verification" below for the bug this fixes.
 - [x] Companion placeholder: an idle, bobbing, slowly-rotating landmark near the fire.
 - [x] Quest Board, chest, treasury, and bridge landmarks. Workbench still open.
 - [x] Per-character tent gated to true first-ever arrival: `Character.hasArrivedAtCamp` (backend,
@@ -32,10 +34,9 @@
       plays an optimistic chop wobble and dispatches a real backend chop (`POST /characters/:id/
       chop-tree`, atomic increment); the resulting firewood count feeds the campfire, see above.
       Verified: backend increment + persistence confirmed live via direct API calls (signup → arrive →
-      chop x3 → fresh fetch confirms firewoodCount survives), and the full frontend dispatch chain
-      (click → store action → effect → success → AnimationDirector event) has complete unit coverage.
-      The literal in-browser click gesture was not observed live this session (the browser pane wasn't
-      rendering frames) — flagged here rather than silently claimed.
+      chop x3 → fresh fetch confirms firewoodCount survives). The in-browser click itself is now
+      verified live too (see "Visual verification" below) — clicking a tree's real projected screen
+      position increments the firewood count end to end.
 - [ ] Foraging spots and wandering animals: a static foraging-bush landmark exists; harvesting
       interaction and wandering-animal spawns are not built yet.
 - [x] Animated freshwater stream: a rippling vertex-displaced water plane. Not yet a lake shape or a
@@ -68,6 +69,29 @@
       plant / catch animal are not — no foraging/animal interaction exists yet.
 - [ ] Continue, split, retreat, and comeback.
 - [ ] Skip safely to final state.
+
+## Visual verification (2026-08-04)
+
+Unit tests and Playwright's bounding-box checks had never actually verified pixel content, only
+that the canvas element existed with a nonzero size — so two real bugs shipped unnoticed until an
+actual screenshot was taken:
+
+- **The campfire was invisible on arrival.** The real-firewood fuel system (see above) made a brand-
+  new character's fire start fully unlit (0 firewood → 0 fuel), when the intended design was "the fire
+  is always going — that's what makes it feel like a lived-in camp" (see documentation/product/
+  base-camp.md). Fixed by giving every arrival a free base burn independent of firewoodCount.
+- **The quest-board panel was rendered directly on top of the campfire.** `.stage__footer` used
+  `margin-top: auto` inside a centered flex column, which put it at roughly the same screen position
+  as the world-origin campfire from this camera angle — so the one landmark meant to be the emotional
+  center of the scene was hidden behind an HTML dialog. Fixed by docking the quest board to a
+  bottom-right corner (`position: absolute`) instead of centering it in the flex flow.
+
+Both were caught and fixed by taking an actual screenshot (`mcp__playwright__browser_take_screenshot`)
+and reading back live WebGL pixel values, not by any automated test. **This is now a known gap in this
+project's testing strategy**: OPEN-004's e2e compensating evidence only proves the canvas mounts, not
+that anything meaningful is drawn or isn't obscured by other UI. No automated regression test exists
+for either bug yet — closing that gap (e.g., a visual-regression or pixel-sampling check in CI) is
+still open.
 
 ## Evidence and performance
 

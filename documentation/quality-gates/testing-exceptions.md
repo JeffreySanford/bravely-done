@@ -113,6 +113,15 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
   (not planned — e2e is the more honest signal for actual rendering correctness than a mocked WebGL
   context would be), if Nx/Angular gains an officially-supported approach for this, or if a future
   Playwright/Firefox release ships a working headless software-WebGL path.
+- **Known gap, confirmed real (2026-08-04)**: the "compensating evidence" above only proves the canvas
+  element mounts with a nonzero bounding box — it does not prove anything meaningful is actually drawn,
+  or that the canvas isn't visually obscured by other UI. Both failure modes shipped for real: a fuel-
+  system change left the campfire fully unlit on arrival, and a layout change (unrelated commit) put
+  the quest-board dialog directly over the campfire's screen position. Neither was caught by any
+  automated test — both were only found by manually taking a screenshot and reading back live WebGL
+  pixel values (see planning/02-base-camp-animations.md's "Visual verification" section for the fix).
+  No automated regression test exists for either failure mode yet. Closing this gap (e.g., pixel-
+  sampling or visual-regression assertions in the e2e suite) is open, tracked in planning/02.
 
 ---
 

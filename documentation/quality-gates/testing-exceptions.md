@@ -94,16 +94,24 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
   WebGL/Three.js internals are excluded.
 - **Mitigation**: Real, automated compensating evidence, not just a documented gap — `apps/frontend-e2e/
   src/character-select.spec.ts` runs a full signup → character-creation → character-select journey
-  through three actual browser engines (Chromium, Firefox, WebKit, all of which do implement WebGL),
-  asserting the canvas actually mounts with non-zero dimensions and that no unexpected console errors
-  occur. This is the same "e2e for what can't be meaningfully faked with mocks" principle the testing
-  gate already states, applied to rendering specifically. Per-file `jest.config.cts` overrides set to the
-  files' actual achievable percentage (the wiring code coverage that leaks through from other tests),
-  not zero.
+  through three actual browser engines (Chromium, Firefox, WebKit), asserting that whichever rendering
+  path the app takes (WebGL canvas or the CSS grid-veil fallback) mounts correctly and that no
+  unexpected console errors occur. This is the same "e2e for what can't be meaningfully faked with
+  mocks" principle the testing gate already states, applied to rendering specifically. Per-file
+  `jest.config.cts` overrides set to the files' actual achievable percentage (the wiring code coverage
+  that leaks through from other tests), not zero.
+- **Firefox/CI WebGL gap (2026-08-03)**: Chromium (bundled SwiftShader) and WebKit both provide a
+  working software WebGL path in this project's GPU-less CI runner. Headless Firefox does not, even
+  with the `webgl.force-enabled` preference set (see `playwright.config.mts`) — `isWebglAvailable()`
+  correctly reports `false` there and the app correctly falls back to the grid-veil. The e2e test
+  therefore asserts on whichever path actually mounts rather than forcing a canvas assertion Firefox's
+  CI environment can't satisfy; the canvas path is still exercised for real on every run via Chromium
+  and WebKit. Locally (with a real GPU), Firefox does render the canvas as expected.
 - **Reviewed by / date**: Claude (scaffolding session), 2026-08-03.
 - **Reopen condition**: Revisit if a headless-WebGL jsdom shim becomes standard practice for this project
   (not planned — e2e is the more honest signal for actual rendering correctness than a mocked WebGL
-  context would be) or if Nx/Angular gains an officially-supported approach for this.
+  context would be), if Nx/Angular gains an officially-supported approach for this, or if a future
+  Playwright/Firefox release ships a working headless software-WebGL path.
 
 ---
 

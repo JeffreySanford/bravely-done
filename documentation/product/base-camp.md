@@ -8,13 +8,45 @@ is not itself the app's first screen.
 
 ## Initial landmarks
 
-- Campfire: continuity, rest, and return
+- Campfire: continuity, rest, and return — a real fire (flickering flame geometry/shader, embers,
+  smoke, warm point-light bloom onto nearby ground and tents), not a static prop.
 - Companion: coaching and emotional feedback
 - Quest Board: capture and selection
 - Chest: loot reveal
 - Treasury: coins and paid bounty progress
 - Workbench or tent: capability upgrades
 - Damaged bridge and path: first long-term construction progression
+- Tents, one per character on the account: a tent is not present from the start — it is **erected**
+  the first time that character arrives at Base Camp (from character select, or returning from a
+  quest/expedition), as a short animated sequence (canvas/roll unfurling, stakes driven in). Once
+  erected, a character's tent is a permanent camp landmark, distinguishing "a camp with people living
+  in it" from an empty stage set.
+- Harvestable resource nodes: trees that can be chopped for firewood (chopping animation, tree falls,
+  log/firewood pickup, stump remains — feeds the campfire's fuel state), and foraging spots
+  (small plants/bushes, and randomly-spawning wandering animals) that can be harvested/gathered for
+  survival resources. These are the camp's first resource-gathering loop, distinct from the Quest
+  Board's task-completion loop — see [Plan 02](../../planning/02-base-camp-animations.md) for the
+  build sequencing.
+- Freshwater stream or lake: animated water (flowing/rippling shader, not a static plane), the camp's
+  water source — visually and narratively ties the "survive" resource loop together with the
+  "build/complete quests" loop.
+
+## Resource and survival loop
+
+Base Camp is not only a reflection of completed work (quests → construction) — it is also a place the
+character's camp visibly *sustains itself* moment to moment:
+
+- Firewood (from chopped trees) fuels the campfire; an unfed fire visibly dims/goes to embers over
+  time, and is relit by returning with more firewood — this is deliberately a light ambient-state
+  loop, not a punishing survival-game timer.
+- Foraged plants and harvested animals represent food/supply resources tracked per-account, feeding
+  future systems (companion upkeep, expedition provisioning) without blocking the core Agile/SAFe
+  teaching loop — resource gathering is flavor and texture on top of the quest system, never a gate
+  in front of it.
+- The stream/lake is the resource loop's visual anchor and does not currently have a harvestable
+  yield of its own (no fishing at this stage) — it establishes the camp's sense of place and is a
+  natural home for future systems (fishing, camp expansion toward the water) without committing to
+  them yet.
 
 ## Scene states
 
@@ -27,6 +59,10 @@ is not itself the app's first screen.
 - Split or retreat
 - Comeback
 - Weekly expedition
+- Tent erection: plays once per character, the first time that character reaches Base Camp (see
+  Initial landmarks above); every later arrival is a Cold/Warm return against an already-erected tent.
+- Resource gathering: chopping a tree, harvesting a plant, or catching a wandering animal — short,
+  interruptible ambient actions layered on top of whatever scene state is otherwise active.
 
 ## Interaction rule
 

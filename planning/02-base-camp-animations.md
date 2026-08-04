@@ -16,19 +16,30 @@
 
 - [ ] Portrait camera and safe UI zones.
 - [ ] Ground, background, and simple lighting.
-- [ ] Campfire ambient animation.
+- [ ] Campfire: real animated fire (flame, embers, smoke, warm point light), with a fuel state that
+      dims toward embers over time and is replenished by chopped firewood.
 - [ ] Companion placeholder idle animation.
-- [ ] Quest Board, chest, treasury, workbench/tent, bridge, and path.
+- [ ] Quest Board, chest, treasury, workbench, bridge, and path.
+- [ ] Per-character tents: not present until that character's first arrival, then erected via a short
+      animated sequence (canvas unfurl, stakes driven in) and persisted as a permanent camp landmark.
+      One tent per character on the account, not per account.
+- [ ] Choppable trees: chop animation, tree falls, produces firewood/log pickups, leaves a stump.
+- [ ] Foraging spots and wandering animals: harvestable plants/bushes and randomly-spawning animals
+      that can be gathered for survival resources (see the product doc's resource loop).
+- [ ] Animated freshwater stream or lake (flowing/rippling water shader, not a static plane) as the
+      camp's water source and visual anchor.
 - [ ] Render a serialized CampSnapshot.
 
 ## Animation director
 
 - [ ] Define AnimationPlan contract.
 - [ ] Player returned.
+- [ ] Tent erection (first arrival for a given character only).
 - [ ] Quest accepted.
 - [ ] Sprint started and calm focus.
 - [ ] Quest completed common.
 - [ ] XP, coins, loot, and construction.
+- [ ] Resource gathering: chop tree, harvest plant, catch animal.
 - [ ] Continue, split, retreat, and comeback.
 - [ ] Skip safely to final state.
 

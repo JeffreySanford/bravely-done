@@ -26,7 +26,10 @@ Work in this order. Do not expand into guilds or advanced AI until the vertical 
 ## D. Three.js camp
 
 - [ ] Primitive scene and renderer lifecycle.
-- [ ] Campfire, companion, board, chest, treasury, bridge.
+- [ ] Campfire (real animated fire, fuel state), companion, board, chest, treasury, bridge.
+- [ ] Per-character tents, erected on first arrival.
+- [ ] Choppable trees (firewood), foraging spots, wandering animals.
+- [ ] Animated stream or lake.
 - [ ] Ambient motion.
 - [ ] One completion sequence.
 

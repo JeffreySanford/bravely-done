@@ -23,6 +23,7 @@ function buildCharacter(overrides: Record<string, unknown> = {}) {
     hasArrivedAtCamp: false,
     campConstructionStage: 0,
     firewoodCount: 0,
+    forageCount: 0,
     ...overrides,
   };
 }
@@ -119,6 +120,30 @@ describe('CharacterService', () => {
       prisma.character.findFirst.mockResolvedValue(null);
 
       await expect(service.chopTree('user-1', 'char-1')).rejects.toThrow(NotFoundException);
+      expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('forage', () => {
+    it('atomically increments forageCount for an owned character', async () => {
+      prisma.character.findFirst.mockResolvedValue(buildCharacter());
+      const updated = buildCharacter({ forageCount: 1 });
+      prisma.character.update.mockResolvedValue(updated);
+
+      const result = await service.forage('user-1', 'char-1');
+
+      expect(prisma.character.findFirst).toHaveBeenCalledWith({ where: { id: 'char-1', userId: 'user-1' } });
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: 'char-1' },
+        data: { forageCount: { increment: 1 } },
+      });
+      expect(result).toEqual(updated);
+    });
+
+    it('throws NotFoundException when the character is not owned by the user', async () => {
+      prisma.character.findFirst.mockResolvedValue(null);
+
+      await expect(service.forage('user-1', 'char-1')).rejects.toThrow(NotFoundException);
       expect(prisma.character.update).not.toHaveBeenCalled();
     });
   });

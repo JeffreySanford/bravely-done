@@ -20,6 +20,7 @@ function buildCharacter(overrides: Record<string, unknown> = {}) {
     hasArrivedAtCamp: true,
     campConstructionStage: 0,
     firewoodCount: 0,
+    forageCount: 0,
     ...overrides,
   };
 }
@@ -88,6 +89,17 @@ describe('BaseCamp', () => {
     expect(component.firewoodCount()).toBe(4);
   });
 
+  it('seeds forage count from the arrive response', () => {
+    const arrive = jest
+      .fn()
+      .mockReturnValue(of({ firstArrival: true, character: buildCharacter({ forageCount: 2 }) }));
+    const { component } = setup({ arrive });
+
+    component.ngOnInit();
+
+    expect(component.forageCount()).toBe(2);
+  });
+
   it('does not call the API when the route has no characterId', () => {
     const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
     const { component } = setup({ arrive }, {}, null);
@@ -113,6 +125,16 @@ describe('BaseCamp', () => {
 
     const store = TestBed.inject(Store);
     expect(() => store.dispatch(CampActions.chopTreeSuccess({ firewoodCount: 1 }))).not.toThrow();
+    fixture.destroy();
+  });
+
+  it('a forageSuccess dispatched with no scene mounted is a safe no-op', () => {
+    const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+    const { component, fixture } = setup({ arrive });
+    component.ngOnInit();
+
+    const store = TestBed.inject(Store);
+    expect(() => store.dispatch(CampActions.forageSuccess({ forageCount: 1 }))).not.toThrow();
     fixture.destroy();
   });
 

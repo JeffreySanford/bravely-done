@@ -18,4 +18,7 @@ export class CharacterDto {
 
   @ApiProperty()
   firewoodCount!: number;
+
+  @ApiProperty()
+  forageCount!: number;
 }

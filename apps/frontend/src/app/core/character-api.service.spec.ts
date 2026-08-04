@@ -81,4 +81,23 @@ describe('CharacterApiService', () => {
 
     expect(result).toEqual(character);
   });
+
+  it('forage posts to /characters/:id/forage', () => {
+    let result: unknown;
+    service.forage('c1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('http://test/characters/c1/forage');
+    expect(req.request.method).toBe('POST');
+    const character = {
+      id: 'c1',
+      name: 'Ember Scout',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      hasArrivedAtCamp: true,
+      campConstructionStage: 0,
+      forageCount: 1,
+    };
+    req.flush(character);
+
+    expect(result).toEqual(character);
+  });
 });

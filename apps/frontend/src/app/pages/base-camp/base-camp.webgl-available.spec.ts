@@ -66,11 +66,14 @@ describe('BaseCamp (WebGL available)', () => {
             arrive: jest.fn().mockReturnValue(
               of({
                 firstArrival: true,
-                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2 },
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 1 },
               }),
             ),
             chopTree: jest.fn().mockReturnValue(
-              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 3 }),
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 3, forageCount: 1 }),
+            ),
+            forage: jest.fn().mockReturnValue(
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 2 }),
             ),
           },
         },
@@ -127,6 +130,17 @@ describe('BaseCamp (WebGL available)', () => {
     lastSceneOptions?.onChopTree();
 
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'firewoodGathered', totalFirewood: 3 });
+    dispatchSpy.mockRestore();
+  });
+
+  it('dispatches forage when the scene reports a harvest, and forage back once it succeeds', () => {
+    const dispatchSpy = jest.spyOn(mockDirector, 'dispatch');
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+
+    lastSceneOptions?.onForage();
+
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'forage' });
     dispatchSpy.mockRestore();
   });
 

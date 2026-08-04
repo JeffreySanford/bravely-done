@@ -22,7 +22,7 @@ import { isWebglAvailable } from '../../game-rendering/webgl-support';
 import { buildBaseCampScene } from './base-camp-scene';
 import { MAX_CONSTRUCTION_STAGE } from './construction-stage';
 import { CampActions } from '../../state/camp/camp.actions';
-import { selectFirewoodCount } from '../../state/camp/camp.reducer';
+import { selectFirewoodCount, selectForageCount } from '../../state/camp/camp.reducer';
 import { QuestsActions } from '../../state/quests/quests.actions';
 import {
   selectCompletingQuestId,
@@ -60,6 +60,7 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly questsLoading = this.store.selectSignal(selectLoading);
   readonly completingQuestId = this.store.selectSignal(selectCompletingQuestId);
   readonly firewoodCount = this.store.selectSignal(selectFirewoodCount);
+  readonly forageCount = this.store.selectSignal(selectForageCount);
 
   readonly newQuestForm = new FormGroup({
     title: new FormControl('', {
@@ -81,6 +82,12 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       .pipe(ofType(CampActions.chopTreeSuccess), takeUntilDestroyed(this.destroyRef))
       .subscribe(({ firewoodCount }) => {
         this.director?.dispatch({ type: 'firewoodGathered', totalFirewood: firewoodCount });
+      });
+
+    this.actions$
+      .pipe(ofType(CampActions.forageSuccess), takeUntilDestroyed(this.destroyRef))
+      .subscribe(() => {
+        this.director?.dispatch({ type: 'forage' });
       });
   }
 
@@ -104,6 +111,7 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
           CampActions.setCharacterContext({
             characterId: character.id,
             firewoodCount: character.firewoodCount,
+            forageCount: character.forageCount,
           }),
         );
         this.mountRendererIfReady();
@@ -148,6 +156,7 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       constructionStage: this.constructionStage(),
       initialFirewoodCount: this.firewoodCount(),
       onChopTree: () => this.store.dispatch(CampActions.chopTree({ characterId })),
+      onForage: () => this.store.dispatch(CampActions.forage({ characterId })),
     });
     this.director = scene.director;
     this.renderer = new RendererLifecycle(this.canvasRef.nativeElement, motionMode, scene.handlers);

@@ -37,8 +37,10 @@
       chop x3 → fresh fetch confirms firewoodCount survives). The in-browser click itself is now
       verified live too (see "Visual verification" below) — clicking a tree's real projected screen
       position increments the firewood count end to end.
-- [ ] Foraging spots and wandering animals: a static foraging-bush landmark exists; harvesting
-      interaction and wandering-animal spawns are not built yet.
+- [x] Foraging spots: clicking the bush (real raycasting) plays an optimistic squash-and-grow pulse
+      and dispatches a real backend harvest (`POST /characters/:id/forage`, atomic increment).
+      Verified live the same way as chopping — real click at the bush's projected screen position
+      increments the forage count end to end. Wandering-animal spawns are not built yet.
 - [x] Animated freshwater stream: a rippling vertex-displaced water plane. Not yet a lake shape or a
       harvestable resource — visual anchor only, as scoped in the product doc.
 - [ ] Render a serialized CampSnapshot.
@@ -47,9 +49,12 @@
 
 - [x] Chop a tree → firewood pickup (`Character.firewoodCount`, atomic backend increment) → feeds the
       campfire's fuel state for real.
-- [ ] Harvest the foraging bush / wandering animals → tracked resource yield. Not started.
-- [x] Persist harvested/gathered resources per character — firewood is a real Postgres-backed field,
-      verified live via direct API calls (chop, then a fresh unrelated fetch confirms the count).
+- [x] Harvest the foraging bush → forage pickup (`Character.forageCount`, atomic backend increment).
+      Not yet spent on anything (no consumption sink exists) — tracked but not used, mirroring
+      firewood before the campfire consumed it. Wandering animals are not built.
+- [x] Persist harvested/gathered resources per character — firewood and forage are both real
+      Postgres-backed fields, verified live via direct API calls (harvest, then a fresh unrelated
+      fetch confirms the count).
 
 ## Animation director
 
@@ -64,9 +69,10 @@
       plank, and pulses it — driven by the real Quest domain (`POST /quests/:id/complete`, see
       [Plan 03](03-first-brave-step.md)), not a mock stub.
 - [ ] XP, coins, loot reveal.
-- [x] Resource gathering: `chopTree` (per-tree, reacted to by that tree's own sequence) and
-      `firewoodGathered` (campfire reacts by recomputing its fuel reserve) are both wired. Harvest
-      plant / catch animal are not — no foraging/animal interaction exists yet.
+- [x] Resource gathering: `chopTree` (per-tree, reacted to by that tree's own sequence),
+      `firewoodGathered` (campfire reacts by recomputing its fuel reserve), and `forage` (the bush's
+      own sequence plays a harvest pulse) are all wired. Catch animal is not — no animal interaction
+      exists yet.
 - [ ] Continue, split, retreat, and comeback.
 - [ ] Skip safely to final state.
 
@@ -92,6 +98,15 @@ project's testing strategy**: OPEN-004's e2e compensating evidence only proves t
 that anything meaningful is drawn or isn't obscured by other UI. No automated regression test exists
 for either bug yet — closing that gap (e.g., a visual-regression or pixel-sampling check in CI) is
 still open.
+
+The same live-click verification technique (compute a landmark's real screen position from the live
+`camera.matrixWorldInverse`/`projectionMatrix`, dispatch a synthetic click there, read the result back
+from the DOM) was reused to verify the foraging bush, and along the way caught a third, unrelated
+issue: **a long-running local dev backend process silently kept serving a stale build** after several
+schema/DTO changes (`forageCount` missing from the API response entirely, not just wrong — an old
+compiled bundle from before the field existed). Not a code bug, but a reminder that this project's
+`nx serve` dev server does not hot-reload backend schema/DTO changes — it must be restarted (ideally
+with `--skip-nx-cache`) after backend model changes, same as CI always does with a fresh process.
 
 ## Evidence and performance
 

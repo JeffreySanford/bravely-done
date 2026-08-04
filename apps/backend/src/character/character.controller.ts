@@ -50,4 +50,12 @@ export class CharacterController {
     const character = await this.characters.chopTree(user.sub, id);
     return toCharacterDto(character);
   }
+
+  @Post(':id/forage')
+  @ApiOperation({ summary: 'Harvest the foraging bush at Base Camp for one unit of forage' })
+  @ApiOkResponse({ type: CharacterDto })
+  async forage(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<CharacterDto> {
+    const character = await this.characters.forage(user.sub, id);
+    return toCharacterDto(character);
+  }
 }

@@ -49,6 +49,10 @@ model Character {
   /// animations.md's resource loop). Deliberately simple: one resource
   /// type, no depletion per tree, chopping is an infinite ambient action.
   firewoodCount Int @default(0)
+  /// Resource gathered by harvesting the foraging bush at Base Camp.
+  /// Deliberately simple, mirrors firewoodCount: one resource type, no
+  /// depletion, harvesting is an infinite ambient action.
+  forageCount Int @default(0)
   quests    Quest[]
 
   @@map("characters")

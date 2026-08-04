@@ -21,6 +21,7 @@ const SECONDS_PER_LOG = 25;
  * out does the fire actually start drawing down real chopped firewood. */
 const INITIAL_FREE_FUEL_SECONDS = 45;
 const CHOP_WOBBLE_SECONDS = 0.4;
+const FORAGE_PULSE_SECONDS = 0.5;
 
 export interface BaseCampSceneOptions {
   firstArrival: boolean;
@@ -30,6 +31,8 @@ export interface BaseCampSceneOptions {
    * confirms — the scene plays its own optimistic wobble regardless; this
    * is purely so the caller can dispatch the real chop request. */
   onChopTree: () => void;
+  /** Same optimistic-then-real pattern as onChopTree, for the foraging bush. */
+  onForage: () => void;
 }
 
 export interface BaseCampScene {
@@ -44,14 +47,15 @@ const TREE_POSITIONS = [
 ] as const;
 
 /**
- * The full first-pass Base Camp scene: ground, campfire (fuel now driven
- * by real chopped firewood), the arriving character's tent, a companion
- * placeholder, resource-loop landmarks (clickable trees, a foraging bush,
- * an animated stream), and the quest-loop landmarks (quest board, chest,
- * treasury, and a bridge that visibly repairs as campConstructionStage
- * advances). See documentation/product/base-camp.md and planning/02-base-
- * camp-animations.md. Foraging/animal harvesting interaction is still out
- * of scope for this pass — only tree-chopping is wired to real state.
+ * The full first-pass Base Camp scene: ground, campfire (fuel driven by
+ * real chopped firewood), the arriving character's tent, a companion
+ * placeholder, resource-loop landmarks (clickable trees and a clickable
+ * foraging bush, plus an animated stream), and the quest-loop landmarks
+ * (quest board, chest, treasury, and a bridge that visibly repairs as
+ * campConstructionStage advances). See documentation/product/base-camp.md
+ * and planning/02-base-camp-animations.md. Wandering-animal harvesting and
+ * the stream are still visual-only — only chopping and foraging are wired
+ * to real backend state so far.
  */
 export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampSceneOptions): BaseCampScene {
   const director = new AnimationDirector();
@@ -67,6 +71,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
   let tentSequence: TentSequence;
   let bridgeSequence: BridgeSequence;
   let campfireSequence: CampfireSequence;
+  let bushSequence: BushSequence;
   const treeSequences: TreeSequence[] = [];
 
   const handlers: SceneHandlers = {
@@ -105,9 +110,10 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       });
       treeMeshes = treeSequences.map((t) => t.group);
 
-      const bush = buildForagingBush();
-      bush.position.set(-3, 0, -4.5);
-      ctx.scene.add(bush);
+      bushSequence = new BushSequence();
+      bushSequence.group.position.set(-3, 0, -4.5);
+      ctx.scene.add(bushSequence.group);
+      director.register(bushSequence);
 
       stream = buildStream();
       stream.position.set(0, 0.01, -7.5);
@@ -138,10 +144,19 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
           -((event.clientY - rect.top) / rect.height) * 2 + 1,
         );
         raycaster.setFromCamera(pointer, camera);
-        const hit = raycaster.intersectObjects(treeMeshes, true)[0];
+
+        const clickable = [...treeMeshes, bushSequence.group];
+        const hit = raycaster.intersectObjects(clickable, true)[0];
         if (!hit) {
           return;
         }
+
+        if (isDescendantOf(hit.object, bushSequence.group)) {
+          director.dispatch({ type: 'forage' });
+          options.onForage();
+          return;
+        }
+
         const treeIndex = treeMeshes.findIndex((mesh) => mesh === hit.object || isDescendantOf(hit.object, mesh));
         if (treeIndex === -1) {
           return;
@@ -158,6 +173,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       tentSequence.onFrame(elapsed);
       bridgeSequence.onFrame(deltaSeconds);
       treeSequences.forEach((tree) => tree.onFrame(deltaSeconds));
+      bushSequence.onFrame(deltaSeconds);
 
       companion.position.y = 0.55 + Math.sin(elapsed * 1.6) * 0.08;
       companion.rotation.y = elapsed * 0.3;
@@ -306,6 +322,30 @@ class TreeSequence implements AnimationSequence {
     this.wobbleRemaining = Math.max(this.wobbleRemaining - deltaSeconds, 0);
     const progress = this.wobbleRemaining / CHOP_WOBBLE_SECONDS;
     this.group.rotation.z = Math.sin(progress * Math.PI * 3) * 0.08 * progress;
+  }
+}
+
+/** A clickable foraging bush: harvesting plays a brief squash-and-grow
+ * pulse (optimistic — doesn't wait for the backend). Only one bush exists
+ * so, unlike trees, the event carries no index. */
+class BushSequence implements AnimationSequence {
+  readonly group = buildForagingBush();
+  private pulseRemaining = 0;
+
+  onEvent(event: BaseCampAnimationEvent): void {
+    if (event.type === 'forage') {
+      this.pulseRemaining = FORAGE_PULSE_SECONDS;
+    }
+  }
+
+  onFrame(deltaSeconds: number): void {
+    if (this.pulseRemaining <= 0) {
+      this.group.scale.setScalar(1);
+      return;
+    }
+    this.pulseRemaining = Math.max(this.pulseRemaining - deltaSeconds, 0);
+    const progress = this.pulseRemaining / FORAGE_PULSE_SECONDS;
+    this.group.scale.setScalar(1 - Math.sin(progress * Math.PI) * 0.35);
   }
 }
 

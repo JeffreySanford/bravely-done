@@ -25,4 +25,17 @@ export class CampEffects {
       ),
     ),
   );
+
+  // Same mergeMap reasoning as chopTree$.
+  forage$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CampActions.forage),
+      mergeMap(({ characterId }) =>
+        this.characterApi.forage(characterId).pipe(
+          map((character) => CampActions.forageSuccess({ forageCount: character.forageCount })),
+          catchError(() => of(CampActions.forageFailure({ error: GENERIC_ERROR }))),
+        ),
+      ),
+    ),
+  );
 }

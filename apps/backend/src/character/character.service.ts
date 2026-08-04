@@ -48,6 +48,16 @@ export class CharacterService {
     });
   }
 
+  /** Harvesting is an infinite ambient action (mirrors chopTree) — each
+   * call adds one unit of forage. Atomic increment for the same reason. */
+  async forage(userId: string, characterId: string): Promise<Character> {
+    await this.findOwned(userId, characterId);
+    return this.prisma.character.update({
+      where: { id: characterId },
+      data: { forageCount: { increment: 1 } },
+    });
+  }
+
   private async findOwned(userId: string, characterId: string): Promise<Character> {
     const character = await this.prisma.character.findFirst({
       where: { id: characterId, userId },

@@ -5,6 +5,7 @@ import { ApiConfiguration } from '../api/api-configuration';
 import { characterControllerArrive } from '../api/fn/characters/character-controller-arrive';
 import { characterControllerChopTree } from '../api/fn/characters/character-controller-chop-tree';
 import { characterControllerCreate } from '../api/fn/characters/character-controller-create';
+import { characterControllerForage } from '../api/fn/characters/character-controller-forage';
 import { characterControllerList } from '../api/fn/characters/character-controller-list';
 import { ArriveResponseDto } from '../api/models/arrive-response-dto';
 import { CharacterDto } from '../api/models/character-dto';
@@ -33,6 +34,12 @@ export class CharacterApiService {
 
   chopTree(id: string): Observable<CharacterDto> {
     return characterControllerChopTree(this.http, this.config.rootUrl, { id }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  forage(id: string): Observable<CharacterDto> {
+    return characterControllerForage(this.http, this.config.rootUrl, { id }).pipe(
       map((res) => res.body),
     );
   }

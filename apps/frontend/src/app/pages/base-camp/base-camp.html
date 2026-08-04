@@ -14,7 +14,10 @@
       <p class="stage__subtitle">Welcome back.</p>
     }
     @if (renderScene) {
-      <p class="stage__hint">Firewood: {{ firewoodCount() }} — click a tree to chop one.</p>
+      <p class="stage__hint">
+        Firewood: {{ firewoodCount() }} — click a tree to chop one. Forage: {{ forageCount() }} —
+        click the bush to harvest.
+      </p>
     }
   </header>
 

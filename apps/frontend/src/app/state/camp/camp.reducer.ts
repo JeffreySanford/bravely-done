@@ -4,14 +4,18 @@ import { CampActions } from './camp.actions';
 export interface CampState {
   characterId: string | null;
   firewoodCount: number;
+  forageCount: number;
   chopping: boolean;
+  foraging: boolean;
   error: string | null;
 }
 
 export const initialCampState: CampState = {
   characterId: null,
   firewoodCount: 0,
+  forageCount: 0,
   chopping: false,
+  foraging: false,
   error: null,
 };
 
@@ -20,10 +24,11 @@ export const campFeature = createFeature({
   reducer: createReducer(
     initialCampState,
 
-    on(CampActions.setCharacterContext, (state, { characterId, firewoodCount }): CampState => ({
+    on(CampActions.setCharacterContext, (state, { characterId, firewoodCount, forageCount }): CampState => ({
       ...initialCampState,
       characterId,
       firewoodCount,
+      forageCount,
     })),
 
     on(CampActions.chopTree, (state): CampState => ({ ...state, chopping: true, error: null })),
@@ -37,6 +42,18 @@ export const campFeature = createFeature({
       chopping: false,
       error,
     })),
+
+    on(CampActions.forage, (state): CampState => ({ ...state, foraging: true, error: null })),
+    on(CampActions.forageSuccess, (state, { forageCount }): CampState => ({
+      ...state,
+      forageCount,
+      foraging: false,
+    })),
+    on(CampActions.forageFailure, (state, { error }): CampState => ({
+      ...state,
+      foraging: false,
+      error,
+    })),
   ),
 });
 
@@ -46,6 +63,8 @@ export const {
   selectCampState,
   selectCharacterId,
   selectFirewoodCount,
+  selectForageCount,
   selectChopping,
+  selectForaging,
   selectError,
 } = campFeature;

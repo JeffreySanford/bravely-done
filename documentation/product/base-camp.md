@@ -79,19 +79,21 @@ A first real pass of Base Camp exists at `/basecamp/:characterId`
 character select (return visits):
 
 - **Built**: ground and lighting, an animated campfire with a real fuel reserve (each chopped log buys
-  a fixed number of seconds of flame; it settles to embers-only once the reserve runs out), a
-  companion placeholder, clickable trees (real raycasting; chopping is backed by
-  `POST /characters/:id/chop-tree`, an atomic Postgres-backed increment), a foraging-bush/stream
-  landmark pair (still visual only), and the quest board/chest/treasury/bridge landmarks. The tent-
-  erect animation is correctly gated to a character's true first-ever arrival via a backend flag
-  (`Character.hasArrivedAtCamp`), not just client state. A real quest board lets a player create and
-  complete quests (`apps/backend/src/quest/`); completing one advances real backend progress
-  (`Character.campConstructionStage`) and the bridge visibly repairs, persisting across reloads. Quest
-  and construction-stage state, and now firewood/camp-resource state, live in this project's NgRx
-  store (`apps/frontend/src/app/state/quests/`, `apps/frontend/src/app/state/camp/`), not local
-  component state.
-- **Not yet built**: foraging/animal harvesting interaction and its resource tracking, the workbench,
-  encounters/sprints/rewards on top of quests (see [Plan 03](../../planning/03-first-brave-step.md)),
-  and the animation director's fuller event set (quest accepted, sprint states, loot reveal, etc. —
-  arrival, quest-completion, and tree-chopping are wired so far). See
-  [Plan 02](../../planning/02-base-camp-animations.md) for the itemized build sequencing.
+  a fixed number of seconds of flame; every arrival also gets a free base burn so the fire is never
+  unlit just because a character hasn't chopped anything yet; the fire settles to embers-only once
+  the reserve runs out), a companion placeholder, clickable trees and a clickable foraging bush (real
+  raycasting; both backed by atomic Postgres increments — `POST /characters/:id/chop-tree` and
+  `POST /characters/:id/forage`), a stream landmark (still visual only), and the quest board/chest/
+  treasury/bridge landmarks. The tent-erect animation is correctly gated to a character's true
+  first-ever arrival via a backend flag (`Character.hasArrivedAtCamp`), not just client state. A real
+  quest board lets a player create and complete quests (`apps/backend/src/quest/`); completing one
+  advances real backend progress (`Character.campConstructionStage`) and the bridge visibly repairs,
+  persisting across reloads. Quest, construction-stage, and camp-resource (firewood/forage) state all
+  live in this project's NgRx store (`apps/frontend/src/app/state/quests/`,
+  `apps/frontend/src/app/state/camp/`), not local component state.
+- **Not yet built**: wandering-animal interaction, spending forage on anything (it's tracked but not
+  consumed by any system yet), the workbench, encounters/sprints/rewards on top of quests (see
+  [Plan 03](../../planning/03-first-brave-step.md)), and the animation director's fuller event set
+  (quest accepted, sprint states, loot reveal, etc. — arrival, quest-completion, tree-chopping, and
+  foraging are wired so far). See [Plan 02](../../planning/02-base-camp-animations.md) for the
+  itemized build sequencing.

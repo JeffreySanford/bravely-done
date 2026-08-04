@@ -68,17 +68,19 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [x] Add ambient animation and full/reduced/minimal motion modes (reuses the character-select scene's
       motion-mode plumbing).
 - [x] Add a minimal animation director (`AnimationDirector`/`AnimationSequence`) driven by domain
-      events — arrival, quest-completion, and tree-chopping are wired; more events (quest accepted,
-      sprint states, loot) are still open.
+      events — arrival, quest-completion, tree-chopping, and foraging are wired; more events (quest
+      accepted, sprint states, loot) are still open.
 - [x] Gate the tent-erect animation to a character's true first-ever arrival: backend
       `Character.hasArrivedAtCamp` (`POST /characters/:id/arrive`) is the source of truth, not client
       state — verified live (arrive, reload, confirm no replay).
-- [x] Add chopping interaction and real firewood tracking for the tree landmarks: clicking a tree
-      (real raycasting) dispatches `POST /characters/:id/chop-tree` (atomic Postgres increment) through
-      this project's second NgRx feature (`apps/frontend/src/app/state/camp/`), and the resulting
-      firewood count drives the campfire's fuel reserve for real. Verified: backend increment +
-      persistence confirmed live via direct API calls; full frontend dispatch chain has complete unit
-      coverage. Foraging/animal harvesting interaction is still open — only tree-chopping is wired.
+- [x] Add chopping and foraging interaction with real resource tracking for the tree and bush
+      landmarks: clicking either (real raycasting) dispatches an atomic Postgres increment
+      (`POST /characters/:id/chop-tree` or `.../forage`) through this project's second NgRx feature
+      (`apps/frontend/src/app/state/camp/`); the resulting firewood count drives the campfire's fuel
+      reserve for real. Verified live end to end — both the backend contract (direct API calls) and
+      the actual in-browser click, using the character's real projected screen position computed from
+      the live camera matrices, not a guessed coordinate. Wandering-animal interaction is still open;
+      forage is tracked but not yet spent on anything.
 - [x] Complete a quest and visibly upgrade the camp: a real Quest domain (create/list/complete,
       `apps/backend/src/quest/`) replaces the earlier mock-quest stub. `POST /quests/:id/complete`
       advances `Character.campConstructionStage`, and the bridge visibly repairs one plank per

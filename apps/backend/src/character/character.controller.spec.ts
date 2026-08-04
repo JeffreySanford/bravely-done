@@ -13,6 +13,7 @@ describe('CharacterController', () => {
     hasArrivedAtCamp: false,
     campConstructionStage: 0,
     firewoodCount: 0,
+    forageCount: 0,
   };
 
   function buildController() {
@@ -21,6 +22,7 @@ describe('CharacterController', () => {
       listForUser: jest.fn().mockResolvedValue([character]),
       arrive: jest.fn().mockResolvedValue({ firstArrival: true, character }),
       chopTree: jest.fn().mockResolvedValue({ ...character, firewoodCount: 1 }),
+      forage: jest.fn().mockResolvedValue({ ...character, forageCount: 1 }),
     } as unknown as CharacterService;
     return { controller: new CharacterController(characters), characters };
   }
@@ -32,6 +34,7 @@ describe('CharacterController', () => {
     hasArrivedAtCamp: character.hasArrivedAtCamp,
     campConstructionStage: character.campConstructionStage,
     firewoodCount: character.firewoodCount,
+    forageCount: character.forageCount,
   };
 
   it('create delegates to the service with the current user and returns the public shape', async () => {
@@ -68,5 +71,14 @@ describe('CharacterController', () => {
 
     expect(characters.chopTree).toHaveBeenCalledWith('user-1', 'char-1');
     expect(result).toEqual({ ...publicShape, firewoodCount: 1 });
+  });
+
+  it('forage delegates to the service and returns the public shape', async () => {
+    const { controller, characters } = buildController();
+
+    const result = await controller.forage(user, 'char-1');
+
+    expect(characters.forage).toHaveBeenCalledWith('user-1', 'char-1');
+    expect(result).toEqual({ ...publicShape, forageCount: 1 });
   });
 });

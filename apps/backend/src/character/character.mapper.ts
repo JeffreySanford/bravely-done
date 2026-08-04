@@ -9,5 +9,6 @@ export function toCharacterDto(character: Character): CharacterDto {
   dto.hasArrivedAtCamp = character.hasArrivedAtCamp;
   dto.campConstructionStage = character.campConstructionStage;
   dto.firewoodCount = character.firewoodCount;
+  dto.forageCount = character.forageCount;
   return dto;
 }

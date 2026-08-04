@@ -1,32 +1,59 @@
 import * as THREE from 'three';
+import { AnimationDirector, AnimationSequence } from '../../game-rendering/animation-director';
 import { MotionMode } from '../../game-rendering/motion-mode';
 import { SceneHandlers } from '../../game-rendering/renderer-lifecycle';
+import { MAX_CONSTRUCTION_STAGE } from './construction-stage';
 
 const CYAN = 0x00e5ff;
 const VIOLET = 0x8b5cf6;
 const FIRE = 0xff7a3d;
 const EMBER = 0xffb066;
+const WATER = 0x1c5c8a;
 
 const TENT_ERECT_SECONDS = 1.1;
+/** Seconds of full flame before the campfire fuel starts dimming toward embers-only.
+ * Client-side only for now — no backend firewood system yet (see Plan 02). */
+const FUEL_FULL_SECONDS = 45;
+const FUEL_DECAY_SECONDS = 30;
+
+export interface BaseCampSceneOptions {
+  firstArrival: boolean;
+  constructionStage: number;
+}
+
+export interface BaseCampScene {
+  handlers: SceneHandlers;
+  director: AnimationDirector;
+}
 
 /**
- * The first real Base Camp scene: ground, a lit campfire, and the arriving
- * character's tent erecting once on arrival (see documentation/product/
- * base-camp.md — "Initial landmarks" and "Scene states: Tent erection").
- * Trees, foraging spots, wandering animals, and the stream/lake are the
- * next layers on top of this foundation (see planning/02-base-camp-
- * animations.md) — deliberately not in this first pass.
+ * The full first-pass Base Camp scene: ground, campfire (with a decaying
+ * fuel state), the arriving character's tent, a companion placeholder, a
+ * few resource-loop landmarks (trees, a foraging bush, an animated
+ * stream), and the quest-loop landmarks (quest board, chest, treasury,
+ * and a bridge that visibly repairs as campConstructionStage advances).
+ * See documentation/product/base-camp.md and planning/02-base-camp-
+ * animations.md. Interaction (chopping, harvesting, quest board clicks)
+ * is out of scope for this pass — these are visual landmarks; the bridge
+ * is the one landmark actually wired to real backend state via
+ * AnimationDirector's 'questCompleted' event.
  */
-export function buildBaseCampScene(motionMode: MotionMode): SceneHandlers {
+export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampSceneOptions): BaseCampScene {
+  const director = new AnimationDirector();
+
   let fireLight: THREE.PointLight;
   let flame: THREE.Mesh;
   let embers: THREE.Points;
-  let tent: THREE.Group;
+  let stream: THREE.Mesh;
+  let companion: THREE.Mesh;
 
-  return {
+  let tentSequence: TentSequence;
+  let bridgeSequence: BridgeSequence;
+
+  const handlers: SceneHandlers = {
     onInit({ scene, camera }) {
-      camera.position.set(0, 2.4, 7.5);
-      camera.lookAt(0, 0.6, 0);
+      camera.position.set(0, 4.2, 12);
+      camera.lookAt(0, 0.6, -1);
 
       scene.add(new THREE.AmbientLight(0x141c33, 1.1));
       const moon = new THREE.PointLight(VIOLET, 2, 40);
@@ -41,18 +68,60 @@ export function buildBaseCampScene(motionMode: MotionMode): SceneHandlers {
       embers = campfire.embers;
       scene.add(campfire.group);
 
-      tent = buildTent();
-      tent.position.set(2.6, 0, -0.6);
-      tent.scale.set(1, 0.001, 1);
-      scene.add(tent);
+      tentSequence = new TentSequence(options.firstArrival);
+      tentSequence.mesh.position.set(2.6, 0, -0.6);
+      scene.add(tentSequence.mesh);
+      director.register(tentSequence);
+
+      companion = buildCompanion();
+      companion.position.set(-1.8, 0.55, -1.6);
+      scene.add(companion);
+
+      for (const position of [
+        [-6, 0, -2],
+        [-5.5, 0, 3.5],
+        [6, 0, -3],
+      ] as const) {
+        const tree = buildTree();
+        tree.position.set(position[0], position[1], position[2]);
+        scene.add(tree);
+      }
+
+      const bush = buildForagingBush();
+      bush.position.set(-3, 0, -4.5);
+      scene.add(bush);
+
+      stream = buildStream();
+      stream.position.set(0, 0.01, -7.5);
+      scene.add(stream);
+
+      const questBoard = buildQuestBoard();
+      questBoard.position.set(5.5, 0, 0.5);
+      scene.add(questBoard);
+
+      const chest = buildChest();
+      chest.position.set(4.5, 0, 3);
+      scene.add(chest);
+
+      const treasury = buildTreasury();
+      treasury.position.set(-4.5, 0, 2.8);
+      scene.add(treasury);
+
+      bridgeSequence = new BridgeSequence(options.constructionStage);
+      bridgeSequence.group.position.set(0, 0, -6.8);
+      scene.add(bridgeSequence.group);
+      director.register(bridgeSequence);
     },
 
-    onFrame(elapsed) {
+    onFrame(elapsed, deltaSeconds) {
       const flicker = motionMode === 'full' ? Math.sin(elapsed * 11) * 0.4 + Math.sin(elapsed * 23) * 0.2 : 0;
-      fireLight.intensity = 4.5 + flicker;
-      flame.scale.y = 1 + Math.sin(elapsed * 9) * (motionMode === 'minimal' ? 0 : 0.12);
+      const fuel = fuelLevel(elapsed);
+      fireLight.intensity = (2 + fuel * 2.5) + flicker * fuel;
+      flame.scale.y = fuel * (1 + Math.sin(elapsed * 9) * (motionMode === 'minimal' ? 0 : 0.12));
+      (flame.material as THREE.MeshBasicMaterial).opacity = 0.85 * fuel;
 
       if (motionMode !== 'minimal') {
+        embers.visible = fuel > 0.15;
         embers.rotation.y = elapsed * 0.4;
         const positions = embers.geometry.attributes['position'] as THREE.BufferAttribute;
         for (let i = 0; i < positions.count; i++) {
@@ -62,9 +131,21 @@ export function buildBaseCampScene(motionMode: MotionMode): SceneHandlers {
         positions.needsUpdate = true;
       }
 
-      const erectProgress = Math.min(elapsed / TENT_ERECT_SECONDS, 1);
-      const eased = 1 - Math.pow(1 - erectProgress, 3);
-      tent.scale.y = Math.max(eased, 0.001);
+      tentSequence.onFrame(elapsed);
+      bridgeSequence.onFrame(deltaSeconds);
+
+      companion.position.y = 0.55 + Math.sin(elapsed * 1.6) * 0.08;
+      companion.rotation.y = elapsed * 0.3;
+
+      if (motionMode !== 'minimal') {
+        const streamPositions = stream.geometry.attributes['position'] as THREE.BufferAttribute;
+        for (let i = 0; i < streamPositions.count; i++) {
+          const x = streamPositions.getX(i);
+          const z0 = (streamPositions as unknown as { z0: number[] }).z0?.[i] ?? 0;
+          streamPositions.setZ(i, z0 + Math.sin(elapsed * 1.5 + x * 0.8) * 0.06);
+        }
+        streamPositions.needsUpdate = true;
+      }
     },
 
     onDispose() {
@@ -72,6 +153,98 @@ export function buildBaseCampScene(motionMode: MotionMode): SceneHandlers {
       // is handled centrally by RendererLifecycle.dispose().
     },
   };
+
+  return { handlers, director };
+}
+
+/** Ramps from 1 (full flame) down to a low ember-only floor, then loops —
+ * an ambient stand-in for a real firewood/fuel system (see FUEL_FULL_SECONDS
+ * doc comment above). */
+function fuelLevel(elapsed: number): number {
+  const cycle = FUEL_FULL_SECONDS + FUEL_DECAY_SECONDS;
+  const t = elapsed % cycle;
+  if (t < FUEL_FULL_SECONDS) {
+    return 1;
+  }
+  const decayT = (t - FUEL_FULL_SECONDS) / FUEL_DECAY_SECONDS;
+  return Math.max(1 - decayT, 0.2);
+}
+
+class TentSequence implements AnimationSequence {
+  readonly mesh = buildTent();
+
+  constructor(firstArrival: boolean) {
+    this.mesh.scale.set(1, firstArrival ? 0.001 : 1, 1);
+  }
+
+  onEvent(): void {
+    // Arrival is decided at construction time (firstArrival is known
+    // up-front), so there's nothing to react to here yet — reserved for a
+    // future "character departs and returns" re-trigger.
+  }
+
+  onFrame(elapsed: number): void {
+    if (this.mesh.scale.y >= 1) {
+      return;
+    }
+    const progress = Math.min(elapsed / TENT_ERECT_SECONDS, 1);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    this.mesh.scale.y = Math.max(eased, 0.001);
+  }
+}
+
+class BridgeSequence implements AnimationSequence {
+  readonly group = new THREE.Group();
+  private readonly planks: THREE.Mesh[] = [];
+  private pulseRemaining = 0;
+  private pulseTarget: THREE.Mesh | null = null;
+
+  constructor(private stage: number) {
+    const plankCount = MAX_CONSTRUCTION_STAGE + 1;
+    const geometry = new THREE.BoxGeometry(1.6, 0.12, 0.9);
+    const repairedMaterial = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.8 });
+    const gapMaterial = new THREE.MeshBasicMaterial({ color: 0x05070d, transparent: true, opacity: 0.6 });
+
+    for (let i = 0; i < plankCount; i++) {
+      const repaired = i <= this.stage;
+      const plank = new THREE.Mesh(geometry, repaired ? repairedMaterial : gapMaterial);
+      plank.position.set((i - (plankCount - 1) / 2) * 1.7, repaired ? 0 : -0.15, 0);
+      this.group.add(plank);
+      this.planks.push(plank);
+    }
+  }
+
+  onEvent(event: { type: string; constructionStage?: number }): void {
+    if (event.type !== 'questCompleted' || event.constructionStage === undefined) {
+      return;
+    }
+    const nextStage = event.constructionStage;
+    if (nextStage <= this.stage) {
+      return;
+    }
+    this.stage = nextStage;
+    const plank = this.planks[nextStage];
+    if (!plank) {
+      return;
+    }
+    plank.material = new THREE.MeshStandardMaterial({ color: 0x6b4a2c, roughness: 0.8, emissive: CYAN, emissiveIntensity: 0.6 });
+    plank.position.y = 0;
+    this.pulseTarget = plank;
+    this.pulseRemaining = 0.6;
+  }
+
+  onFrame(deltaSeconds: number): void {
+    if (this.pulseRemaining <= 0 || !this.pulseTarget) {
+      return;
+    }
+    this.pulseRemaining -= deltaSeconds;
+    const material = this.pulseTarget.material as THREE.MeshStandardMaterial;
+    material.emissiveIntensity = Math.max(this.pulseRemaining / 0.6, 0) * 0.6;
+    if (this.pulseRemaining <= 0) {
+      material.emissiveIntensity = 0;
+      this.pulseTarget = null;
+    }
+  }
 }
 
 function buildGround(): THREE.Mesh {
@@ -153,6 +326,118 @@ function buildTent(): THREE.Group {
   trim.rotation.x = Math.PI / 2;
   trim.rotation.z = Math.PI / 4;
   group.add(trim);
+
+  return group;
+}
+
+function buildCompanion(): THREE.Mesh {
+  const geometry = new THREE.IcosahedronGeometry(0.28, 1);
+  const material = new THREE.MeshStandardMaterial({
+    color: VIOLET,
+    emissive: VIOLET,
+    emissiveIntensity: 0.8,
+    roughness: 0.3,
+  });
+  return new THREE.Mesh(geometry, material);
+}
+
+function buildTree(): THREE.Group {
+  const group = new THREE.Group();
+  const trunkGeometry = new THREE.CylinderGeometry(0.12, 0.16, 1.1, 8);
+  const trunkMaterial = new THREE.MeshStandardMaterial({ color: 0x2e1d12, roughness: 1 });
+  const trunk = new THREE.Mesh(trunkGeometry, trunkMaterial);
+  trunk.position.y = 0.55;
+  group.add(trunk);
+
+  const foliageGeometry = new THREE.ConeGeometry(0.75, 1.6, 8);
+  const foliageMaterial = new THREE.MeshStandardMaterial({ color: 0x123324, roughness: 0.9 });
+  const foliage = new THREE.Mesh(foliageGeometry, foliageMaterial);
+  foliage.position.y = 1.6;
+  group.add(foliage);
+
+  return group;
+}
+
+function buildForagingBush(): THREE.Group {
+  const group = new THREE.Group();
+  const geometry = new THREE.SphereGeometry(0.32, 8, 6);
+  const material = new THREE.MeshStandardMaterial({ color: 0x1c4a2a, roughness: 1 });
+  for (const [x, z] of [
+    [0, 0],
+    [0.35, 0.1],
+    [-0.3, 0.15],
+  ] as const) {
+    const clump = new THREE.Mesh(geometry, material);
+    clump.position.set(x, 0.28, z);
+    group.add(clump);
+  }
+  return group;
+}
+
+function buildStream(): THREE.Mesh {
+  const geometry = new THREE.PlaneGeometry(20, 3, 40, 4);
+  geometry.rotateX(-Math.PI / 2);
+  const positions = geometry.attributes['position'] as THREE.BufferAttribute;
+  const z0: number[] = [];
+  for (let i = 0; i < positions.count; i++) {
+    z0.push(positions.getZ(i));
+  }
+  (positions as unknown as { z0: number[] }).z0 = z0;
+
+  const material = new THREE.MeshStandardMaterial({
+    color: WATER,
+    roughness: 0.2,
+    metalness: 0.4,
+    transparent: true,
+    opacity: 0.85,
+  });
+  return new THREE.Mesh(geometry, material);
+}
+
+function buildQuestBoard(): THREE.Group {
+  const group = new THREE.Group();
+  const postGeometry = new THREE.CylinderGeometry(0.06, 0.06, 1.4, 6);
+  const postMaterial = new THREE.MeshStandardMaterial({ color: 0x2e2418, roughness: 1 });
+  const post = new THREE.Mesh(postGeometry, postMaterial);
+  post.position.y = 0.7;
+  group.add(post);
+
+  const boardGeometry = new THREE.BoxGeometry(1.1, 0.75, 0.06);
+  const boardMaterial = new THREE.MeshStandardMaterial({
+    color: 0x101826,
+    emissive: CYAN,
+    emissiveIntensity: 0.15,
+    roughness: 0.6,
+  });
+  const board = new THREE.Mesh(boardGeometry, boardMaterial);
+  board.position.y = 1.3;
+  group.add(board);
+
+  return group;
+}
+
+function buildChest(): THREE.Mesh {
+  const geometry = new THREE.BoxGeometry(0.7, 0.45, 0.45);
+  const material = new THREE.MeshStandardMaterial({ color: 0x3a2417, roughness: 0.8 });
+  const chest = new THREE.Mesh(geometry, material);
+  chest.position.y = 0.22;
+  return chest;
+}
+
+function buildTreasury(): THREE.Group {
+  const group = new THREE.Group();
+  const pedestalGeometry = new THREE.CylinderGeometry(0.3, 0.35, 0.3, 8);
+  const pedestalMaterial = new THREE.MeshStandardMaterial({ color: 0x1a2440, roughness: 0.7 });
+  const pedestal = new THREE.Mesh(pedestalGeometry, pedestalMaterial);
+  pedestal.position.y = 0.15;
+  group.add(pedestal);
+
+  const coinGeometry = new THREE.TorusGeometry(0.14, 0.04, 8, 16);
+  const coinMaterial = new THREE.MeshStandardMaterial({ color: 0xffd166, emissive: 0xffd166, emissiveIntensity: 0.3 });
+  const coin = new THREE.Mesh(coinGeometry, coinMaterial);
+  coin.rotation.x = Math.PI / 2;
+  coin.position.y = 0.42;
+  group.add(coin);
 
   return group;
 }

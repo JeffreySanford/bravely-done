@@ -82,6 +82,28 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
   await expectSceneMounted(page);
+  await expect(page.getByText('Bridge repair: 0 / 3')).toBeVisible();
+
+  // Completing mock quests advances and persists the bridge construction
+  // stage — the vertical slice from planning/02-base-camp-animations.md's
+  // acceptance criterion.
+  const completeQuestButton = page.getByRole('button', { name: 'Complete a mock quest' });
+  await completeQuestButton.click();
+  await expect(page.getByText('Bridge repair: 1 / 3')).toBeVisible();
+  await completeQuestButton.click();
+  await expect(page.getByText('Bridge repair: 2 / 3')).toBeVisible();
+  await completeQuestButton.click();
+  await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Bridge repaired' })).toBeDisabled();
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
+  await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
+
+  // A returning character does not replay the tent-erect animation — the
+  // subtitle still reads "has arrived", but this is a repeat, not the
+  // first-ever arrival captured by the backend's hasArrivedAtCamp flag.
+  await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
 
   expect(consoleErrors).toEqual([]);
 });

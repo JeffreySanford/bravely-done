@@ -62,8 +62,34 @@
   font-size: 14px;
 }
 
-.stage__back {
+.stage__footer {
   position: relative;
   margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.bridge-status {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px 20px;
+  border-radius: var(--bd-radius);
+  background: var(--bd-surface);
+  border: 1px solid var(--bd-surface-border);
+  backdrop-filter: blur(14px);
+}
+
+.bridge-status__label {
+  margin: 0;
+  font-size: 13px;
+  color: var(--bd-text-muted);
+  font-family: var(--bd-font-mono);
+}
+
+.stage__back {
   max-width: 200px;
 }

@@ -71,3 +71,22 @@ Important actions remain accessible through ordinary semantic HTML. The Three.js
 ## First construction arc
 
 The first several completed quests repair a bridge. Each completion produces a visible stage so the player immediately understands that real work changes the world.
+
+## Implementation status
+
+A first real pass of Base Camp exists at `/basecamp/:characterId`
+(`apps/frontend/src/app/pages/base-camp/`), reached from character creation (first arrival) and from
+character select (return visits):
+
+- **Built**: ground and lighting, an animated campfire with a client-side fuel decay loop, a
+  companion placeholder, tree/foraging-bush/stream landmarks (visual only — no chopping/harvesting
+  interaction yet), and the quest board/chest/treasury/bridge landmarks. The tent-erect animation is
+  correctly gated to a character's true first-ever arrival via a backend flag
+  (`Character.hasArrivedAtCamp`), not just client state. The bridge is wired to real backend
+  progress (`Character.campConstructionStage`, advanced via a dev-facing "Complete a mock quest"
+  button standing in for the real quest system) and persists across reloads.
+- **Not yet built**: chopping/harvesting interaction and a real firewood/resource-tracking system (the
+  campfire fuel and resource nodes are ambient/visual only for now), the workbench, and the animation
+  director's fuller event set (quest accepted, sprint states, loot reveal, etc. — only arrival and
+  mock-quest-completion are wired so far). See [Plan 02](../../planning/02-base-camp-animations.md)
+  for the itemized build sequencing.

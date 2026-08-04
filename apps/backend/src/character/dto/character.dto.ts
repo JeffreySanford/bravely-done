@@ -9,4 +9,10 @@ export class CharacterDto {
 
   @ApiProperty()
   createdAt!: Date;
+
+  @ApiProperty()
+  hasArrivedAtCamp!: boolean;
+
+  @ApiProperty()
+  campConstructionStage!: number;
 }

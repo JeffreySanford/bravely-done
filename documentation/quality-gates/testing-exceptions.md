@@ -41,7 +41,7 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
   either constructor parameter-property DI (`constructor(private readonly x: Foo) {}`) or a property
   decorator like `@ApiProperty()`. Hit in `app.controller.ts`, `auth.controller.ts`, `auth.service.ts`,
   `roles.guard.ts`, `auth-user.dto.ts`, `character.controller.ts`, `character.service.ts`,
-  `character.dto.ts`.
+  `character.dto.ts`, `arrive-response.dto.ts`.
 - **Reason**: TypeScript's legacy decorator emission (`__esDecorate`) for these patterns compiles to a
   branch in the output JS that only ever resolves one way at runtime. This project's coverage collector
   (ts-jest via the Nx Jest preset) reports it as an uncovered branch regardless of test coverage of the
@@ -58,7 +58,7 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
   0-40% because v8's bytecode-level instrumentation counts decorator/interface scaffolding differently
   than istanbul does. Reverted. Per-file overrides remain the right tool for this project; not
   revisiting this again without a concrete new instrumenter to try, not just "swap providers and see."
-- **Status**: eight per-file overrides as of this writing. Accepted as this project's steady-state
+- **Status**: nine per-file overrides as of this writing. Accepted as this project's steady-state
   pattern for NestJS decorator-heavy files — add one per new file as needed, no further investigation
   planned.
 

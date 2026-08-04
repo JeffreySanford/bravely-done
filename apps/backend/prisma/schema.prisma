@@ -38,6 +38,14 @@ model Character {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  /// Set true the first time this character reaches Base Camp — gates the
+  /// one-time tent-erect animation (see documentation/product/base-camp.md).
+  hasArrivedAtCamp Boolean @default(false)
+  /// Bridge repair progress from the first construction arc (see planning/
+  /// 02-base-camp-animations.md). Advanced by completing mock quests until
+  /// the mock-quest system exists for real.
+  campConstructionStage Int @default(0)
+
   @@map("characters")
 }
 

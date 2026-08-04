@@ -15,5 +15,23 @@
     }
   </header>
 
-  <a routerLink="/characters" class="bd-button bd-button--ghost stage__back">Back to characters</a>
+  <div class="stage__footer">
+    <div class="bridge-status">
+      <p class="bridge-status__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
+      <button
+        type="button"
+        class="bd-button"
+        [disabled]="advancingBridge() || constructionStage() >= maxConstructionStage"
+        (click)="completeMockQuest()"
+      >
+        @if (constructionStage() >= maxConstructionStage) {
+          Bridge repaired
+        } @else {
+          Complete a mock quest
+        }
+      </button>
+    </div>
+
+    <a routerLink="/characters" class="bd-button bd-button--ghost stage__back">Back to characters</a>
+  </div>
 </div>

@@ -2,6 +2,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { of } from 'rxjs';
 import { CharacterApiService } from '../../core/character-api.service';
+import { AnimationDirector } from '../../game-rendering/animation-director';
 
 // Module-level mocks so `isWebglAvailable()` (evaluated at class-field
 // initialization time) reports true here, letting us verify the renderer
@@ -30,7 +31,20 @@ describe('BaseCamp (WebGL available)', () => {
       imports: [BaseCamp],
       providers: [
         provideRouter([]),
-        { provide: CharacterApiService, useValue: { list: jest.fn().mockReturnValue(of([])) } },
+        {
+          provide: CharacterApiService,
+          useValue: {
+            arrive: jest.fn().mockReturnValue(
+              of({
+                firstArrival: true,
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0 },
+              }),
+            ),
+            completeMockQuest: jest.fn().mockReturnValue(
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1 }),
+            ),
+          },
+        },
         {
           provide: ActivatedRoute,
           useValue: { snapshot: { paramMap: convertToParamMap({ characterId: 'c1' }) } },
@@ -55,5 +69,16 @@ describe('BaseCamp (WebGL available)', () => {
     fixture.destroy();
 
     expect(mockDispose).toHaveBeenCalledTimes(1);
+  });
+
+  it('dispatches a questCompleted event to the scene director on completeMockQuest', () => {
+    const dispatchSpy = jest.spyOn(AnimationDirector.prototype, 'dispatch');
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+
+    fixture.componentInstance.completeMockQuest();
+
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'questCompleted', constructionStage: 1 });
+    dispatchSpy.mockRestore();
   });
 });

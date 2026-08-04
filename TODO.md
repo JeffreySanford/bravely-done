@@ -53,19 +53,28 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 
 - [x] Add Three.js and a renderer lifecycle service (shared with character select).
 - [x] Render a primitive Base Camp: ground, lighting, an animated campfire (flame, embers, flickering
-      light), and a tent that erects on arrival. Reachable at `/basecamp/:characterId` — clicking a
-      character on character select, or finishing character creation, lands the character's avatar in
-      Base Camp. Verified via a 3-engine Playwright e2e journey covering both entry paths.
-- [ ] Add companion placeholder, quest board, chest, treasury, and bridge.
+      light, client-side fuel decay), and a tent that erects on arrival. Reachable at
+      `/basecamp/:characterId` — clicking a character on character select, or finishing character
+      creation, lands the character's avatar in Base Camp. Verified via a 3-engine Playwright e2e
+      journey covering both entry paths.
+- [x] Add companion placeholder, quest board, chest, treasury, and bridge landmarks. Workbench still
+      open.
 - [x] Add ambient animation and full/reduced/minimal motion modes (reuses the character-select scene's
       motion-mode plumbing).
-- [ ] Add animation director driven by domain events.
-- [ ] Gate the tent-erect animation to a character's true first-ever arrival (currently replays on
-      every visit — needs durable per-character camp state, not just the rendering piece).
-- [ ] Add choppable trees, foraging spots, wandering animals, and an animated stream/lake (see
-      [Plan 02](planning/02-base-camp-animations.md)'s resource/survival loop).
-- [ ] Complete one mock quest and visibly upgrade the camp.
-- [ ] Persist and restore the upgrade through the API/PostgreSQL.
+- [x] Add a minimal animation director (`AnimationDirector`/`AnimationSequence`) driven by domain
+      events — arrival and mock-quest-completion are wired; more events (quest accepted, sprint states,
+      loot) are still open.
+- [x] Gate the tent-erect animation to a character's true first-ever arrival: backend
+      `Character.hasArrivedAtCamp` (`POST /characters/:id/arrive`) is the source of truth, not client
+      state — verified live (arrive, reload, confirm no replay).
+- [ ] Add chopping/harvesting interaction and real firewood/resource tracking for the tree, foraging,
+      and stream landmarks (they exist visually now — see
+      [Plan 02](planning/02-base-camp-animations.md)'s resource loop; interaction is the next slice).
+- [x] Complete one mock quest and visibly upgrade the camp: `POST /characters/:id/complete-mock-quest`
+      advances `Character.campConstructionStage`, and the bridge visibly repairs one plank per
+      completion up to fully repaired.
+- [x] Persist and restore the upgrade through the API/PostgreSQL — verified live (complete quests,
+      reload the page, confirm the repaired stage survives).
 - [ ] Establish Android performance budgets before adding complex assets.
 
 ## Next: First Brave Step

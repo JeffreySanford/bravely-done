@@ -17,32 +17,47 @@
 
 - [x] Camera and safe UI zones for the real HTML header/back-link (see the interaction rule).
 - [x] Ground and simple lighting (`apps/frontend/src/app/pages/base-camp/base-camp-scene.ts`).
-- [x] Campfire: animated fire (flame flicker, rising embers, warm flickering point light). Not yet
-      done: a fuel state that dims toward embers over time and is replenished by chopped firewood —
-      that depends on the resource-gathering loop below.
-- [ ] Companion placeholder idle animation.
-- [ ] Quest Board, chest, treasury, workbench, bridge, and path.
-- [x] MVP tent: a tent mesh scales up ("erects") once per page load when a character arrives at
-      `/basecamp/:characterId`. Not yet done: gating this to a character's true *first-ever* arrival
-      (currently persisted nowhere, so it replays on every visit) and one tent per character
-      simultaneously visible — both need the durable camp/character state this plan's later milestones
-      bring in, not just the rendering piece.
-- [ ] Choppable trees: chop animation, tree falls, produces firewood/log pickups, leaves a stump.
-- [ ] Foraging spots and wandering animals: harvestable plants/bushes and randomly-spawning animals
-      that can be gathered for survival resources (see the product doc's resource loop).
-- [ ] Animated freshwater stream or lake (flowing/rippling water shader, not a static plane) as the
-      camp's water source and visual anchor.
+- [x] Campfire: animated fire (flame flicker, rising embers, warm flickering point light) with a
+      client-side fuel state that ramps down toward embers-only over time and loops. Not yet backed by
+      a real firewood system — see "Resource loop" below.
+- [x] Companion placeholder: an idle, bobbing, slowly-rotating landmark near the fire.
+- [x] Quest Board, chest, treasury, and bridge landmarks. Workbench still open.
+- [x] Per-character tent gated to true first-ever arrival: `Character.hasArrivedAtCamp` (backend,
+      `POST /characters/:id/arrive`) is checked before the scene is built, and the erect animation only
+      plays when this is the character's first arrival. Returning visits render the tent already
+      erected. Verified live via a 3-engine Playwright e2e run (arrive once, reload, confirm no replay
+      of the erect animation logic — the backend flag, not client state, is authoritative).
+- [ ] Choppable trees: visual tree landmarks exist; chopping interaction and firewood pickups are not
+      built yet (see "Resource loop").
+- [ ] Foraging spots and wandering animals: a static foraging-bush landmark exists; harvesting
+      interaction and wandering-animal spawns are not built yet.
+- [x] Animated freshwater stream: a rippling vertex-displaced water plane. Not yet a lake shape or a
+      harvestable resource — visual anchor only, as scoped in the product doc.
 - [ ] Render a serialized CampSnapshot.
+
+## Resource loop (visual landmarks only, this pass)
+
+Trees, the foraging bush, and the stream currently exist as static/ambient scene landmarks with no
+interaction or backend resource tracking — that's the next slice of this plan, not yet started:
+
+- [ ] Chop a tree → firewood pickup → feeds the campfire's fuel state for real (replacing the current
+      client-only decay loop).
+- [ ] Harvest the foraging bush / wandering animals → tracked resource yield.
+- [ ] Persist harvested/gathered resources per character.
 
 ## Animation director
 
-- [ ] Define AnimationPlan contract.
-- [ ] Player returned.
-- [ ] Tent erection (first arrival for a given character only).
+- [x] Define a minimal `AnimationDirector`/`AnimationSequence` contract
+      (`apps/frontend/src/app/game-rendering/animation-director.ts`) — sequences register with a
+      director and react to typed domain events via `dispatch()`.
+- [x] Player returned (tent sequence — resolved by firstArrival at construction time).
+- [x] Tent erection (first arrival for a given character only — gated by backend state, see above).
 - [ ] Quest accepted.
 - [ ] Sprint started and calm focus.
-- [ ] Quest completed common.
-- [ ] XP, coins, loot, and construction.
+- [x] Quest completed (mock): `BridgeSequence` reacts to a `questCompleted` event, reveals the next
+      bridge plank, and pulses it — driven by real backend state
+      (`POST /characters/:id/complete-mock-quest`), not a fake trigger.
+- [ ] XP, coins, loot reveal.
 - [ ] Resource gathering: chop tree, harvest plant, catch animal.
 - [ ] Continue, split, retreat, and comeback.
 - [ ] Skip safely to final state.
@@ -58,4 +73,9 @@
 
 ## Acceptance
 
-- [ ] Completing one mock quest permanently advances one camp construction state in browser and Android, with equivalent rewards in all motion modes.
+- [x] Completing one mock quest permanently advances one camp construction state in browser, with
+      equivalent rewards in all motion modes — verified live: a real Playwright e2e run completes three
+      mock quests via `/characters/:id/complete-mock-quest`, confirms the bridge-repair counter advances
+      and the "Bridge repaired" state is reached, then reloads the page and confirms the stage persisted
+      (backed by Postgres, not client state). Android verification is not yet done — no Capacitor
+      packaging exists yet (see later milestones in `TODO.md`).

@@ -82,22 +82,28 @@ jobs:
       - name: Run backend and frontend end-to-end tests
         shell: bash
         run: |
-          # The backend must stay up across both e2e suites below: the
-          # frontend suite's signup/character-creation journey depends on it
-          # just as much as the backend suite does. Starting/killing it once
-          # here (instead of per-step) avoids a step boundary silently
-          # tearing down a server the next step still needs.
-          pnpm exec nx serve @org/backend > /tmp/bravely-backend.log 2>&1 &
-          backend_pid=$!
+          # backend-e2e's own Nx-generated global-teardown unconditionally
+          # kills whatever is listening on :3000 once its suite finishes
+          # (apps/backend-e2e/src/support/global-teardown.ts), regardless of
+          # who started it. So the backend has to be (re)started before each
+          # suite that needs it, not just once up front.
+          start_backend() {
+            pnpm exec nx serve @org/backend > /tmp/bravely-backend.log 2>&1 &
+            backend_pid=$!
+            for attempt in {1..60}; do
+              if curl --silent --fail http://localhost:3000/api > /dev/null; then
+                return 0
+              fi
+              sleep 1
+            done
+            return 1
+          }
           trap 'kill "$backend_pid" 2>/dev/null || true; cat /tmp/bravely-backend.log' EXIT
 
-          for attempt in {1..60}; do
-            if curl --silent --fail http://localhost:3000/api > /dev/null; then
-              break
-            fi
-            sleep 1
-          done
-
+          start_backend
           curl --fail http://localhost:3000/api
           pnpm exec nx run @org/backend-e2e:e2e-ci
+
+          start_backend
+          curl --fail http://localhost:3000/api
           pnpm exec nx run frontend-e2e:e2e

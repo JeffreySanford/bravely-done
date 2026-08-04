@@ -87,6 +87,10 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       completion up to fully repaired.
 - [x] Persist and restore the upgrade through the API/PostgreSQL — verified live (create and complete
       quests, reload the page, confirm the quest list and repaired stage both survive).
+- [x] Polish scene lighting/atmosphere (2026-08-04): a hemisphere + directional fill light, fog, and a
+      warm ground-glow decal under the campfire replace the original flat ambient light — the ground
+      and every non-emissive landmark (trees, tent, chest, treasury) now actually read as lit shapes
+      instead of near-black silhouettes. No new mechanics — a deliberate polish-only pass.
 - [ ] Establish Android performance budgets before adding complex assets.
 
 ## Next: First Brave Step

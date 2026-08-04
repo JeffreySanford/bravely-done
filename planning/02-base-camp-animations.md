@@ -16,7 +16,11 @@
 ## First environment
 
 - [x] Camera and safe UI zones for the real HTML header/back-link (see the interaction rule).
-- [x] Ground and simple lighting (`apps/frontend/src/app/pages/base-camp/base-camp-scene.ts`).
+- [x] Ground and lighting (`apps/frontend/src/app/pages/base-camp/base-camp-scene.ts`) — a hemisphere
+      light (cool "sky" fading to a warm "ground" bounce) plus a directional fill light, fog for depth,
+      and a canvas-texture warm glow decal under the campfire. The original flat single ambient light
+      left the ground and every non-emissive landmark reading as near-black silhouettes; this pass
+      (2026-08-04) was a deliberate polish-only pass with no new mechanics, prompted by that feedback.
 - [x] Campfire: animated fire (flame flicker, rising embers, warm flickering point light) with a real
       fuel reserve — each chopped log buys a fixed number of seconds of full flame; once the reserve
       runs out and no more logs are available, the fire settles to embers-only until the player chops

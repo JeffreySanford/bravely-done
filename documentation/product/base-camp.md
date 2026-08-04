@@ -78,7 +78,10 @@ A first real pass of Base Camp exists at `/basecamp/:characterId`
 (`apps/frontend/src/app/pages/base-camp/`), reached from character creation (first arrival) and from
 character select (return visits):
 
-- **Built**: ground and lighting, an animated campfire with a real fuel reserve (each chopped log buys
+- **Built**: ground and atmospheric lighting (hemisphere + directional fill light, fog, a warm ground
+  glow under the fire — a deliberate 2026-08-04 polish pass so landmarks read as actual lit shapes
+  rather than near-black silhouettes), an animated campfire with a real fuel reserve (each chopped log
+  buys
   a fixed number of seconds of flame; every arrival also gets a free base burn so the fire is never
   unlit just because a character hasn't chopped anything yet; the fire settles to embers-only once
   the reserve runs out), a companion placeholder, clickable trees and a clickable foraging bush (real

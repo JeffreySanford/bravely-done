@@ -81,12 +81,21 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       camera.position.set(0, 4.2, 12);
       camera.lookAt(0, 0.6, -1);
 
-      ctx.scene.add(new THREE.AmbientLight(0x141c33, 1.1));
-      const moon = new THREE.PointLight(VIOLET, 2, 40);
+      // A hemisphere light (cool violet "sky" fading to a dim warm
+      // "ground" bounce) reads far more like a real night camp than a
+      // single flat ambient value — it's what makes the ground, tent, and
+      // other non-emissive landmarks visible as actual shapes instead of
+      // silhouettes. The moon fill light adds real directional shading on
+      // top of that.
+      ctx.scene.add(new THREE.HemisphereLight(0x3a3f7a, 0x1a120c, 1.6));
+      const moon = new THREE.DirectionalLight(VIOLET, 1.2);
       moon.position.set(-6, 8, -4);
       ctx.scene.add(moon);
 
+      ctx.scene.fog = new THREE.Fog(0x05070d, 10, 26);
+
       ctx.scene.add(buildGround());
+      ctx.scene.add(buildGroundGlow());
 
       campfireSequence = new CampfireSequence(options.initialFirewoodCount);
       ctx.scene.add(campfireSequence.group);
@@ -406,13 +415,45 @@ class BridgeSequence implements AnimationSequence {
 function buildGround(): THREE.Mesh {
   const geometry = new THREE.CircleGeometry(14, 48);
   const material = new THREE.MeshStandardMaterial({
-    color: 0x0a1220,
-    roughness: 0.9,
-    metalness: 0.1,
+    color: 0x121b2e,
+    roughness: 0.85,
+    metalness: 0.15,
   });
   const ground = new THREE.Mesh(geometry, material);
   ground.rotation.x = -Math.PI / 2;
   return ground;
+}
+
+/** A soft warm decal on the ground under the campfire — built from a
+ * canvas radial-gradient texture rather than relying on point-light
+ * falloff alone, so the "fire lights up the camp" feeling reads clearly
+ * even at the campfire's low ambient fuel floor. */
+function buildGroundGlow(): THREE.Mesh {
+  const canvas = document.createElement('canvas');
+  canvas.width = 256;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  if (ctx) {
+    const gradient = ctx.createRadialGradient(128, 128, 0, 128, 128, 128);
+    gradient.addColorStop(0, 'rgba(255, 138, 61, 0.55)');
+    gradient.addColorStop(0.5, 'rgba(255, 122, 61, 0.18)');
+    gradient.addColorStop(1, 'rgba(255, 122, 61, 0)');
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, 256, 256);
+  }
+  const texture = new THREE.CanvasTexture(canvas);
+
+  const geometry = new THREE.PlaneGeometry(9, 9);
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    transparent: true,
+    depthWrite: false,
+    blending: THREE.AdditiveBlending,
+  });
+  const glow = new THREE.Mesh(geometry, material);
+  glow.rotation.x = -Math.PI / 2;
+  glow.position.y = 0.02;
+  return glow;
 }
 
 function buildCampfire(): { group: THREE.Group; light: THREE.PointLight; flame: THREE.Mesh; embers: THREE.Points } {

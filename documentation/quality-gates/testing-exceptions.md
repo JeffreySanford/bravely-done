@@ -82,21 +82,21 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
 ## OPEN-004 — Three.js/WebGL scene code can't be unit-tested in jsdom
 
 - **Area**: `apps/frontend/src/app/game-rendering/renderer-lifecycle.ts` (real `THREE.WebGLRenderer`,
-  `ResizeObserver`, render-loop construction) and `apps/frontend/src/app/pages/character-list/
-  character-select-scene.ts` (real Three.js scene-graph object construction: geometries, materials,
-  lights).
+  `ResizeObserver`, render-loop construction), `apps/frontend/src/app/pages/character-list/
+  character-select-scene.ts`, and `apps/frontend/src/app/pages/base-camp/base-camp-scene.ts` (real
+  Three.js scene-graph object construction: geometries, materials, lights).
 - **Reason**: jsdom has no WebGL implementation. Constructing a real `THREE.WebGLRenderer` against a
   jsdom canvas either throws or silently no-ops depending on the mock shape, and there's no way to
   meaningfully assert "the scene looks right" without an actual GPU-backed rendering context. Everything
   *around* this — motion-mode detection, WebGL-availability detection, and the component-level wiring
   that constructs `RendererLifecycle` and calls `.start()`/`.dispose()` — **is** unit-tested (via
-  `jest.mock` on these two modules; see `character-list.webgl-available.spec.ts`). Only the actual
-  WebGL/Three.js internals are excluded.
+  `jest.mock` on these modules; see `character-list.webgl-available.spec.ts` and `base-camp
+  .webgl-available.spec.ts`). Only the actual WebGL/Three.js internals are excluded.
 - **Mitigation**: Real, automated compensating evidence, not just a documented gap — `apps/frontend-e2e/
-  src/character-select.spec.ts` runs a full signup → character-creation → character-select journey
-  through three actual browser engines (Chromium, Firefox, WebKit), asserting that whichever rendering
-  path the app takes (WebGL canvas or the CSS grid-veil fallback) mounts correctly and that no
-  unexpected console errors occur. This is the same "e2e for what can't be meaningfully faked with
+  src/character-select.spec.ts` runs a full signup → character-creation → Base Camp → character-select
+  → Base Camp journey through three actual browser engines (Chromium, Firefox, WebKit), asserting that
+  whichever rendering path the app takes (WebGL canvas or the CSS grid-veil fallback) mounts correctly
+  on both scenes and that no unexpected console errors occur. This is the same "e2e for what can't be meaningfully faked with
   mocks" principle the testing gate already states, applied to rendering specifically. Per-file
   `jest.config.cts` overrides set to the files' actual achievable percentage (the wiring code coverage
   that leaks through from other tests), not zero.

@@ -36,9 +36,9 @@ export class CharacterCreate {
     const { name } = this.form.getRawValue();
 
     this.characters.create({ name }).subscribe({
-      next: () => {
+      next: (character) => {
         this.created.set(true);
-        setTimeout(() => this.router.navigateByUrl('/characters'), 900);
+        setTimeout(() => this.router.navigateByUrl(`/basecamp/${character.id}`), 900);
       },
       error: () => {
         this.submitting.set(false);

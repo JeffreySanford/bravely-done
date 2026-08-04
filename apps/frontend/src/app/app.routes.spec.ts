@@ -29,7 +29,7 @@ describe('appRoutes', () => {
   });
 
   it('guards authenticated routes and lazy-loads their components', async () => {
-    for (const path of ['characters/new', 'characters']) {
+    for (const path of ['characters/new', 'characters', 'basecamp/:characterId']) {
       const route = findRoute(path);
       expect(route.canActivate).toEqual([authGuard]);
       const component = await route.loadComponent?.();

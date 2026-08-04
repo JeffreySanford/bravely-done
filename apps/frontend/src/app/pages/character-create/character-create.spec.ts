@@ -25,7 +25,7 @@ describe('CharacterCreate', () => {
     expect(create).not.toHaveBeenCalled();
   });
 
-  it('shows the success state then navigates to /characters', () => {
+  it('shows the success state then navigates to Base Camp for the new character', () => {
     jest.useFakeTimers();
     const create = jest.fn().mockReturnValue(of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01' }));
     const { component, router } = setup({ create });
@@ -38,7 +38,7 @@ describe('CharacterCreate', () => {
     expect(router.navigateByUrl).not.toHaveBeenCalled();
 
     jest.advanceTimersByTime(900);
-    expect(router.navigateByUrl).toHaveBeenCalledWith('/characters');
+    expect(router.navigateByUrl).toHaveBeenCalledWith('/basecamp/c1');
     jest.useRealTimers();
   });
 

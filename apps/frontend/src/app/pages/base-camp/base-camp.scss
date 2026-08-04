@@ -1,0 +1,69 @@
+:host {
+  display: block;
+}
+
+.stage {
+  min-height: 100dvh;
+  padding: 56px 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+.stage__canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+/* CSS fallback when WebGL isn't available — same visual family as the
+   canvas, just static. */
+.grid-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 0%, black, transparent 75%);
+}
+
+.stage__header {
+  position: relative;
+  text-align: center;
+  max-width: 520px;
+  margin-bottom: 44px;
+  animation: bd-rise-in 0.5s ease both;
+}
+
+.stage__mark {
+  display: inline-block;
+  font-family: var(--bd-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--bd-cyan);
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+.stage__header h1 {
+  margin: 0 0 10px;
+  font-size: 30px;
+}
+
+.stage__subtitle {
+  margin: 0;
+  color: var(--bd-text-muted);
+  font-size: 14px;
+}
+
+.stage__back {
+  position: relative;
+  margin-top: auto;
+  max-width: 200px;
+}

@@ -1,13 +1,39 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 
 /**
- * Full authenticated journey through to the Three.js character-select scene.
- * This is the real compensating evidence for game-rendering/ and
- * character-select-scene.ts — WebGL can't be meaningfully exercised in
- * jsdom unit tests (see testing-exceptions.md OPEN-004), but a real browser
- * here genuinely renders it.
+ * Full authenticated journey from signup through to a rendered Base Camp:
+ * signup → character creation → Base Camp (first arrival) → character
+ * select → Base Camp again (returning). This is the real compensating
+ * evidence for game-rendering/, character-select-scene.ts, and
+ * base-camp-scene.ts — WebGL can't be meaningfully exercised in jsdom unit
+ * tests (see testing-exceptions.md OPEN-004), but a real browser here
+ * genuinely renders it.
  */
-test('signup through to a rendered character-select scene', async ({ page }) => {
+
+// WebGL is available in Chromium (bundled SwiftShader) and WebKit's own
+// software path, so the canvas (not the CSS grid-veil fallback) is what
+// should mount there. Headless Firefox on a GPU-less CI runner has no
+// software WebGL rasterizer available even with webgl.force-enabled set
+// (see playwright.config.mts) - isWebglAvailable() then correctly reports
+// false and the app correctly renders the grid-veil fallback instead,
+// which is the intended graceful-degradation behavior, not a bug. Assert
+// on whichever path this engine/environment actually produces, rather
+// than forcing Firefox down a path its CI environment can't support.
+async function expectSceneMounted(page: Page): Promise<void> {
+  const canvas = page.locator('canvas.stage__canvas');
+  const fallback = page.locator('.grid-veil');
+
+  const canvasVisible = await canvas.isVisible().catch(() => false);
+  if (canvasVisible) {
+    const box = await canvas.boundingBox();
+    expect(box?.width).toBeGreaterThan(0);
+    expect(box?.height).toBeGreaterThan(0);
+  } else {
+    await expect(fallback).toBeAttached();
+  }
+}
+
+test('signup through to a rendered Base Camp, and back again via character select', async ({ page }) => {
   // The app initializer always calls GET /auth/me on load to check for an
   // existing cookie session (see restoreSessionInitializer); a fresh visitor
   // with no session correctly gets a 401 there, which the app handles
@@ -38,29 +64,24 @@ test('signup through to a rendered character-select scene', async ({ page }) => 
   await page.getByLabel('Character name').fill('Ember Scout');
   await page.getByRole('button', { name: 'Create character' }).click();
 
+  // A brand-new character lands directly in Base Camp — this is the tent's
+  // first-arrival moment (see documentation/product/base-camp.md).
+  await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
+  await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
+  await expectSceneMounted(page);
+
+  await page.getByRole('link', { name: 'Back to characters' }).click();
+
   await expect(page.getByRole('heading', { name: 'Choose your character' })).toBeVisible();
   await expect(page.getByText('Ember Scout')).toBeVisible();
+  await expectSceneMounted(page);
 
-  // WebGL is available in Chromium (bundled SwiftShader) and WebKit's own
-  // software path, so the canvas (not the CSS grid-veil fallback) is what
-  // should mount there. Headless Firefox on a GPU-less CI runner has no
-  // software WebGL rasterizer available even with webgl.force-enabled set
-  // (see playwright.config.mts) - isWebglAvailable() then correctly
-  // reports false and the app correctly renders the grid-veil fallback
-  // instead, which is the intended graceful-degradation behavior, not a
-  // bug. Assert on whichever path this engine/environment actually
-  // produces, rather than forcing Firefox down a path its CI environment
-  // can't support.
-  const canvas = page.locator('canvas.stage__canvas');
-  const fallback = page.locator('.grid-veil');
+  // Returning to Base Camp via character select (not just via creation).
+  await page.getByRole('link', { name: 'Ember Scout' }).click();
 
-  if (await canvas.isVisible().catch(() => false)) {
-    const box = await canvas.boundingBox();
-    expect(box?.width).toBeGreaterThan(0);
-    expect(box?.height).toBeGreaterThan(0);
-  } else {
-    await expect(fallback).toBeAttached();
-  }
+  await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
+  await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
+  await expectSceneMounted(page);
 
   expect(consoleErrors).toEqual([]);
 });

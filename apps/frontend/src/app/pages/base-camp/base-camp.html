@@ -1,0 +1,19 @@
+<div class="stage">
+  @if (renderScene) {
+    <canvas #sceneCanvas class="stage__canvas" aria-hidden="true"></canvas>
+  } @else {
+    <div class="grid-veil" aria-hidden="true"></div>
+  }
+
+  <header class="stage__header">
+    <span class="stage__mark">BRAVELY DONE</span>
+    <h1>Base Camp</h1>
+    @if (characterName(); as name) {
+      <p class="stage__subtitle">{{ name }} has arrived.</p>
+    } @else {
+      <p class="stage__subtitle">Welcome back.</p>
+    }
+  </header>
+
+  <a routerLink="/characters" class="bd-button bd-button--ghost stage__back">Back to characters</a>
+</div>

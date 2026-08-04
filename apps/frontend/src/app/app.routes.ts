@@ -25,5 +25,10 @@ export const appRoutes: Route[] = [
     loadComponent: () =>
       import('./pages/character-list/character-list').then((m) => m.CharacterList),
   },
+  {
+    path: 'basecamp/:characterId',
+    canActivate: [authGuard],
+    loadComponent: () => import('./pages/base-camp/base-camp').then((m) => m.BaseCamp),
+  },
   { path: '**', redirectTo: 'login' },
 ];

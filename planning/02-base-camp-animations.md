@@ -4,25 +4,29 @@
 
 ## Scene foundation
 
-- [ ] Create game-rendering and game-animation boundaries.
-- [ ] Create renderer lifecycle independent of Angular component internals.
-- [ ] Mount/destroy without leaks.
-- [ ] Clamp pixel ratio and resize to container.
-- [ ] Pause while hidden.
+- [x] Create game-rendering and game-animation boundaries (`apps/frontend/src/app/game-rendering/`,
+      shared by character-select and Base Camp).
+- [x] Create renderer lifecycle independent of Angular component internals (`RendererLifecycle`).
+- [x] Mount/destroy without leaks.
+- [x] Clamp pixel ratio and resize to container.
+- [x] Pause while hidden.
 - [ ] Add deterministic seed and animation time scale.
-- [ ] Support full, reduced, and minimal motion.
+- [x] Support full, reduced, and minimal motion.
 
 ## First environment
 
-- [ ] Portrait camera and safe UI zones.
-- [ ] Ground, background, and simple lighting.
-- [ ] Campfire: real animated fire (flame, embers, smoke, warm point light), with a fuel state that
-      dims toward embers over time and is replenished by chopped firewood.
+- [x] Camera and safe UI zones for the real HTML header/back-link (see the interaction rule).
+- [x] Ground and simple lighting (`apps/frontend/src/app/pages/base-camp/base-camp-scene.ts`).
+- [x] Campfire: animated fire (flame flicker, rising embers, warm flickering point light). Not yet
+      done: a fuel state that dims toward embers over time and is replenished by chopped firewood —
+      that depends on the resource-gathering loop below.
 - [ ] Companion placeholder idle animation.
 - [ ] Quest Board, chest, treasury, workbench, bridge, and path.
-- [ ] Per-character tents: not present until that character's first arrival, then erected via a short
-      animated sequence (canvas unfurl, stakes driven in) and persisted as a permanent camp landmark.
-      One tent per character on the account, not per account.
+- [x] MVP tent: a tent mesh scales up ("erects") once per page load when a character arrives at
+      `/basecamp/:characterId`. Not yet done: gating this to a character's true *first-ever* arrival
+      (currently persisted nowhere, so it replays on every visit) and one tent per character
+      simultaneously visible — both need the durable camp/character state this plan's later milestones
+      bring in, not just the rendering piece.
 - [ ] Choppable trees: chop animation, tree falls, produces firewood/log pickups, leaves a stump.
 - [ ] Foraging spots and wandering animals: harvestable plants/bushes and randomly-spawning animals
       that can be gathered for survival resources (see the product doc's resource loop).

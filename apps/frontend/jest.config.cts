@@ -33,6 +33,12 @@ module.exports = {
       lines: 14,
       statements: 13,
     },
+    '**/base-camp-scene.ts': {
+      branches: 0,
+      functions: 10,
+      lines: 8,
+      statements: 8,
+    },
   },
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [

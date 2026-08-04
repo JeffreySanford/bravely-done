@@ -51,11 +51,19 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 
 ## Next: Base Camp Alive
 
-- [ ] Add Three.js and a renderer lifecycle service.
-- [ ] Render a primitive portrait Base Camp.
-- [ ] Add campfire, companion placeholder, quest board, chest, treasury, and bridge.
-- [ ] Add ambient animation and full/reduced/minimal motion modes.
+- [x] Add Three.js and a renderer lifecycle service (shared with character select).
+- [x] Render a primitive Base Camp: ground, lighting, an animated campfire (flame, embers, flickering
+      light), and a tent that erects on arrival. Reachable at `/basecamp/:characterId` — clicking a
+      character on character select, or finishing character creation, lands the character's avatar in
+      Base Camp. Verified via a 3-engine Playwright e2e journey covering both entry paths.
+- [ ] Add companion placeholder, quest board, chest, treasury, and bridge.
+- [x] Add ambient animation and full/reduced/minimal motion modes (reuses the character-select scene's
+      motion-mode plumbing).
 - [ ] Add animation director driven by domain events.
+- [ ] Gate the tent-erect animation to a character's true first-ever arrival (currently replays on
+      every visit — needs durable per-character camp state, not just the rendering piece).
+- [ ] Add choppable trees, foraging spots, wandering animals, and an animated stream/lake (see
+      [Plan 02](planning/02-base-camp-animations.md)'s resource/survival loop).
 - [ ] Complete one mock quest and visibly upgrade the camp.
 - [ ] Persist and restore the upgrade through the API/PostgreSQL.
 - [ ] Establish Android performance budgets before adding complex assets.

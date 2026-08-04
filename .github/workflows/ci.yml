@@ -86,11 +86,19 @@ jobs:
           # kills whatever is listening on :3000 once its suite finishes
           # (apps/backend-e2e/src/support/global-teardown.ts), regardless of
           # who started it. So the backend has to be (re)started before each
-          # suite that needs it, not just once up front.
+          # suite that needs it, not just once up front. The prior backend
+          # process is explicitly killed (not just left to killPort) before
+          # restarting, since a still-running `nx serve` from the first
+          # start can otherwise contend with the second and slow its build/
+          # boot past a short retry budget.
           start_backend() {
+            if [ -n "${backend_pid:-}" ]; then
+              kill "$backend_pid" 2>/dev/null || true
+              wait "$backend_pid" 2>/dev/null || true
+            fi
             pnpm exec nx serve @org/backend > /tmp/bravely-backend.log 2>&1 &
             backend_pid=$!
-            for attempt in {1..60}; do
+            for attempt in {1..120}; do
               if curl --silent --fail http://localhost:3000/api > /dev/null; then
                 return 0
               fi

@@ -16,6 +16,13 @@ describe('Quest resolution (integration)', () => {
     return { client, characterId, questId: quest.data.id };
   }
 
+  // Every test here signs up a fresh character, so its very first completion
+  // always also earns the Daily reward loop's First Brave Step bonus
+  // (FIRST_BRAVE_STEP_XP_REWARD = 10 / COIN = 5) on top of QUEST_XP_REWARD =
+  // 20 / QUEST_COIN_REWARD = 10 — hence 30/15, not 20/10.
+  const FIRST_COMPLETION_XP = 30;
+  const FIRST_COMPLETION_COINS = 15;
+
   it('completes a quest and grants deterministic XP/coins', async () => {
     const { client, questId } = await createQuest('Complete me');
 
@@ -23,8 +30,10 @@ describe('Quest resolution (integration)', () => {
 
     expect(res.status).toBe(201);
     expect(res.data.quest.status).toBe('COMPLETED');
-    expect(res.data.character.xp).toBe(20);
-    expect(res.data.character.coins).toBe(10);
+    expect(res.data.character.xp).toBe(FIRST_COMPLETION_XP);
+    expect(res.data.character.coins).toBe(FIRST_COMPLETION_COINS);
+    expect(res.data.firstBraveStepBonusGranted).toBe(true);
+    expect(res.data.todaysThreeBonusGranted).toBe(false);
   });
 
   it('does not grant a reward twice for a repeat complete call', async () => {
@@ -33,8 +42,8 @@ describe('Quest resolution (integration)', () => {
     await client.post(`/api/quests/${questId}/complete`, {});
     const res = await client.post(`/api/quests/${questId}/complete`, {});
 
-    expect(res.data.character.xp).toBe(20);
-    expect(res.data.character.coins).toBe(10);
+    expect(res.data.character.xp).toBe(FIRST_COMPLETION_XP);
+    expect(res.data.character.coins).toBe(FIRST_COMPLETION_COINS);
   });
 
   it('splits a quest for half credit and leaves it resolved', async () => {
@@ -83,8 +92,8 @@ describe('Quest resolution (integration)', () => {
     await client.post(`/api/quests/${questId}/complete`, { idempotencyKey: 'int-key-complete' });
     const retry = await client.post(`/api/quests/${questId}/complete`, { idempotencyKey: 'int-key-complete' });
 
-    expect(retry.data.character.xp).toBe(20);
-    expect(retry.data.character.coins).toBe(10);
+    expect(retry.data.character.xp).toBe(FIRST_COMPLETION_XP);
+    expect(retry.data.character.coins).toBe(FIRST_COMPLETION_COINS);
   });
 
   it('rejects a resolution call for a quest not owned by the caller', async () => {

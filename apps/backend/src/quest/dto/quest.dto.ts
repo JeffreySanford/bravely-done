@@ -22,4 +22,12 @@ export class QuestDto {
 
   @ApiProperty({ type: Date, required: false, nullable: true })
   lastContinuedAt!: Date | null;
+
+  /// Whether this quest is currently designated as one of today's (UTC)
+  /// "Today's Three" (rewards-retention.md's Daily cadence) — computed
+  /// server-side from Quest.todaysThreeDay against the current UTC day, not
+  /// exposed as a raw date so the client never has to do its own day-
+  /// boundary math.
+  @ApiProperty()
+  isTodaysThree!: boolean;
 }

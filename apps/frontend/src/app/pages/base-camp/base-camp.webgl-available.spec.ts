@@ -93,6 +93,8 @@ describe('BaseCamp (WebGL available)', () => {
               of({
                 quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
                 character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, firewoodCount: 2, forageCount: 1, xp: 20, coins: 10 },
+                firstBraveStepBonusGranted: false,
+                todaysThreeBonusGranted: false,
               }),
             ),
             retreat: jest.fn().mockReturnValue(

@@ -1,4 +1,5 @@
 import { Quest } from '../generated/prisma/client';
+import { isSameUtcDay } from '../common/date.util';
 import { QuestDto } from './dto/quest.dto';
 
 export function toQuestDto(quest: Quest): QuestDto {
@@ -10,5 +11,6 @@ export function toQuestDto(quest: Quest): QuestDto {
   dto.createdAt = quest.createdAt;
   dto.completedAt = quest.completedAt;
   dto.lastContinuedAt = quest.lastContinuedAt;
+  dto.isTodaysThree = isSameUtcDay(quest.todaysThreeDay, new Date());
   return dto;
 }

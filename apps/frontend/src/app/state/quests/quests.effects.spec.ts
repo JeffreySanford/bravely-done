@@ -10,7 +10,20 @@ const quest = { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'OPEN' 
 describe('QuestsEffects', () => {
   let actions$: Observable<unknown>;
   let effects: QuestsEffects;
-  let questApi: jest.Mocked<Pick<QuestApiService, 'list' | 'create' | 'start' | 'continue' | 'complete' | 'retreat' | 'split'>>;
+  let questApi: jest.Mocked<
+    Pick<
+      QuestApiService,
+      | 'list'
+      | 'create'
+      | 'start'
+      | 'continue'
+      | 'complete'
+      | 'retreat'
+      | 'split'
+      | 'designateTodaysThree'
+      | 'undesignateTodaysThree'
+    >
+  >;
 
   function setup() {
     TestBed.configureTestingModule({
@@ -32,6 +45,8 @@ describe('QuestsEffects', () => {
       complete: jest.fn(),
       retreat: jest.fn(),
       split: jest.fn(),
+      designateTodaysThree: jest.fn(),
+      undesignateTodaysThree: jest.fn(),
     };
   });
 
@@ -139,7 +154,14 @@ describe('QuestsEffects', () => {
   describe('completeQuest$', () => {
     it('emits completeQuestSuccess with the new construction stage, xp, and coins on success', (done) => {
       const character = { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, xp: 20, coins: 10 };
-      questApi.complete.mockReturnValue(of({ quest: { ...quest, status: 'COMPLETED' as const }, character }));
+      questApi.complete.mockReturnValue(
+        of({
+          quest: { ...quest, status: 'COMPLETED' as const },
+          character,
+          firstBraveStepBonusGranted: true,
+          todaysThreeBonusGranted: false,
+        }),
+      );
       actions$ = of(QuestsActions.completeQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
       setup();
 
@@ -151,6 +173,8 @@ describe('QuestsEffects', () => {
             constructionStage: 1,
             xp: 20,
             coins: 10,
+            firstBraveStepBonusGranted: true,
+            todaysThreeBonusGranted: false,
           }),
         );
         done();
@@ -217,6 +241,58 @@ describe('QuestsEffects', () => {
 
       effects.splitQuest$.subscribe((action) => {
         expect(action.type).toBe(QuestsActions.splitQuestFailure.type);
+        done();
+      });
+    });
+  });
+
+  describe('designateTodaysThree$', () => {
+    it('emits designateTodaysThreeSuccess on success', (done) => {
+      const designated = { ...quest, isTodaysThree: true };
+      questApi.designateTodaysThree.mockReturnValue(of(designated));
+      actions$ = of(QuestsActions.designateTodaysThree({ questId: 'q1' }));
+      setup();
+
+      effects.designateTodaysThree$.subscribe((action) => {
+        expect(questApi.designateTodaysThree).toHaveBeenCalledWith('q1');
+        expect(action).toEqual(QuestsActions.designateTodaysThreeSuccess({ quest: designated }));
+        done();
+      });
+    });
+
+    it('emits designateTodaysThreeFailure on error (e.g. the 3-per-day cap)', (done) => {
+      questApi.designateTodaysThree.mockReturnValue(throwError(() => new Error('boom')));
+      actions$ = of(QuestsActions.designateTodaysThree({ questId: 'q1' }));
+      setup();
+
+      effects.designateTodaysThree$.subscribe((action) => {
+        expect(action.type).toBe(QuestsActions.designateTodaysThreeFailure.type);
+        done();
+      });
+    });
+  });
+
+  describe('undesignateTodaysThree$', () => {
+    it('emits undesignateTodaysThreeSuccess on success', (done) => {
+      const undesignated = { ...quest, isTodaysThree: false };
+      questApi.undesignateTodaysThree.mockReturnValue(of(undesignated));
+      actions$ = of(QuestsActions.undesignateTodaysThree({ questId: 'q1' }));
+      setup();
+
+      effects.undesignateTodaysThree$.subscribe((action) => {
+        expect(questApi.undesignateTodaysThree).toHaveBeenCalledWith('q1');
+        expect(action).toEqual(QuestsActions.undesignateTodaysThreeSuccess({ quest: undesignated }));
+        done();
+      });
+    });
+
+    it('emits undesignateTodaysThreeFailure on error', (done) => {
+      questApi.undesignateTodaysThree.mockReturnValue(throwError(() => new Error('boom')));
+      actions$ = of(QuestsActions.undesignateTodaysThree({ questId: 'q1' }));
+      setup();
+
+      effects.undesignateTodaysThree$.subscribe((action) => {
+        expect(action.type).toBe(QuestsActions.undesignateTodaysThreeFailure.type);
         done();
       });
     });

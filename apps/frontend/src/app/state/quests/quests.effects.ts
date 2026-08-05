@@ -64,12 +64,14 @@ export class QuestsEffects {
       ofType(QuestsActions.completeQuest),
       exhaustMap(({ questId, idempotencyKey }) =>
         this.questApi.complete(questId, idempotencyKey).pipe(
-          map(({ quest, character }) =>
+          map(({ quest, character, firstBraveStepBonusGranted, todaysThreeBonusGranted }) =>
             QuestsActions.completeQuestSuccess({
               quest,
               constructionStage: character.campConstructionStage,
               xp: character.xp,
               coins: character.coins,
+              firstBraveStepBonusGranted,
+              todaysThreeBonusGranted,
             }),
           ),
           catchError(() => of(QuestsActions.completeQuestFailure({ error: GENERIC_ERROR }))),
@@ -99,6 +101,30 @@ export class QuestsEffects {
             QuestsActions.splitQuestSuccess({ quest, xp: character.xp, coins: character.coins }),
           ),
           catchError(() => of(QuestsActions.splitQuestFailure({ error: GENERIC_ERROR }))),
+        ),
+      ),
+    ),
+  );
+
+  designateTodaysThree$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(QuestsActions.designateTodaysThree),
+      exhaustMap(({ questId }) =>
+        this.questApi.designateTodaysThree(questId).pipe(
+          map((quest) => QuestsActions.designateTodaysThreeSuccess({ quest })),
+          catchError(() => of(QuestsActions.designateTodaysThreeFailure({ error: GENERIC_ERROR }))),
+        ),
+      ),
+    ),
+  );
+
+  undesignateTodaysThree$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(QuestsActions.undesignateTodaysThree),
+      exhaustMap(({ questId }) =>
+        this.questApi.undesignateTodaysThree(questId).pipe(
+          map((quest) => QuestsActions.undesignateTodaysThreeSuccess({ quest })),
+          catchError(() => of(QuestsActions.undesignateTodaysThreeFailure({ error: GENERIC_ERROR }))),
         ),
       ),
     ),

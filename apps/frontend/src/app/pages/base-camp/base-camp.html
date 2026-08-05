@@ -28,6 +28,9 @@
       @if (reward.coinsGained > 0) {
         · +{{ reward.coinsGained }} coins
       }
+      @if (reward.label; as label) {
+        <span class="celebration-toast__label">{{ label }}</span>
+      }
     </div>
   }
 
@@ -58,7 +61,20 @@
             <p class="kanban-column__title">Backlog<span class="kanban-column__sub">Story</span></p>
             @for (quest of backlogQuests(); track quest.id) {
               <div class="kanban-card">
-                <span class="kanban-card__title">{{ quest.title }}</span>
+                <span class="kanban-card__title-row">
+                  <span class="kanban-card__title">{{ quest.title }}</span>
+                  <button
+                    type="button"
+                    class="todays-three-toggle"
+                    [class.todays-three-toggle--active]="quest.isTodaysThree"
+                    [attr.aria-pressed]="quest.isTodaysThree"
+                    [attr.aria-label]="(quest.isTodaysThree ? 'Remove from' : 'Add to') + ' Today\'s Three'"
+                    [disabled]="togglingTodaysThreeQuestId() === quest.id"
+                    (click)="toggleTodaysThree(quest.id, quest.isTodaysThree)"
+                  >
+                    ★
+                  </button>
+                </span>
 
                 <div class="encounter-list">
                   @for (encounter of encountersFor(quest.id); track encounter.id) {
@@ -125,7 +141,20 @@
             @for (quest of inProgressQuests(); track quest.id) {
               @let sprint = sprintFor(quest.id);
               <div class="kanban-card">
-                <span class="kanban-card__title">{{ quest.title }}</span>
+                <span class="kanban-card__title-row">
+                  <span class="kanban-card__title">{{ quest.title }}</span>
+                  <button
+                    type="button"
+                    class="todays-three-toggle"
+                    [class.todays-three-toggle--active]="quest.isTodaysThree"
+                    [attr.aria-pressed]="quest.isTodaysThree"
+                    [attr.aria-label]="(quest.isTodaysThree ? 'Remove from' : 'Add to') + ' Today\'s Three'"
+                    [disabled]="togglingTodaysThreeQuestId() === quest.id"
+                    (click)="toggleTodaysThree(quest.id, quest.isTodaysThree)"
+                  >
+                    ★
+                  </button>
+                </span>
 
                 <div class="encounter-list">
                   @for (encounter of encountersFor(quest.id); track encounter.id) {

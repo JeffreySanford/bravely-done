@@ -68,6 +68,13 @@ model Character {
   /// CharacterService.WORKBENCH_MAX_LEVEL. Deliberately just a level
   /// number for now — no actual capability unlocks are wired to it yet.
   workbenchLevel Int @default(0)
+  /// The UTC calendar day (truncated to midnight) on which the First Brave
+  /// Step daily bonus was last granted — see QuestService.complete()'s
+  /// FIRST_BRAVE_STEP_XP_REWARD/COIN_REWARD. Compared against "today" (also
+  /// UTC) so the bonus fires at most once per day, on whichever quest
+  /// completion happens to be first — no login-time or passive-time
+  /// component, so it can't be farmed by idle timers.
+  firstBraveStepDay DateTime?
   quests    Quest[]
 
   @@map("characters")
@@ -120,6 +127,15 @@ model Quest {
   /// status alone (it re-stamps on every real call), so without a key a
   /// retry would be indistinguishable from a second genuine continue.
   lastIdempotencyKey String?
+  /// The UTC calendar day (truncated to midnight) this quest was designated
+  /// as one of the player's "Today's Three" (rewards-retention.md's Daily
+  /// cadence — QuestService.designateTodaysThree/undesignateTodaysThree).
+  /// At most 3 quests may share the same day value per character. Compared
+  /// against "today" to compute QuestDto.isTodaysThree — a stale value from
+  /// a previous day just quietly stops counting, no explicit expiry needed.
+  /// Completing a quest while its day matches today grants
+  /// TODAYS_THREE_BONUS_XP_REWARD/COIN_REWARD on top of the normal reward.
+  todaysThreeDay DateTime?
   sprints     Sprint[]
   encounters  Encounter[]
 

@@ -184,9 +184,22 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       so a page load or a workbench-upgrade coin spend never falsely triggers one. Respects
       `prefers-reduced-motion` (same ~2.4s duration, no movement in the reduced variant).
 
+- [x] Build the Daily half of the reward loop (rewards-retention.md's Daily cadence — see
+      [Plan 04](planning/04-rewards-retention.md)): a **First Brave Step** bonus (10 XP / 5 coins)
+      granted on the first quest a character *completes* each UTC day (`Character.firstBraveStepDay`),
+      and **Today's Three** — up to 3 player-designated quests per UTC day (`POST`/`DELETE
+      /quests/:id/todays-three`, `Quest.todaysThreeDay`), each granting 10 XP / 5 coins on top of the
+      normal reward when completed. Both stack, both ride the existing transactional reward path, and
+      neither is grantable by `split()` or by idling — they fire only on a real completion, keeping
+      the idle-timer-resistance rule intact. A star toggle on Backlog/In Progress Kanban cards drives
+      the designation; the celebration toast names which bonus fired. Verified live via direct API
+      calls (3-per-day cap, idempotent re-designation, undesignate frees a slot, bonus stacking, split
+      grants neither), a real-Postgres integration suite, and a 3-engine Playwright e2e run.
+
 ## Later milestones
 
-- [ ] Daily, weekly, and monthly reward loops.
+- [ ] Weekly and monthly reward loops (Expedition/Chronicle, Campaign chapter) — the Daily cadence is
+      done; these two are each substantially larger and need their own scoping pass.
 - [ ] Remote Ember LLM service (NestJS-connected), confidence-based autonomy, editable Hero Profile.
 - [ ] Capacitor Android and iOS packaging.
 - [ ] Parties (real-invited or matchmade), guilds, cooperative quests, and moderation.

@@ -22,8 +22,15 @@ export interface QuestsState {
    * page load never replays a celebration for XP/coins the player already
    * had). Drives the celebration toast (base-camp.html) — see
    * documentation/product/base-camp.md. Not persisted; a fresh page load
-   * starts with this null. */
-  lastReward: { xpGained: number; coinsGained: number; at: number } | null;
+   * starts with this null. `label` is set when the grant included a Daily
+   * reward loop bonus (First Brave Step / Today's Three — rewards-
+   * retention.md), so the toast can say what actually happened rather than
+   * just a bigger number. */
+  lastReward: { xpGained: number; coinsGained: number; at: number; label?: string } | null;
+  /** The quest currently being designated/undesignated as Today's Three —
+   * a lightweight toggle, not a quest resolution, so it gets its own
+   * in-flight tracking rather than sharing resolvingQuestId. */
+  togglingTodaysThreeQuestId: string | null;
 }
 
 export const initialQuestsState: QuestsState = {
@@ -36,7 +43,24 @@ export const initialQuestsState: QuestsState = {
   resolvingQuestId: null,
   error: null,
   lastReward: null,
+  togglingTodaysThreeQuestId: null,
 };
+
+/** Human-readable label for the celebration toast when a completion grants
+ * one or both of the Daily reward loop's bonuses — undefined for an
+ * ordinary completion (the toast just shows the XP/coins total then). */
+function dailyBonusLabel(firstBraveStepBonusGranted: boolean, todaysThreeBonusGranted: boolean): string | undefined {
+  if (firstBraveStepBonusGranted && todaysThreeBonusGranted) {
+    return "First Brave Step + Today's Three bonus!";
+  }
+  if (firstBraveStepBonusGranted) {
+    return 'First Brave Step bonus!';
+  }
+  if (todaysThreeBonusGranted) {
+    return "Today's Three bonus!";
+  }
+  return undefined;
+}
 
 export const questsFeature = createFeature({
   name: 'quests',
@@ -100,15 +124,23 @@ export const questsFeature = createFeature({
       resolvingQuestId: questId,
       error: null,
     })),
-    on(QuestsActions.completeQuestSuccess, (state, { quest, constructionStage, xp, coins }): QuestsState => ({
-      ...state,
-      quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
-      constructionStage,
-      xp,
-      coins,
-      resolvingQuestId: null,
-      lastReward: { xpGained: xp - state.xp, coinsGained: coins - state.coins, at: Date.now() },
-    })),
+    on(
+      QuestsActions.completeQuestSuccess,
+      (state, { quest, constructionStage, xp, coins, firstBraveStepBonusGranted, todaysThreeBonusGranted }): QuestsState => ({
+        ...state,
+        quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
+        constructionStage,
+        xp,
+        coins,
+        resolvingQuestId: null,
+        lastReward: {
+          xpGained: xp - state.xp,
+          coinsGained: coins - state.coins,
+          at: Date.now(),
+          label: dailyBonusLabel(firstBraveStepBonusGranted, todaysThreeBonusGranted),
+        },
+      }),
+    ),
     on(QuestsActions.completeQuestFailure, (state, { error }): QuestsState => ({
       ...state,
       resolvingQuestId: null,
@@ -147,6 +179,38 @@ export const questsFeature = createFeature({
     on(QuestsActions.splitQuestFailure, (state, { error }): QuestsState => ({
       ...state,
       resolvingQuestId: null,
+      error,
+    })),
+
+    on(QuestsActions.designateTodaysThree, (state, { questId }): QuestsState => ({
+      ...state,
+      togglingTodaysThreeQuestId: questId,
+      error: null,
+    })),
+    on(QuestsActions.designateTodaysThreeSuccess, (state, { quest }): QuestsState => ({
+      ...state,
+      quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
+      togglingTodaysThreeQuestId: null,
+    })),
+    on(QuestsActions.designateTodaysThreeFailure, (state, { error }): QuestsState => ({
+      ...state,
+      togglingTodaysThreeQuestId: null,
+      error,
+    })),
+
+    on(QuestsActions.undesignateTodaysThree, (state, { questId }): QuestsState => ({
+      ...state,
+      togglingTodaysThreeQuestId: questId,
+      error: null,
+    })),
+    on(QuestsActions.undesignateTodaysThreeSuccess, (state, { quest }): QuestsState => ({
+      ...state,
+      quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
+      togglingTodaysThreeQuestId: null,
+    })),
+    on(QuestsActions.undesignateTodaysThreeFailure, (state, { error }): QuestsState => ({
+      ...state,
+      togglingTodaysThreeQuestId: null,
       error,
     })),
 
@@ -193,4 +257,5 @@ export const {
   selectResolvingQuestId,
   selectError,
   selectLastReward,
+  selectTogglingTodaysThreeQuestId,
 } = questsFeature;

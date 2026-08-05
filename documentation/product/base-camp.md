@@ -108,7 +108,12 @@ character select (return visits):
   client-generated idempotency key so a duplicate network retry can't double-apply a resolution. Every
   reward grant (quest complete/split, sprint Focus XP, encounter Courage XP) now raises a real accessible
   celebration — a `role="status"`/`aria-live="polite"` toast showing the XP/coins gained, respecting
-  `prefers-reduced-motion`. Coins have a first real sink too: clicking the workbench (real
+  `prefers-reduced-motion`. The Daily reward loop is live too (rewards-retention.md's Daily cadence): a
+  star toggle on Backlog/In Progress cards designates up to three quests as **Today's Three** for the
+  current UTC day, and completing one grants a bonus on top of the normal reward; separately, the first
+  quest completed each day earns a **First Brave Step** bonus. Both stack, the toast names whichever
+  fired, and neither is reachable by idling or by splitting — only by actually finishing something.
+  Coins have a first real sink too: clicking the workbench (real
   raycasting) spends coins on a capped level upgrade (`POST /characters/:id/upgrade-workbench`),
   rejected if unaffordable and a no-op past the cap — and it now has a real capability unlock: each
   level increases how much firewood/forage one chop/forage click grants (1 unit at level 0 up to 4 at

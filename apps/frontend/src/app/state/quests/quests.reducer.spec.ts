@@ -162,7 +162,14 @@ describe('questsFeature reducer', () => {
     const completed = { ...quest, status: 'COMPLETED' as const };
     const state = questsFeature.reducer(
       { ...initialQuestsState, quests: [quest, otherQuest], resolvingQuestId: 'q1' },
-      QuestsActions.completeQuestSuccess({ quest: completed, constructionStage: 1, xp: 20, coins: 10 }),
+      QuestsActions.completeQuestSuccess({
+        quest: completed,
+        constructionStage: 1,
+        xp: 20,
+        coins: 10,
+        firstBraveStepBonusGranted: false,
+        todaysThreeBonusGranted: false,
+      }),
     );
 
     expect(state.quests).toEqual([completed, otherQuest]);
@@ -170,7 +177,58 @@ describe('questsFeature reducer', () => {
     expect(state.xp).toBe(20);
     expect(state.coins).toBe(10);
     expect(state.resolvingQuestId).toBeNull();
-    expect(state.lastReward).toEqual({ xpGained: 20, coinsGained: 10, at: expect.any(Number) });
+    expect(state.lastReward).toEqual({ xpGained: 20, coinsGained: 10, at: expect.any(Number), label: undefined });
+  });
+
+  it('completeQuestSuccess labels the celebration when the First Brave Step bonus was granted', () => {
+    const completed = { ...quest, status: 'COMPLETED' as const };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [quest] },
+      QuestsActions.completeQuestSuccess({
+        quest: completed,
+        constructionStage: 1,
+        xp: 30,
+        coins: 15,
+        firstBraveStepBonusGranted: true,
+        todaysThreeBonusGranted: false,
+      }),
+    );
+
+    expect(state.lastReward?.label).toBe('First Brave Step bonus!');
+  });
+
+  it('completeQuestSuccess labels the celebration when the Today\'s Three bonus was granted', () => {
+    const completed = { ...quest, status: 'COMPLETED' as const };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [quest] },
+      QuestsActions.completeQuestSuccess({
+        quest: completed,
+        constructionStage: 1,
+        xp: 30,
+        coins: 15,
+        firstBraveStepBonusGranted: false,
+        todaysThreeBonusGranted: true,
+      }),
+    );
+
+    expect(state.lastReward?.label).toBe("Today's Three bonus!");
+  });
+
+  it('completeQuestSuccess labels the celebration when both daily bonuses stack', () => {
+    const completed = { ...quest, status: 'COMPLETED' as const };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [quest] },
+      QuestsActions.completeQuestSuccess({
+        quest: completed,
+        constructionStage: 1,
+        xp: 40,
+        coins: 20,
+        firstBraveStepBonusGranted: true,
+        todaysThreeBonusGranted: true,
+      }),
+    );
+
+    expect(state.lastReward?.label).toBe("First Brave Step + Today's Three bonus!");
   });
 
   it('completeQuestFailure stores the error and clears resolvingQuestId', () => {
@@ -248,6 +306,60 @@ describe('questsFeature reducer', () => {
 
     expect(state.error).toBe('boom');
     expect(state.resolvingQuestId).toBeNull();
+  });
+
+  it('designateTodaysThree tracks the toggling quest and clears any prior error', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, error: 'boom' },
+      QuestsActions.designateTodaysThree({ questId: 'q1' }),
+    );
+
+    expect(state.togglingTodaysThreeQuestId).toBe('q1');
+    expect(state.error).toBeNull();
+  });
+
+  it('designateTodaysThreeSuccess replaces only the matching quest and clears the toggling id', () => {
+    const otherQuest = { ...quest, id: 'q2', title: 'Forage plants' };
+    const designated = { ...quest, isTodaysThree: true };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [quest, otherQuest], togglingTodaysThreeQuestId: 'q1' },
+      QuestsActions.designateTodaysThreeSuccess({ quest: designated }),
+    );
+
+    expect(state.quests).toEqual([designated, otherQuest]);
+    expect(state.togglingTodaysThreeQuestId).toBeNull();
+  });
+
+  it('designateTodaysThreeFailure stores the error and clears the toggling id', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, togglingTodaysThreeQuestId: 'q1' },
+      QuestsActions.designateTodaysThreeFailure({ error: 'boom' }),
+    );
+
+    expect(state.error).toBe('boom');
+    expect(state.togglingTodaysThreeQuestId).toBeNull();
+  });
+
+  it('undesignateTodaysThreeSuccess replaces only the matching quest and clears the toggling id', () => {
+    const designated = { ...quest, isTodaysThree: true };
+    const undesignated = { ...quest, isTodaysThree: false };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [designated], togglingTodaysThreeQuestId: 'q1' },
+      QuestsActions.undesignateTodaysThreeSuccess({ quest: undesignated }),
+    );
+
+    expect(state.quests).toEqual([undesignated]);
+    expect(state.togglingTodaysThreeQuestId).toBeNull();
+  });
+
+  it('undesignateTodaysThreeFailure stores the error and clears the toggling id', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, togglingTodaysThreeQuestId: 'q1' },
+      QuestsActions.undesignateTodaysThreeFailure({ error: 'boom' }),
+    );
+
+    expect(state.error).toBe('boom');
+    expect(state.togglingTodaysThreeQuestId).toBeNull();
   });
 
   it('syncs coins when the camp feature reports a successful workbench upgrade', () => {

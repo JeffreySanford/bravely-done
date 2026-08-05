@@ -45,6 +45,7 @@ import {
   selectLoading,
   selectQuests,
   selectResolvingQuestId,
+  selectTogglingTodaysThreeQuestId,
   selectXp,
 } from '../../state/quests/quests.reducer';
 import { SprintDto } from '../../api/models/sprint-dto';
@@ -107,6 +108,7 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly constructionStage = this.store.selectSignal(selectConstructionStage);
   readonly questsLoading = this.store.selectSignal(selectLoading);
   readonly resolvingQuestId = this.store.selectSignal(selectResolvingQuestId);
+  readonly togglingTodaysThreeQuestId = this.store.selectSignal(selectTogglingTodaysThreeQuestId);
   readonly xp = this.store.selectSignal(selectXp);
   readonly coins = this.store.selectSignal(selectCoins);
   readonly level = computed(() => Math.floor(this.xp() / XP_PER_LEVEL) + 1);
@@ -301,6 +303,14 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
 
   splitQuest(questId: string): void {
     this.store.dispatch(QuestsActions.splitQuest({ questId, idempotencyKey: crypto.randomUUID() }));
+  }
+
+  toggleTodaysThree(questId: string, isCurrentlyDesignated: boolean): void {
+    if (isCurrentlyDesignated) {
+      this.store.dispatch(QuestsActions.undesignateTodaysThree({ questId }));
+    } else {
+      this.store.dispatch(QuestsActions.designateTodaysThree({ questId }));
+    }
   }
 
   upgradeWorkbench(): void {

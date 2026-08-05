@@ -143,6 +143,14 @@
   animation: bd-celebrate 2.4s ease both;
 }
 
+.celebration-toast__label {
+  display: block;
+  margin-top: 2px;
+  color: var(--bd-violet);
+  font-size: 11px;
+  font-weight: 500;
+}
+
 /* Reduced motion: no rise/scale, just an instant appearance, a hold, and a
    plain fade-out — same total on-screen duration, none of the movement. */
 @keyframes bd-celebrate-reduced {
@@ -362,6 +370,45 @@
 
 .kanban-card__title {
   word-break: break-word;
+}
+
+.kanban-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Today's Three toggle (rewards-retention.md's Daily cadence) — a plain
+   star glyph rather than a labeled button, since it sits inline with the
+   title on every Backlog/In Progress card and a full "Add to Today's
+   Three" label would crowd the row; aria-label carries the full meaning
+   for assistive tech. */
+.todays-three-toggle {
+  flex-shrink: 0;
+  width: auto;
+  padding: 0 2px;
+  border: none;
+  background: transparent;
+  color: var(--bd-text-muted);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0.5;
+  transition: opacity 0.15s ease, color 0.15s ease;
+}
+
+.todays-three-toggle:hover:not(:disabled) {
+  opacity: 0.85;
+}
+
+.todays-three-toggle:disabled {
+  cursor: default;
+}
+
+.todays-three-toggle--active {
+  color: var(--bd-cyan);
+  opacity: 1;
 }
 
 .kanban-card__actions {

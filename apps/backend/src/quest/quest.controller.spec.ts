@@ -33,9 +33,16 @@ describe('QuestController', () => {
       listForCharacter: jest.fn().mockResolvedValue([quest]),
       start: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.IN_PROGRESS }),
       continue: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.IN_PROGRESS, lastContinuedAt: new Date() }),
-      complete: jest.fn().mockResolvedValue({ quest: { ...quest, status: QuestStatus.COMPLETED }, character }),
+      complete: jest.fn().mockResolvedValue({
+        quest: { ...quest, status: QuestStatus.COMPLETED },
+        character,
+        firstBraveStepBonusGranted: true,
+        todaysThreeBonusGranted: false,
+      }),
       retreat: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.RETREATED }),
       split: jest.fn().mockResolvedValue({ quest: { ...quest, status: QuestStatus.SPLIT }, character }),
+      designateTodaysThree: jest.fn().mockResolvedValue({ ...quest, todaysThreeDay: new Date() }),
+      undesignateTodaysThree: jest.fn().mockResolvedValue({ ...quest, todaysThreeDay: null }),
     } as unknown as QuestService;
     return { controller: new QuestController(quests), quests };
   }
@@ -48,6 +55,7 @@ describe('QuestController', () => {
     createdAt: quest.createdAt,
     completedAt: quest.completedAt,
     lastContinuedAt: quest.lastContinuedAt,
+    isTodaysThree: false,
   };
 
   const publicCharacterShape = {
@@ -109,6 +117,8 @@ describe('QuestController', () => {
     expect(result).toEqual({
       quest: { ...publicQuestShape, status: QuestStatus.COMPLETED },
       character: publicCharacterShape,
+      firstBraveStepBonusGranted: true,
+      todaysThreeBonusGranted: false,
     });
   });
 
@@ -130,6 +140,26 @@ describe('QuestController', () => {
     expect(result).toEqual({
       quest: { ...publicQuestShape, status: QuestStatus.SPLIT },
       character: publicCharacterShape,
+      firstBraveStepBonusGranted: false,
+      todaysThreeBonusGranted: false,
     });
+  });
+
+  it('designateTodaysThree delegates to the service and returns the public shape', async () => {
+    const { controller, quests } = buildController();
+
+    const result = await controller.designateTodaysThree(user, 'quest-1');
+
+    expect(quests.designateTodaysThree).toHaveBeenCalledWith('user-1', 'quest-1');
+    expect(result).toEqual({ ...publicQuestShape, isTodaysThree: true });
+  });
+
+  it('undesignateTodaysThree delegates to the service and returns the public shape', async () => {
+    const { controller, quests } = buildController();
+
+    const result = await controller.undesignateTodaysThree(user, 'quest-1');
+
+    expect(quests.undesignateTodaysThree).toHaveBeenCalledWith('user-1', 'quest-1');
+    expect(result).toEqual({ ...publicQuestShape, isTodaysThree: false });
   });
 });

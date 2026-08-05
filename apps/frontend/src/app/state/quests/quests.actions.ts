@@ -31,7 +31,14 @@ export const QuestsActions = createActionGroup({
     'Continue Quest Failure': props<{ error: string }>(),
 
     'Complete Quest': props<{ questId: string; idempotencyKey: string }>(),
-    'Complete Quest Success': props<{ quest: QuestDto; constructionStage: number; xp: number; coins: number }>(),
+    'Complete Quest Success': props<{
+      quest: QuestDto;
+      constructionStage: number;
+      xp: number;
+      coins: number;
+      firstBraveStepBonusGranted: boolean;
+      todaysThreeBonusGranted: boolean;
+    }>(),
     'Complete Quest Failure': props<{ error: string }>(),
 
     'Retreat Quest': props<{ questId: string; idempotencyKey: string }>(),
@@ -41,5 +48,18 @@ export const QuestsActions = createActionGroup({
     'Split Quest': props<{ questId: string; idempotencyKey: string }>(),
     'Split Quest Success': props<{ quest: QuestDto; xp: number; coins: number }>(),
     'Split Quest Failure': props<{ error: string }>(),
+
+    // Today's Three (rewards-retention.md's Daily cadence): up to 3 quests a
+    // player can designate per UTC day for a bonus on completion. A
+    // lightweight toggle, not a quest resolution, so it gets its own
+    // in-flight tracking (togglingTodaysThreeQuestId) rather than sharing
+    // resolvingQuestId.
+    'Designate Todays Three': props<{ questId: string }>(),
+    'Designate Todays Three Success': props<{ quest: QuestDto }>(),
+    'Designate Todays Three Failure': props<{ error: string }>(),
+
+    'Undesignate Todays Three': props<{ questId: string }>(),
+    'Undesignate Todays Three Success': props<{ quest: QuestDto }>(),
+    'Undesignate Todays Three Failure': props<{ error: string }>(),
   },
 });

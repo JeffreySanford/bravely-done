@@ -125,6 +125,16 @@ test('signup through to a rendered Base Camp, and back again via character selec
     await expect(page.getByText(title)).toBeVisible();
   }
 
+  // Today's Three (rewards-retention.md's Daily cadence): the player
+  // designates up to 3 of their own quests per UTC day via the star toggle
+  // on Backlog/In Progress cards. Completing a designated quest later grants
+  // TODAYS_THREE_BONUS_XP_REWARD/COIN_REWARD on top of the normal reward —
+  // asserted further down where "Chop firewood" is completed.
+  const firewoodCard = page.locator('.kanban-card', { hasText: 'Chop firewood' });
+  const firewoodStar = firewoodCard.getByRole('button', { name: "Add to Today's Three" });
+  await firewoodStar.click();
+  await expect(firewoodCard.getByRole('button', { name: "Remove from Today's Three" })).toBeVisible();
+
   // Encounters (small actionable steps within a quest) work straight from
   // the Backlog column, independent of the quest's own resolution — adding
   // and completing one grants Courage XP without touching quest status.
@@ -202,16 +212,27 @@ test('signup through to a rendered Base Camp, and back again via character selec
     await inProgressCard.getByRole('button', { name: 'Complete' }).click();
     await expect(page.getByText(`Bridge repair: ${index + 1} / 3`)).toBeVisible();
     await expect(page.locator('.kanban-card', { hasText: title }).getByText('Done')).toBeVisible();
+
+    if (title === 'Chop firewood') {
+      // The Daily reward loop's two completion-triggered bonuses, both
+      // landing on this one quest: First Brave Step (the day's first
+      // *completion* — the earlier Split deliberately doesn't count) and
+      // Today's Three (this quest was starred above). The celebration toast
+      // names which bonuses fired rather than just showing a bigger number.
+      await expect(page.getByRole('status').filter({ hasText: "First Brave Step + Today's Three bonus!" })).toBeVisible();
+    }
   }
 
   // 3 completed quests x 20 XP / 10 coins each (see QUEST_XP_REWARD /
   // QUEST_COIN_REWARD in apps/backend/src/quest/quest.service.ts), plus the
-  // 5 Courage XP from the encounter and the 10 XP / 5 coins Split grant above.
-  await expect(page.getByText('Level 1 — 75 XP — 35 coins')).toBeVisible();
+  // 5 Courage XP from the encounter, the 10 XP / 5 coins Split grant, and the
+  // Daily reward loop's First Brave Step (10/5) + Today's Three (10/5)
+  // bonuses that both landed on the "Chop firewood" completion above.
+  await expect(page.getByText('Level 1 — 95 XP — 45 coins')).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
-  await expect(page.getByText('Level 1 — 75 XP — 35 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 95 XP — 45 coins')).toBeVisible();
 
   // The board defaults to closed again after a reload — reopening it is
   // what proves the underlying quest/sprint/encounter state persisted, not
@@ -223,7 +244,7 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
   // Encounters only render on Backlog/In Progress cards (Done/Retreated are
   // already resolved), so the completed encounter's persistence is proven
-  // by the surviving 75 XP total above rather than by re-finding the
+  // by the surviving 95 XP total above rather than by re-finding the
   // checklist on a card that's now moved to Done.
   await page.getByRole('button', { name: 'Close' }).click();
 
@@ -232,20 +253,20 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // first-ever arrival captured by the backend's hasArrivedAtCamp flag.
   await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
 
-  // Workbench/coins-spend slice: 35 coins covers the first upgrade (10
+  // Workbench/coins-spend slice: 45 coins covers the first upgrade (10
   // coins — see WORKBENCH_UPGRADE_COSTS in apps/backend/src/character/
-  // character.service.ts) with 25 left over, which should also show up as
+  // character.service.ts) with 35 left over, which should also show up as
   // a spend against the same coins total the quest board reads
   // (cross-reducer sync between the camp and quests NgRx features).
   await expect(page.getByText('Workbench: level 0 / 3')).toBeVisible();
   await page.getByRole('button', { name: 'Upgrade for 10 coins' }).click();
   await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
-  await expect(page.getByText('Level 1 — 75 XP — 25 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 95 XP — 35 coins')).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
-  await expect(page.getByText('Level 1 — 75 XP — 25 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 95 XP — 35 coins')).toBeVisible();
 
   expect(consoleErrors).toEqual([]);
 });

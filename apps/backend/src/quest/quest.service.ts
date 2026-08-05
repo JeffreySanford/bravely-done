@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Character, Quest, QuestStatus } from '../generated/prisma/client';
+import { isSameUtcDay, utcDayStart } from '../common/date.util';
 import { CreateQuestDto } from './dto/create-quest.dto';
 
 /** Bridge is fully repaired once this many quests have been completed. */
@@ -18,6 +19,23 @@ export const QUEST_COIN_REWARD = 10;
 /** Half credit for the Split resolution (rounded down) — see split(). */
 export const SPLIT_XP_REWARD = Math.floor(QUEST_XP_REWARD / 2);
 export const SPLIT_COIN_REWARD = Math.floor(QUEST_COIN_REWARD / 2);
+
+/** The Daily reward loop's first cadence (rewards-retention.md): "First
+ * Brave Step bonus" — a flat bonus on top of a quest's normal reward for
+ * the first quest a player *completes* (not split) on a given UTC day.
+ * Fires at most once per day, checked against Character.firstBraveStepDay —
+ * a pure completion-triggered grant, no login or passive-time component, so
+ * it can't be farmed by idle timers. */
+export const FIRST_BRAVE_STEP_XP_REWARD = 10;
+export const FIRST_BRAVE_STEP_COIN_REWARD = 5;
+
+/** "Today's Three": up to TODAYS_THREE_MAX quests a player can designate
+ * per UTC day (see designateTodaysThree). Completing a designated quest
+ * grants this bonus on top of its normal reward — same idle-timer-resistant
+ * shape as First Brave Step, gated purely on a real completion. */
+export const TODAYS_THREE_MAX = 3;
+export const TODAYS_THREE_BONUS_XP_REWARD = 10;
+export const TODAYS_THREE_BONUS_COIN_REWARD = 5;
 
 @Injectable()
 export class QuestService {
@@ -94,14 +112,38 @@ export class QuestService {
    * or vice versa. Already-resolved quests (completed, retreated, or split)
    * are returned as-is without granting a reward again — naturally
    * idempotent by status alone, but idempotencyKey is still honored for a
-   * consistent contract across all four resolution endpoints. */
-  async complete(userId: string, questId: string, idempotencyKey?: string): Promise<{ quest: Quest; character: Character }> {
+   * consistent contract across all four resolution endpoints.
+   *
+   * Also grants the Daily reward loop's two completion-triggered bonuses,
+   * stacked on top of the normal QUEST_XP_REWARD/QUEST_COIN_REWARD in the
+   * same transaction: First Brave Step (once per UTC day, any quest) and
+   * the Today's Three bonus (if this specific quest was designated for
+   * today). Neither applies to split() — a split is explicitly "won't be
+   * finished as scoped," which doesn't match either bonus's "you finished
+   * something today" framing. */
+  async complete(
+    userId: string,
+    questId: string,
+    idempotencyKey?: string,
+  ): Promise<{ quest: Quest; character: Character; firstBraveStepBonusGranted: boolean; todaysThreeBonusGranted: boolean }> {
     const quest = await this.findOwnedQuest(userId, questId);
 
     if (this.isDuplicateCall(quest, idempotencyKey) || this.isResolved(quest.status)) {
       const { character, ...rest } = quest;
-      return { quest: rest, character };
+      return { quest: rest, character, firstBraveStepBonusGranted: false, todaysThreeBonusGranted: false };
     }
+
+    const now = new Date();
+    const firstBraveStepBonusGranted = !isSameUtcDay(quest.character.firstBraveStepDay, now);
+    const todaysThreeBonusGranted = isSameUtcDay(quest.todaysThreeDay, now);
+    const xpReward =
+      QUEST_XP_REWARD +
+      (firstBraveStepBonusGranted ? FIRST_BRAVE_STEP_XP_REWARD : 0) +
+      (todaysThreeBonusGranted ? TODAYS_THREE_BONUS_XP_REWARD : 0);
+    const coinReward =
+      QUEST_COIN_REWARD +
+      (firstBraveStepBonusGranted ? FIRST_BRAVE_STEP_COIN_REWARD : 0) +
+      (todaysThreeBonusGranted ? TODAYS_THREE_BONUS_COIN_REWARD : 0);
 
     const nextStage = Math.min(quest.character.campConstructionStage + 1, MAX_CONSTRUCTION_STAGE);
     const [completedQuest, character] = await this.prisma.$transaction([
@@ -109,7 +151,7 @@ export class QuestService {
         where: { id: questId },
         data: {
           status: QuestStatus.COMPLETED,
-          completedAt: new Date(),
+          completedAt: now,
           lastIdempotencyKey: idempotencyKey ?? quest.lastIdempotencyKey,
         },
       }),
@@ -117,13 +159,14 @@ export class QuestService {
         where: { id: quest.characterId },
         data: {
           campConstructionStage: nextStage,
-          xp: { increment: QUEST_XP_REWARD },
-          coins: { increment: QUEST_COIN_REWARD },
+          xp: { increment: xpReward },
+          coins: { increment: coinReward },
+          firstBraveStepDay: firstBraveStepBonusGranted ? utcDayStart(now) : undefined,
         },
       }),
     ]);
 
-    return { quest: completedQuest, character };
+    return { quest: completedQuest, character, firstBraveStepBonusGranted, todaysThreeBonusGranted };
   }
 
   /** Retreats from an open or in-progress quest: a deliberate, penalty-free
@@ -177,6 +220,53 @@ export class QuestService {
     ]);
 
     return { quest: splitQuest, character };
+  }
+
+  /** Designates a quest as one of today's (UTC) "Today's Three" — see
+   * TODAYS_THREE_MAX/TODAYS_THREE_BONUS_XP_REWARD. Idempotent if already
+   * designated today. Rejects (BadRequestException, a genuinely invalid
+   * request rather than an already-there no-op) a resolved quest — there's
+   * no reward left to bonus — and rejects once TODAYS_THREE_MAX is already
+   * reached for today. */
+  async designateTodaysThree(userId: string, questId: string): Promise<Quest> {
+    const quest = await this.findOwnedQuest(userId, questId);
+    const now = new Date();
+
+    if (this.isResolved(quest.status)) {
+      throw new BadRequestException('Cannot designate a resolved quest for Today\'s Three');
+    }
+    if (isSameUtcDay(quest.todaysThreeDay, now)) {
+      return quest;
+    }
+
+    const today = utcDayStart(now);
+    const designatedToday = await this.prisma.quest.count({
+      where: { characterId: quest.characterId, todaysThreeDay: today },
+    });
+    if (designatedToday >= TODAYS_THREE_MAX) {
+      throw new BadRequestException(`Only ${TODAYS_THREE_MAX} quests can be designated as Today's Three per day`);
+    }
+
+    return this.prisma.quest.update({
+      where: { id: questId },
+      data: { todaysThreeDay: today },
+    });
+  }
+
+  /** Removes today's Today's Three designation, if any — idempotent no-op
+   * if the quest wasn't designated today (matches complete/continue/
+   * retreat's forgiving-on-repeat style). */
+  async undesignateTodaysThree(userId: string, questId: string): Promise<Quest> {
+    const quest = await this.findOwnedQuest(userId, questId);
+
+    if (!isSameUtcDay(quest.todaysThreeDay, new Date())) {
+      return quest;
+    }
+
+    return this.prisma.quest.update({
+      where: { id: questId },
+      data: { todaysThreeDay: null },
+    });
   }
 
   private isResolved(status: QuestStatus): boolean {

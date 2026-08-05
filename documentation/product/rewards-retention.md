@@ -2,23 +2,31 @@
 
 ## Reward categories
 
-- Courage XP for beginning avoided work
-- Focus XP for completing an honest sprint
-- Wisdom XP for splitting, estimating, or revising a plan
-- Quest XP for completion
-- Coins for ordinary progress
-- Materials for camp construction
-- Reputation for helping others
-- Treasury value for real paid work
+- Courage XP for beginning avoided work *(built — granted on encounter completion)*
+- Focus XP for completing an honest sprint *(built — granted on sprint completion, gated on real
+  elapsed time)*
+- Wisdom XP for splitting, estimating, or revising a plan *(not built as its own category — splitting
+  a quest grants half Quest XP rather than a distinct Wisdom XP counter)*
+- Quest XP for completion *(built — plus the Daily loop's First Brave Step and Today's Three bonuses,
+  which stack on top of it)*
+- Coins for ordinary progress *(built — spendable on workbench upgrades)*
+- Materials for camp construction *(represented by the bridge construction stage, not a separate
+  counter)*
+- Reputation for helping others *(not built — needs the social system)*
+- Treasury value for real paid work *(not built)*
 
 ## Return cadence
 
 ### Daily
 
-- Campfire welcome
-- Today's Three quest choices
-- First Brave Step bonus
-- Optional small companion interaction
+- Campfire welcome *(not built — the campfire exists as a scene landmark with real fuel state, but
+  there's no once-per-day welcome beat wired to it)*
+- Today's Three quest choices *(built — the player designates up to 3 of their own OPEN/IN_PROGRESS
+  quests per UTC day; completing one grants a bonus on top of the normal reward. Player-chosen, not
+  system-suggested.)*
+- First Brave Step bonus *(built — granted on the first quest completed each UTC day; never on login
+  or elapsed time, and never on a split)*
+- Optional small companion interaction *(not built)*
 
 ### Weekly
 

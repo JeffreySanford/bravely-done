@@ -293,6 +293,8 @@ describe('BaseCamp', () => {
         of({
           quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
           character: buildCharacter({ campConstructionStage: 1, xp: 20, coins: 10 }),
+          firstBraveStepBonusGranted: false,
+          todaysThreeBonusGranted: false,
         }),
       );
       const { component } = setup({ arrive }, { complete });
@@ -312,6 +314,8 @@ describe('BaseCamp', () => {
         of({
           quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
           character: buildCharacter({ campConstructionStage: 1, xp: 20, coins: 10 }),
+          firstBraveStepBonusGranted: false,
+          todaysThreeBonusGranted: false,
         }),
       );
       const { component } = setup({ arrive }, { complete });
@@ -385,12 +389,42 @@ describe('BaseCamp', () => {
     });
   });
 
+  describe('toggleTodaysThree', () => {
+    it('designates a quest that is not yet in Today\'s Three', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const designateTodaysThree = jest.fn().mockReturnValue(
+        of({ id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'OPEN', createdAt: '2026-01-01', completedAt: null, isTodaysThree: true }),
+      );
+      const { component } = setup({ arrive }, { designateTodaysThree });
+      component.ngOnInit();
+
+      component.toggleTodaysThree('q1', false);
+
+      expect(designateTodaysThree).toHaveBeenCalledWith('q1');
+    });
+
+    it('undesignates a quest that is already in Today\'s Three', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const undesignateTodaysThree = jest.fn().mockReturnValue(
+        of({ id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'OPEN', createdAt: '2026-01-01', completedAt: null, isTodaysThree: false }),
+      );
+      const { component } = setup({ arrive }, { undesignateTodaysThree });
+      component.ngOnInit();
+
+      component.toggleTodaysThree('q1', true);
+
+      expect(undesignateTodaysThree).toHaveBeenCalledWith('q1');
+    });
+  });
+
   it('dispatches a questCompleted event to the scene director when a quest completes (no director mounted is a no-op)', () => {
     const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
     const complete = jest.fn().mockReturnValue(
       of({
         quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
         character: buildCharacter({ campConstructionStage: 1 }),
+        firstBraveStepBonusGranted: false,
+        todaysThreeBonusGranted: false,
       }),
     );
     const { component } = setup({ arrive }, { complete });

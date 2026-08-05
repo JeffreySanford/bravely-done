@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiCookieAuth, ApiCreatedResponse, ApiOkResponse, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { toCharacterDto } from '../character/character.mapper';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -66,10 +66,16 @@ export class QuestController {
     @Param('id') id: string,
     @Body() dto: ResolveQuestDto,
   ): Promise<CompleteQuestResponseDto> {
-    const { quest, character } = await this.quests.complete(user.sub, id, dto.idempotencyKey);
+    const { quest, character, firstBraveStepBonusGranted, todaysThreeBonusGranted } = await this.quests.complete(
+      user.sub,
+      id,
+      dto.idempotencyKey,
+    );
     const response = new CompleteQuestResponseDto();
     response.quest = toQuestDto(quest);
     response.character = toCharacterDto(character);
+    response.firstBraveStepBonusGranted = firstBraveStepBonusGranted;
+    response.todaysThreeBonusGranted = todaysThreeBonusGranted;
     return response;
   }
 
@@ -97,6 +103,24 @@ export class QuestController {
     const response = new CompleteQuestResponseDto();
     response.quest = toQuestDto(quest);
     response.character = toCharacterDto(character);
+    response.firstBraveStepBonusGranted = false;
+    response.todaysThreeBonusGranted = false;
     return response;
+  }
+
+  @Post('quests/:id/todays-three')
+  @ApiOperation({ summary: "Designate a quest as one of today's (UTC) Today's Three" })
+  @ApiOkResponse({ type: QuestDto })
+  async designateTodaysThree(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<QuestDto> {
+    const quest = await this.quests.designateTodaysThree(user.sub, id);
+    return toQuestDto(quest);
+  }
+
+  @Delete('quests/:id/todays-three')
+  @ApiOperation({ summary: "Remove a quest's Today's Three designation" })
+  @ApiOkResponse({ type: QuestDto })
+  async undesignateTodaysThree(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<QuestDto> {
+    const quest = await this.quests.undesignateTodaysThree(user.sub, id);
+    return toQuestDto(quest);
   }
 }

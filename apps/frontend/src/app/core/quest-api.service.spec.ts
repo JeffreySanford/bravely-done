@@ -129,4 +129,28 @@ describe('QuestApiService', () => {
 
     expect(result).toEqual({ quest: { ...quest, status: 'SPLIT' }, character });
   });
+
+  it('designateTodaysThree posts to /quests/:id/todays-three', () => {
+    let result: unknown;
+    service.designateTodaysThree('q1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('http://test/quests/q1/todays-three');
+    expect(req.request.method).toBe('POST');
+    const designated = { ...quest, isTodaysThree: true };
+    req.flush(designated);
+
+    expect(result).toEqual(designated);
+  });
+
+  it('undesignateTodaysThree deletes /quests/:id/todays-three', () => {
+    let result: unknown;
+    service.undesignateTodaysThree('q1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('http://test/quests/q1/todays-three');
+    expect(req.request.method).toBe('DELETE');
+    const undesignated = { ...quest, isTodaysThree: false };
+    req.flush(undesignated);
+
+    expect(result).toEqual(undesignated);
+  });
 });

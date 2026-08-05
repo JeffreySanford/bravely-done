@@ -5,10 +5,12 @@ import { ApiConfiguration } from '../api/api-configuration';
 import { questControllerComplete } from '../api/fn/quests/quest-controller-complete';
 import { questControllerContinue } from '../api/fn/quests/quest-controller-continue';
 import { questControllerCreate } from '../api/fn/quests/quest-controller-create';
+import { questControllerDesignateTodaysThree } from '../api/fn/quests/quest-controller-designate-todays-three';
 import { questControllerList } from '../api/fn/quests/quest-controller-list';
 import { questControllerRetreat } from '../api/fn/quests/quest-controller-retreat';
 import { questControllerSplit } from '../api/fn/quests/quest-controller-split';
 import { questControllerStart } from '../api/fn/quests/quest-controller-start';
+import { questControllerUndesignateTodaysThree } from '../api/fn/quests/quest-controller-undesignate-todays-three';
 import { CompleteQuestResponseDto } from '../api/models/complete-quest-response-dto';
 import { CreateQuestDto } from '../api/models/create-quest-dto';
 import { QuestDto } from '../api/models/quest-dto';
@@ -56,6 +58,18 @@ export class QuestApiService {
 
   split(id: string, idempotencyKey: string): Observable<CompleteQuestResponseDto> {
     return questControllerSplit(this.http, this.config.rootUrl, { id, body: { idempotencyKey } }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  designateTodaysThree(id: string): Observable<QuestDto> {
+    return questControllerDesignateTodaysThree(this.http, this.config.rootUrl, { id }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  undesignateTodaysThree(id: string): Observable<QuestDto> {
+    return questControllerUndesignateTodaysThree(this.http, this.config.rootUrl, { id }).pipe(
       map((res) => res.body),
     );
   }

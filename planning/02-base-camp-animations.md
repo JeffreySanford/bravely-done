@@ -152,6 +152,37 @@ compiled bundle from before the field existed). Not a code bug, but a reminder t
 `nx serve` dev server does not hot-reload backend schema/DTO changes — it must be restarted (ideally
 with `--skip-nx-cache`) after backend model changes, same as CI always does with a fresh process.
 
+## UI polish pass (2026-08-05)
+
+A fourth real bug, this time caught by reading the stylesheet rather than a screenshot (the Browser
+pane in this pass's environment wasn't compositing frames, so live visual confirmation wasn't
+available — the CSS reasoning below is verifiable directly from source, but a manual look is still
+open): **every Kanban-card action button, the board's Close button, and the "Add quest" submit
+button were rendering full-width, one per line**, instead of sitting compactly side by side. The
+global `.bd-button` sets `width: 100%` (correct for the full-width buttons it was designed for, e.g.
+signup/login), and none of the button-row selectors in `base-camp.scss` overrode it — real `<button>`
+elements are `inline-block` by default, so `width: 100%` genuinely applies and forces wrapping in a
+`flex-wrap: wrap` row. Fixed by adding `width: auto` to every action-row button selector
+(`.kanban-card__actions .bd-button`, `.sprint-picker__options .bd-button`, `.kanban-board__close`,
+`.kanban-board__form .bd-button`, `.board-toggle`).
+
+A second bug in the same pass: the quest-title input reused the global `.bd-field` class directly on
+itself, but `.bd-field` (`apps/frontend/src/styles.scss`) is a label+input+hint *wrapper* — every
+other form in the app (signup, login, character creation) wraps a `<label>`/`<input>`/hint `<span>`
+in a `.bd-field` div, and the actual input styling lives in a `.bd-field input` descendant selector.
+Applying `.bd-field` straight to the `<input>` meant that descendant selector never matched, so the
+quest-title input silently fell back to unstyled browser defaults instead of the app's real input
+look. Fixed by giving it its own `.kanban-board__form-input` class with the same visual treatment,
+since this is a single unlabeled input (`aria-label` instead of a visible `<label>`) in a compact
+inline row, not a fit for the wrapper pattern.
+
+Also added: a fade/scale-in entrance for the board overlay and its backdrop (previously popped in
+with no transition), a hover state on Kanban cards, and a thin cyan-to-violet accent line along the
+top of the board and workbench panels, echoing `.bd-button`'s gradient so both read as part of the
+same visual system. Verified via the full test/typecheck/lint/build suite and the 3-engine Playwright
+e2e run (all green, no regressions) — not via a live screenshot, which is the one honest gap in this
+pass's verification.
+
 ## Evidence and performance
 
 - [ ] Trigger panel for every sequence.

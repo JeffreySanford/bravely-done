@@ -105,6 +105,26 @@
    fixed once for the older single-quest dialog (see planning/02-base-camp-
    animations.md). Fixed + centered, above a dimming backdrop that also
    closes it on click. */
+@keyframes bd-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes bd-modal-in {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+
 .board-backdrop {
   position: fixed;
   inset: 0;
@@ -114,6 +134,7 @@
   background: rgba(0, 0, 0, 0.55);
   cursor: default;
   z-index: 20;
+  animation: bd-fade-in 0.18s ease both;
 }
 
 .kanban-board {
@@ -135,6 +156,23 @@
   border: 1px solid var(--bd-surface-border);
   backdrop-filter: blur(14px);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+  animation: bd-modal-in 0.18s ease both;
+}
+
+/* A thin gradient accent along the top edge — echoes .bd-button's
+   cyan-to-violet gradient so the board and workbench panel read as part of
+   the same visual system as every interactive control, not a flat card. */
+.kanban-board::before,
+.workbench-panel::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 16px;
+  right: 16px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--bd-cyan), var(--bd-violet));
+  border-radius: 0 0 2px 2px;
+  opacity: 0.8;
 }
 
 .kanban-board__header {
@@ -145,6 +183,7 @@
 }
 
 .kanban-board__close {
+  width: auto;
   flex-shrink: 0;
 }
 
@@ -161,8 +200,31 @@
   width: 100%;
 }
 
-.kanban-board__form .bd-field {
+/* Not .bd-field — that global class is a label+input+hint wrapper (see
+   styles.scss), but this is a single unlabeled input (aria-label instead)
+   in a compact inline row, so it gets the same visual treatment as
+   .bd-field input directly rather than fighting that wrapper's own
+   flex-column/margin layout. */
+.kanban-board__form-input {
   flex: 1;
+  font: inherit;
+  color: var(--bd-text);
+  background: var(--bd-bg-elevated);
+  border: 1px solid var(--bd-surface-border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.kanban-board__form-input:focus {
+  border-color: var(--bd-cyan);
+  box-shadow: 0 0 0 3px var(--bd-cyan-soft);
+}
+
+.kanban-board__form .bd-button {
+  width: auto;
+  flex-shrink: 0;
 }
 
 .kanban-board__empty {
@@ -221,7 +283,14 @@
   padding: 8px 10px;
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
   font-size: 12px;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.kanban-card:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--bd-surface-border);
 }
 
 .kanban-card--resolved {
@@ -264,6 +333,7 @@
 
 .sprint-picker__options .bd-button,
 .kanban-card__actions .bd-button {
+  width: auto;
   padding: 4px 8px;
   font-size: 11px;
 }
@@ -275,10 +345,12 @@
 }
 
 .board-toggle {
+  width: auto;
   font-family: var(--bd-font-mono);
 }
 
 .workbench-panel {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-end;

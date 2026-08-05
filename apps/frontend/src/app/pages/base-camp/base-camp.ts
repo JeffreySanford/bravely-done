@@ -41,6 +41,7 @@ import { WORKBENCH_MAX_LEVEL, WORKBENCH_UPGRADE_COSTS } from './workbench-level'
 import {
   selectCoins,
   selectConstructionStage,
+  selectLastReward,
   selectLoading,
   selectQuests,
   selectResolvingQuestId,
@@ -95,12 +96,13 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly boardOpen = signal(false);
 
   readonly quests = this.store.selectSignal(selectQuests);
-  /** The Kanban board's four columns — Backlog/In Progress/Done/Retreated —
-   * derived from the same quest list the old flat panel used, just grouped
-   * by status instead of rendered as one list. */
+  /** The Kanban board's five columns — Backlog/In Progress/Done/Split/
+   * Retreated — derived from the same quest list the old flat panel used,
+   * just grouped by status instead of rendered as one list. */
   readonly backlogQuests = computed(() => this.quests().filter((q) => q.status === 'OPEN'));
   readonly inProgressQuests = computed(() => this.quests().filter((q) => q.status === 'IN_PROGRESS'));
   readonly doneQuests = computed(() => this.quests().filter((q) => q.status === 'COMPLETED'));
+  readonly splitQuests = computed(() => this.quests().filter((q) => q.status === 'SPLIT'));
   readonly retreatedQuests = computed(() => this.quests().filter((q) => q.status === 'RETREATED'));
   readonly constructionStage = this.store.selectSignal(selectConstructionStage);
   readonly questsLoading = this.store.selectSignal(selectLoading);
@@ -108,6 +110,17 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly xp = this.store.selectSignal(selectXp);
   readonly coins = this.store.selectSignal(selectCoins);
   readonly level = computed(() => Math.floor(this.xp() / XP_PER_LEVEL) + 1);
+  readonly lastReward = this.store.selectSignal(selectLastReward);
+  /** A single-item array (not the reward directly) so the template's `@for`
+   * can `track reward.at` — recreating the DOM node on every new reward
+   * (even an identical-looking one) is what retriggers the CSS celebration
+   * animation without any component-side setTimeout bookkeeping; the
+   * animation's own `animation-fill-mode: forwards` handles fading it back
+   * out (see base-camp.scss). */
+  readonly celebrationList = computed(() => {
+    const reward = this.lastReward();
+    return reward && (reward.xpGained > 0 || reward.coinsGained > 0) ? [reward] : [];
+  });
   readonly firewoodCount = this.store.selectSignal(selectFirewoodCount);
   readonly forageCount = this.store.selectSignal(selectForageCount);
   readonly workbenchLevel = this.store.selectSignal(selectWorkbenchLevel);
@@ -275,15 +288,19 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   }
 
   continueQuest(questId: string): void {
-    this.store.dispatch(QuestsActions.continueQuest({ questId }));
+    this.store.dispatch(QuestsActions.continueQuest({ questId, idempotencyKey: crypto.randomUUID() }));
   }
 
   completeQuest(questId: string): void {
-    this.store.dispatch(QuestsActions.completeQuest({ questId }));
+    this.store.dispatch(QuestsActions.completeQuest({ questId, idempotencyKey: crypto.randomUUID() }));
   }
 
   retreatQuest(questId: string): void {
-    this.store.dispatch(QuestsActions.retreatQuest({ questId }));
+    this.store.dispatch(QuestsActions.retreatQuest({ questId, idempotencyKey: crypto.randomUUID() }));
+  }
+
+  splitQuest(questId: string): void {
+    this.store.dispatch(QuestsActions.splitQuest({ questId, idempotencyKey: crypto.randomUUID() }));
   }
 
   upgradeWorkbench(): void {

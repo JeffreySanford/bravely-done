@@ -98,6 +98,69 @@
   pointer-events: auto;
 }
 
+/* The celebration moment for a reward grant (quest complete/split, sprint
+   Focus XP, encounter Courage XP — see quests.reducer.ts's lastReward).
+   role="status"/aria-live="polite" makes it a real accessible announcement,
+   not just a visual flourish — a screen reader user gets the same "you were
+   rewarded" signal a sighted player gets from the animation. Positioned
+   under the header rather than as a fixed/floating overlay so it never
+   competes with the Kanban board or scene for the same screen space.
+   animation-fill-mode: forwards ends the element invisible + non-interactive
+   without any component-side timer to clear it — see base-camp.ts's
+   celebrationList doc comment for how @for's `track` retriggers this on
+   every new reward. */
+@keyframes bd-celebrate {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.92);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+}
+
+.celebration-toast {
+  margin: 12px auto 0;
+  padding: 8px 18px;
+  width: fit-content;
+  border-radius: 999px;
+  background: var(--bd-surface);
+  border: 1px solid var(--bd-cyan-soft);
+  color: var(--bd-cyan);
+  font-family: var(--bd-font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  pointer-events: none;
+  animation: bd-celebrate 2.4s ease both;
+}
+
+/* Reduced motion: no rise/scale, just an instant appearance, a hold, and a
+   plain fade-out — same total on-screen duration, none of the movement. */
+@keyframes bd-celebrate-reduced {
+  0%,
+  90% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .celebration-toast {
+    animation: bd-celebrate-reduced 2.4s ease both;
+  }
+}
+
 /* An on-demand overlay (opened via the "Quests" toggle in .stage__footer)
    rather than an always-docked panel — it used to sit permanently over a
    large slice of the 3D scene, which is exactly the "quest dialog covering
@@ -315,6 +378,12 @@
 
 .kanban-card__retreated {
   color: var(--bd-text-muted);
+  font-family: var(--bd-font-mono);
+  font-size: 11px;
+}
+
+.kanban-card__split {
+  color: var(--bd-violet);
   font-family: var(--bd-font-mono);
   font-size: 11px;
 }

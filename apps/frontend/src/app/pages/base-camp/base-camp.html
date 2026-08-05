@@ -22,6 +22,15 @@
     }
   </header>
 
+  @for (reward of celebrationList(); track reward.at) {
+    <div class="celebration-toast" role="status" aria-live="polite">
+      +{{ reward.xpGained }} XP
+      @if (reward.coinsGained > 0) {
+        · +{{ reward.coinsGained }} coins
+      }
+    </div>
+  }
+
   @if (boardOpen()) {
     <button type="button" class="board-backdrop" aria-label="Dismiss quest board" (click)="closeBoard()"></button>
     <div class="kanban-board">
@@ -229,6 +238,14 @@
                   </button>
                   <button
                     type="button"
+                    class="bd-button bd-button--ghost"
+                    [disabled]="resolvingQuestId() === quest.id"
+                    (click)="splitQuest(quest.id)"
+                  >
+                    Split
+                  </button>
+                  <button
+                    type="button"
                     class="bd-button"
                     [disabled]="resolvingQuestId() === quest.id"
                     (click)="completeQuest(quest.id)"
@@ -254,6 +271,18 @@
               </div>
             } @empty {
               <p class="kanban-column__empty">Nothing delivered yet.</p>
+            }
+          </div>
+
+          <div class="kanban-column">
+            <p class="kanban-column__title">Split<span class="kanban-column__sub">Partial credit</span></p>
+            @for (quest of splitQuests(); track quest.id) {
+              <div class="kanban-card kanban-card--resolved">
+                <span class="kanban-card__title">{{ quest.title }}</span>
+                <span class="kanban-card__split">Split</span>
+              </div>
+            } @empty {
+              <p class="kanban-column__empty">Nothing split yet.</p>
             }
           </div>
 

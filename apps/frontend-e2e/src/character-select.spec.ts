@@ -119,7 +119,7 @@ test('signup through to a rendered Base Camp, and back again via character selec
   const questTitleInput = page.getByLabel('Quest title');
   const addQuestButton = page.getByRole('button', { name: 'Add quest' });
 
-  for (const title of ['Chop firewood', 'Answer three emails', 'Forage berries', 'Take a rest day']) {
+  for (const title of ['Chop firewood', 'Answer three emails', 'Forage berries', 'Take a rest day', 'Split me later']) {
     await questTitleInput.fill(title);
     await addQuestButton.click();
     await expect(page.getByText(title)).toBeVisible();
@@ -145,6 +145,20 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await restDayCard.getByRole('button', { name: 'Retreat' }).click();
   await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
   await expect(page.getByText('Level 1 — 5 XP — 0 coins')).toBeVisible();
+
+  // Split (partial credit — half QUEST_XP_REWARD/QUEST_COIN_REWARD, rounded
+  // down) needs Start first, same as Complete/Continue — only shown on
+  // In Progress cards, not Backlog.
+  await page.locator('.kanban-card', { hasText: 'Split me later' }).getByRole('button', { name: 'Start' }).click();
+  const splitCard = page.locator('.kanban-card', { hasText: 'Split me later' });
+  await splitCard.getByRole('button', { name: 'Split' }).click();
+  await expect(splitCard.getByText('Split', { exact: true })).toBeVisible();
+  // 5 Courage XP + 10 Split XP (half of QUEST_XP_REWARD=20); 5 Split coins
+  // (half of QUEST_COIN_REWARD=10).
+  await expect(page.getByText('Level 1 — 15 XP — 5 coins')).toBeVisible();
+  // The accessible celebration toast (role="status", aria-live="polite") —
+  // a real reward-grant announcement, not just a visual flourish.
+  await expect(page.getByRole('status').filter({ hasText: '+10 XP' })).toBeVisible();
 
   for (const [index, title] of ['Chop firewood', 'Answer three emails', 'Forage berries'].entries()) {
     await page.locator('.kanban-card', { hasText: title }).getByRole('button', { name: 'Start' }).click();
@@ -192,12 +206,12 @@ test('signup through to a rendered Base Camp, and back again via character selec
 
   // 3 completed quests x 20 XP / 10 coins each (see QUEST_XP_REWARD /
   // QUEST_COIN_REWARD in apps/backend/src/quest/quest.service.ts), plus the
-  // 5 Courage XP from the encounter above.
-  await expect(page.getByText('Level 1 — 65 XP — 30 coins')).toBeVisible();
+  // 5 Courage XP from the encounter and the 10 XP / 5 coins Split grant above.
+  await expect(page.getByText('Level 1 — 75 XP — 35 coins')).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
-  await expect(page.getByText('Level 1 — 65 XP — 30 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 75 XP — 35 coins')).toBeVisible();
 
   // The board defaults to closed again after a reload — reopening it is
   // what proves the underlying quest/sprint/encounter state persisted, not
@@ -209,7 +223,7 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
   // Encounters only render on Backlog/In Progress cards (Done/Retreated are
   // already resolved), so the completed encounter's persistence is proven
-  // by the surviving 65 XP total above rather than by re-finding the
+  // by the surviving 75 XP total above rather than by re-finding the
   // checklist on a card that's now moved to Done.
   await page.getByRole('button', { name: 'Close' }).click();
 
@@ -218,20 +232,20 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // first-ever arrival captured by the backend's hasArrivedAtCamp flag.
   await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
 
-  // Workbench/coins-spend slice: 30 coins covers exactly the first upgrade
-  // (10 coins — see WORKBENCH_UPGRADE_COSTS in apps/backend/src/character/
-  // character.service.ts), which should also show up as a spend against the
-  // same coins total the quest board reads (cross-reducer sync between the
-  // camp and quests NgRx features).
+  // Workbench/coins-spend slice: 35 coins covers the first upgrade (10
+  // coins — see WORKBENCH_UPGRADE_COSTS in apps/backend/src/character/
+  // character.service.ts) with 25 left over, which should also show up as
+  // a spend against the same coins total the quest board reads
+  // (cross-reducer sync between the camp and quests NgRx features).
   await expect(page.getByText('Workbench: level 0 / 3')).toBeVisible();
   await page.getByRole('button', { name: 'Upgrade for 10 coins' }).click();
   await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
-  await expect(page.getByText('Level 1 — 65 XP — 20 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 75 XP — 25 coins')).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
-  await expect(page.getByText('Level 1 — 65 XP — 20 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 75 XP — 25 coins')).toBeVisible();
 
   expect(consoleErrors).toEqual([]);
 });

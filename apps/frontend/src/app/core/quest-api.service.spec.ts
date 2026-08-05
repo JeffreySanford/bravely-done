@@ -66,24 +66,26 @@ describe('QuestApiService', () => {
     expect(result).toEqual(started);
   });
 
-  it('continue posts to /quests/:id/continue', () => {
+  it('continue posts to /quests/:id/continue with the idempotency key', () => {
     let result: unknown;
-    service.continue('q1').subscribe((res) => (result = res));
+    service.continue('q1', 'key-1').subscribe((res) => (result = res));
 
     const req = httpMock.expectOne('http://test/quests/q1/continue');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ idempotencyKey: 'key-1' });
     const continued = { ...quest, status: 'IN_PROGRESS', lastContinuedAt: '2026-01-01T00:05:00.000Z' };
     req.flush(continued);
 
     expect(result).toEqual(continued);
   });
 
-  it('complete posts to /quests/:id/complete', () => {
+  it('complete posts to /quests/:id/complete with the idempotency key', () => {
     let result: unknown;
-    service.complete('q1').subscribe((res) => (result = res));
+    service.complete('q1', 'key-1').subscribe((res) => (result = res));
 
     const req = httpMock.expectOne('http://test/quests/q1/complete');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ idempotencyKey: 'key-1' });
     const character = {
       id: 'c1',
       name: 'Ember Scout',
@@ -96,15 +98,35 @@ describe('QuestApiService', () => {
     expect(result).toEqual({ quest: { ...quest, status: 'COMPLETED' }, character });
   });
 
-  it('retreat posts to /quests/:id/retreat', () => {
+  it('retreat posts to /quests/:id/retreat with the idempotency key', () => {
     let result: unknown;
-    service.retreat('q1').subscribe((res) => (result = res));
+    service.retreat('q1', 'key-1').subscribe((res) => (result = res));
 
     const req = httpMock.expectOne('http://test/quests/q1/retreat');
     expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ idempotencyKey: 'key-1' });
     const retreated = { ...quest, status: 'RETREATED' };
     req.flush(retreated);
 
     expect(result).toEqual(retreated);
+  });
+
+  it('split posts to /quests/:id/split with the idempotency key', () => {
+    let result: unknown;
+    service.split('q1', 'key-1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('http://test/quests/q1/split');
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ idempotencyKey: 'key-1' });
+    const character = {
+      id: 'c1',
+      name: 'Ember Scout',
+      createdAt: '2026-01-01T00:00:00.000Z',
+      hasArrivedAtCamp: true,
+      campConstructionStage: 1,
+    };
+    req.flush({ quest: { ...quest, status: 'SPLIT' }, character });
+
+    expect(result).toEqual({ quest: { ...quest, status: 'SPLIT' }, character });
   });
 });

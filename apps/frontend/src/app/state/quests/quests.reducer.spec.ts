@@ -118,7 +118,7 @@ describe('questsFeature reducer', () => {
   it('continueQuest tracks which quest is resolving and clears any prior error', () => {
     const state = questsFeature.reducer(
       { ...initialQuestsState, error: 'boom' },
-      QuestsActions.continueQuest({ questId: 'q1' }),
+      QuestsActions.continueQuest({ questId: 'q1', idempotencyKey: 'key-1' }),
     );
 
     expect(state.resolvingQuestId).toBe('q1');
@@ -150,7 +150,7 @@ describe('questsFeature reducer', () => {
   it('completeQuest tracks which quest is resolving and clears any prior error', () => {
     const state = questsFeature.reducer(
       { ...initialQuestsState, error: 'boom' },
-      QuestsActions.completeQuest({ questId: 'q1' }),
+      QuestsActions.completeQuest({ questId: 'q1', idempotencyKey: 'key-1' }),
     );
 
     expect(state.resolvingQuestId).toBe('q1');
@@ -170,6 +170,7 @@ describe('questsFeature reducer', () => {
     expect(state.xp).toBe(20);
     expect(state.coins).toBe(10);
     expect(state.resolvingQuestId).toBeNull();
+    expect(state.lastReward).toEqual({ xpGained: 20, coinsGained: 10, at: expect.any(Number) });
   });
 
   it('completeQuestFailure stores the error and clears resolvingQuestId', () => {
@@ -185,7 +186,7 @@ describe('questsFeature reducer', () => {
   it('retreatQuest tracks which quest is resolving and clears any prior error', () => {
     const state = questsFeature.reducer(
       { ...initialQuestsState, error: 'boom' },
-      QuestsActions.retreatQuest({ questId: 'q1' }),
+      QuestsActions.retreatQuest({ questId: 'q1', idempotencyKey: 'key-1' }),
     );
 
     expect(state.resolvingQuestId).toBe('q1');
@@ -208,6 +209,41 @@ describe('questsFeature reducer', () => {
     const state = questsFeature.reducer(
       { ...initialQuestsState, resolvingQuestId: 'q1' },
       QuestsActions.retreatQuestFailure({ error: 'boom' }),
+    );
+
+    expect(state.error).toBe('boom');
+    expect(state.resolvingQuestId).toBeNull();
+  });
+
+  it('splitQuest tracks which quest is resolving and clears any prior error', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, error: 'boom' },
+      QuestsActions.splitQuest({ questId: 'q1', idempotencyKey: 'key-1' }),
+    );
+
+    expect(state.resolvingQuestId).toBe('q1');
+    expect(state.error).toBeNull();
+  });
+
+  it('splitQuestSuccess replaces only the matching quest, updates xp/coins, and clears resolvingQuestId', () => {
+    const otherQuest = { ...quest, id: 'q2', title: 'Forage plants' };
+    const split = { ...quest, status: 'SPLIT' as const };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [quest, otherQuest], resolvingQuestId: 'q1' },
+      QuestsActions.splitQuestSuccess({ quest: split, xp: 10, coins: 5 }),
+    );
+
+    expect(state.quests).toEqual([split, otherQuest]);
+    expect(state.xp).toBe(10);
+    expect(state.coins).toBe(5);
+    expect(state.resolvingQuestId).toBeNull();
+    expect(state.lastReward).toEqual({ xpGained: 10, coinsGained: 5, at: expect.any(Number) });
+  });
+
+  it('splitQuestFailure stores the error and clears resolvingQuestId', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, resolvingQuestId: 'q1' },
+      QuestsActions.splitQuestFailure({ error: 'boom' }),
     );
 
     expect(state.error).toBe('boom');
@@ -241,6 +277,7 @@ describe('questsFeature reducer', () => {
     );
 
     expect(state.xp).toBe(35);
+    expect(state.lastReward).toEqual({ xpGained: 15, coinsGained: 0, at: expect.any(Number) });
   });
 
   it('syncs xp when the encounters feature reports a successful encounter completion', () => {
@@ -258,5 +295,30 @@ describe('questsFeature reducer', () => {
     );
 
     expect(state.xp).toBe(25);
+    expect(state.lastReward).toEqual({ xpGained: 5, coinsGained: 0, at: expect.any(Number) });
+  });
+
+  it('does not set lastReward when a workbench upgrade spends coins (a spend, not a grant)', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, coins: 30 },
+      CampActions.upgradeWorkbenchSuccess({ workbenchLevel: 1, coins: 20 }),
+    );
+
+    expect(state.lastReward).toBeNull();
+  });
+
+  it('setCharacterContext never replays a celebration for XP/coins the player already had', () => {
+    const dirty = questsFeature.reducer(
+      initialQuestsState,
+      QuestsActions.completeQuestSuccess({ quest, constructionStage: 1, xp: 20, coins: 10 }),
+    );
+    expect(dirty.lastReward).not.toBeNull();
+
+    const state = questsFeature.reducer(
+      dirty,
+      QuestsActions.setCharacterContext({ characterId: 'c1', constructionStage: 1, xp: 20, coins: 10 }),
+    );
+
+    expect(state.lastReward).toBeNull();
   });
 });

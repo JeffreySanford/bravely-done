@@ -35,6 +35,7 @@ describe('QuestController', () => {
       continue: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.IN_PROGRESS, lastContinuedAt: new Date() }),
       complete: jest.fn().mockResolvedValue({ quest: { ...quest, status: QuestStatus.COMPLETED }, character }),
       retreat: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.RETREATED }),
+      split: jest.fn().mockResolvedValue({ quest: { ...quest, status: QuestStatus.SPLIT }, character }),
     } as unknown as QuestService;
     return { controller: new QuestController(quests), quests };
   }
@@ -91,9 +92,9 @@ describe('QuestController', () => {
   it('continue delegates to the service and returns the public shape', async () => {
     const { controller, quests } = buildController();
 
-    const result = await controller.continue(user, 'quest-1');
+    const result = await controller.continue(user, 'quest-1', { idempotencyKey: 'key-1' });
 
-    expect(quests.continue).toHaveBeenCalledWith('user-1', 'quest-1');
+    expect(quests.continue).toHaveBeenCalledWith('user-1', 'quest-1', 'key-1');
     expect(result).toEqual(
       expect.objectContaining({ status: QuestStatus.IN_PROGRESS, lastContinuedAt: expect.any(Date) }),
     );
@@ -102,9 +103,9 @@ describe('QuestController', () => {
   it('complete delegates to the service and returns both public shapes', async () => {
     const { controller, quests } = buildController();
 
-    const result = await controller.complete(user, 'quest-1');
+    const result = await controller.complete(user, 'quest-1', { idempotencyKey: 'key-1' });
 
-    expect(quests.complete).toHaveBeenCalledWith('user-1', 'quest-1');
+    expect(quests.complete).toHaveBeenCalledWith('user-1', 'quest-1', 'key-1');
     expect(result).toEqual({
       quest: { ...publicQuestShape, status: QuestStatus.COMPLETED },
       character: publicCharacterShape,
@@ -114,9 +115,21 @@ describe('QuestController', () => {
   it('retreat delegates to the service and returns the public shape', async () => {
     const { controller, quests } = buildController();
 
-    const result = await controller.retreat(user, 'quest-1');
+    const result = await controller.retreat(user, 'quest-1', { idempotencyKey: 'key-1' });
 
-    expect(quests.retreat).toHaveBeenCalledWith('user-1', 'quest-1');
+    expect(quests.retreat).toHaveBeenCalledWith('user-1', 'quest-1', 'key-1');
     expect(result).toEqual({ ...publicQuestShape, status: QuestStatus.RETREATED });
+  });
+
+  it('split delegates to the service and returns both public shapes', async () => {
+    const { controller, quests } = buildController();
+
+    const result = await controller.split(user, 'quest-1', { idempotencyKey: 'key-1' });
+
+    expect(quests.split).toHaveBeenCalledWith('user-1', 'quest-1', 'key-1');
+    expect(result).toEqual({
+      quest: { ...publicQuestShape, status: QuestStatus.SPLIT },
+      character: publicCharacterShape,
+    });
   });
 });

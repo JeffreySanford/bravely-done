@@ -7,6 +7,7 @@ import { questControllerContinue } from '../api/fn/quests/quest-controller-conti
 import { questControllerCreate } from '../api/fn/quests/quest-controller-create';
 import { questControllerList } from '../api/fn/quests/quest-controller-list';
 import { questControllerRetreat } from '../api/fn/quests/quest-controller-retreat';
+import { questControllerSplit } from '../api/fn/quests/quest-controller-split';
 import { questControllerStart } from '../api/fn/quests/quest-controller-start';
 import { CompleteQuestResponseDto } from '../api/models/complete-quest-response-dto';
 import { CreateQuestDto } from '../api/models/create-quest-dto';
@@ -35,20 +36,26 @@ export class QuestApiService {
     );
   }
 
-  continue(id: string): Observable<QuestDto> {
-    return questControllerContinue(this.http, this.config.rootUrl, { id }).pipe(
+  continue(id: string, idempotencyKey: string): Observable<QuestDto> {
+    return questControllerContinue(this.http, this.config.rootUrl, { id, body: { idempotencyKey } }).pipe(
       map((res) => res.body),
     );
   }
 
-  complete(id: string): Observable<CompleteQuestResponseDto> {
-    return questControllerComplete(this.http, this.config.rootUrl, { id }).pipe(
+  complete(id: string, idempotencyKey: string): Observable<CompleteQuestResponseDto> {
+    return questControllerComplete(this.http, this.config.rootUrl, { id, body: { idempotencyKey } }).pipe(
       map((res) => res.body),
     );
   }
 
-  retreat(id: string): Observable<QuestDto> {
-    return questControllerRetreat(this.http, this.config.rootUrl, { id }).pipe(
+  retreat(id: string, idempotencyKey: string): Observable<QuestDto> {
+    return questControllerRetreat(this.http, this.config.rootUrl, { id, body: { idempotencyKey } }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  split(id: string, idempotencyKey: string): Observable<CompleteQuestResponseDto> {
+    return questControllerSplit(this.http, this.config.rootUrl, { id, body: { idempotencyKey } }).pipe(
       map((res) => res.body),
     );
   }

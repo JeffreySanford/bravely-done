@@ -300,10 +300,30 @@ describe('BaseCamp', () => {
 
       component.completeQuest('q1');
 
-      expect(complete).toHaveBeenCalledWith('q1');
+      expect(complete).toHaveBeenCalledWith('q1', expect.any(String));
       expect(component.constructionStage()).toBe(1);
       expect(component.xp()).toBe(20);
       expect(component.coins()).toBe(10);
+    });
+
+    it('populates celebrationList with the xp/coins gained', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const complete = jest.fn().mockReturnValue(
+        of({
+          quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
+          character: buildCharacter({ campConstructionStage: 1, xp: 20, coins: 10 }),
+        }),
+      );
+      const { component } = setup({ arrive }, { complete });
+      component.ngOnInit();
+
+      expect(component.celebrationList()).toEqual([]);
+
+      component.completeQuest('q1');
+
+      expect(component.celebrationList()).toEqual([
+        { xpGained: 20, coinsGained: 10, at: expect.any(Number) },
+      ]);
     });
   });
 
@@ -326,7 +346,7 @@ describe('BaseCamp', () => {
 
       component.continueQuest('q1');
 
-      expect(continue_).toHaveBeenCalledWith('q1');
+      expect(continue_).toHaveBeenCalledWith('q1', expect.any(String));
     });
   });
 
@@ -341,7 +361,27 @@ describe('BaseCamp', () => {
 
       component.retreatQuest('q1');
 
-      expect(retreat).toHaveBeenCalledWith('q1');
+      expect(retreat).toHaveBeenCalledWith('q1', expect.any(String));
+    });
+  });
+
+  describe('splitQuest', () => {
+    it('dispatches splitQuest and updates xp/coins', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const split = jest.fn().mockReturnValue(
+        of({
+          quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'SPLIT', createdAt: '2026-01-01', completedAt: null },
+          character: buildCharacter({ xp: 10, coins: 5 }),
+        }),
+      );
+      const { component } = setup({ arrive }, { split });
+      component.ngOnInit();
+
+      component.splitQuest('q1');
+
+      expect(split).toHaveBeenCalledWith('q1', expect.any(String));
+      expect(component.xp()).toBe(10);
+      expect(component.coins()).toBe(5);
     });
   });
 

@@ -12,11 +12,18 @@ export interface QuestsState {
   coins: number;
   quests: QuestDto[];
   loading: boolean;
-  /** The quest currently being started, continued, completed, or retreated
-   * from — a quest can only be in one transition at a time, so one field
-   * covers all four. */
+  /** The quest currently being started, continued, completed, retreated, or
+   * split — a quest can only be in one transition at a time, so one field
+   * covers all five. */
   resolvingQuestId: string | null;
   error: string | null;
+  /** The most recent XP/coin grant, computed as a delta at the moment each
+   * reward-bearing success action lands (never in setCharacterContext, so a
+   * page load never replays a celebration for XP/coins the player already
+   * had). Drives the celebration toast (base-camp.html) — see
+   * documentation/product/base-camp.md. Not persisted; a fresh page load
+   * starts with this null. */
+  lastReward: { xpGained: number; coinsGained: number; at: number } | null;
 }
 
 export const initialQuestsState: QuestsState = {
@@ -28,6 +35,7 @@ export const initialQuestsState: QuestsState = {
   loading: false,
   resolvingQuestId: null,
   error: null,
+  lastReward: null,
 };
 
 export const questsFeature = createFeature({
@@ -99,6 +107,7 @@ export const questsFeature = createFeature({
       xp,
       coins,
       resolvingQuestId: null,
+      lastReward: { xpGained: xp - state.xp, coinsGained: coins - state.coins, at: Date.now() },
     })),
     on(QuestsActions.completeQuestFailure, (state, { error }): QuestsState => ({
       ...state,
@@ -122,6 +131,25 @@ export const questsFeature = createFeature({
       error,
     })),
 
+    on(QuestsActions.splitQuest, (state, { questId }): QuestsState => ({
+      ...state,
+      resolvingQuestId: questId,
+      error: null,
+    })),
+    on(QuestsActions.splitQuestSuccess, (state, { quest, xp, coins }): QuestsState => ({
+      ...state,
+      quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
+      xp,
+      coins,
+      resolvingQuestId: null,
+      lastReward: { xpGained: xp - state.xp, coinsGained: coins - state.coins, at: Date.now() },
+    })),
+    on(QuestsActions.splitQuestFailure, (state, { error }): QuestsState => ({
+      ...state,
+      resolvingQuestId: null,
+      error,
+    })),
+
     // Coins live here (alongside xp) since both are quest-reward currency,
     // but they're also spent by the camp feature's workbench upgrade — the
     // quests reducer listens for that success action too, rather than
@@ -138,6 +166,7 @@ export const questsFeature = createFeature({
     on(SprintsActions.completeSprintSuccess, (state, { xp }): QuestsState => ({
       ...state,
       xp,
+      lastReward: { xpGained: xp - state.xp, coinsGained: 0, at: Date.now() },
     })),
 
     // Same cross-feature sync again: Courage XP is granted by the
@@ -146,6 +175,7 @@ export const questsFeature = createFeature({
     on(EncountersActions.completeEncounterSuccess, (state, { xp }): QuestsState => ({
       ...state,
       xp,
+      lastReward: { xpGained: xp - state.xp, coinsGained: 0, at: Date.now() },
     })),
   ),
 });
@@ -162,4 +192,5 @@ export const {
   selectLoading,
   selectResolvingQuestId,
   selectError,
+  selectLastReward,
 } = questsFeature;

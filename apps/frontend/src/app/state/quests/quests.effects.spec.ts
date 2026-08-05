@@ -10,7 +10,7 @@ const quest = { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'OPEN' 
 describe('QuestsEffects', () => {
   let actions$: Observable<unknown>;
   let effects: QuestsEffects;
-  let questApi: jest.Mocked<Pick<QuestApiService, 'list' | 'create' | 'start' | 'continue' | 'complete' | 'retreat'>>;
+  let questApi: jest.Mocked<Pick<QuestApiService, 'list' | 'create' | 'start' | 'continue' | 'complete' | 'retreat' | 'split'>>;
 
   function setup() {
     TestBed.configureTestingModule({
@@ -31,6 +31,7 @@ describe('QuestsEffects', () => {
       continue: jest.fn(),
       complete: jest.fn(),
       retreat: jest.fn(),
+      split: jest.fn(),
     };
   });
 
@@ -113,11 +114,11 @@ describe('QuestsEffects', () => {
     it('emits continueQuestSuccess on success', (done) => {
       const continued = { ...quest, status: 'IN_PROGRESS' as const };
       questApi.continue.mockReturnValue(of(continued));
-      actions$ = of(QuestsActions.continueQuest({ questId: 'q1' }));
+      actions$ = of(QuestsActions.continueQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
       setup();
 
       effects.continueQuest$.subscribe((action) => {
-        expect(questApi.continue).toHaveBeenCalledWith('q1');
+        expect(questApi.continue).toHaveBeenCalledWith('q1', 'key-1');
         expect(action).toEqual(QuestsActions.continueQuestSuccess({ quest: continued }));
         done();
       });
@@ -125,7 +126,7 @@ describe('QuestsEffects', () => {
 
     it('emits continueQuestFailure on error', (done) => {
       questApi.continue.mockReturnValue(throwError(() => new Error('boom')));
-      actions$ = of(QuestsActions.continueQuest({ questId: 'q1' }));
+      actions$ = of(QuestsActions.continueQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
       setup();
 
       effects.continueQuest$.subscribe((action) => {
@@ -139,11 +140,11 @@ describe('QuestsEffects', () => {
     it('emits completeQuestSuccess with the new construction stage, xp, and coins on success', (done) => {
       const character = { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, xp: 20, coins: 10 };
       questApi.complete.mockReturnValue(of({ quest: { ...quest, status: 'COMPLETED' as const }, character }));
-      actions$ = of(QuestsActions.completeQuest({ questId: 'q1' }));
+      actions$ = of(QuestsActions.completeQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
       setup();
 
       effects.completeQuest$.subscribe((action) => {
-        expect(questApi.complete).toHaveBeenCalledWith('q1');
+        expect(questApi.complete).toHaveBeenCalledWith('q1', 'key-1');
         expect(action).toEqual(
           QuestsActions.completeQuestSuccess({
             quest: { ...quest, status: 'COMPLETED' },
@@ -158,7 +159,7 @@ describe('QuestsEffects', () => {
 
     it('emits completeQuestFailure on error', (done) => {
       questApi.complete.mockReturnValue(throwError(() => new Error('boom')));
-      actions$ = of(QuestsActions.completeQuest({ questId: 'q1' }));
+      actions$ = of(QuestsActions.completeQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
       setup();
 
       effects.completeQuest$.subscribe((action) => {
@@ -171,11 +172,11 @@ describe('QuestsEffects', () => {
   describe('retreatQuest$', () => {
     it('emits retreatQuestSuccess on success', (done) => {
       questApi.retreat.mockReturnValue(of({ ...quest, status: 'RETREATED' as const }));
-      actions$ = of(QuestsActions.retreatQuest({ questId: 'q1' }));
+      actions$ = of(QuestsActions.retreatQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
       setup();
 
       effects.retreatQuest$.subscribe((action) => {
-        expect(questApi.retreat).toHaveBeenCalledWith('q1');
+        expect(questApi.retreat).toHaveBeenCalledWith('q1', 'key-1');
         expect(action).toEqual(QuestsActions.retreatQuestSuccess({ quest: { ...quest, status: 'RETREATED' } }));
         done();
       });
@@ -183,11 +184,39 @@ describe('QuestsEffects', () => {
 
     it('emits retreatQuestFailure on error', (done) => {
       questApi.retreat.mockReturnValue(throwError(() => new Error('boom')));
-      actions$ = of(QuestsActions.retreatQuest({ questId: 'q1' }));
+      actions$ = of(QuestsActions.retreatQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
       setup();
 
       effects.retreatQuest$.subscribe((action) => {
         expect(action.type).toBe(QuestsActions.retreatQuestFailure.type);
+        done();
+      });
+    });
+  });
+
+  describe('splitQuest$', () => {
+    it('emits splitQuestSuccess with xp and coins on success', (done) => {
+      const character = { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, xp: 10, coins: 5 };
+      questApi.split.mockReturnValue(of({ quest: { ...quest, status: 'SPLIT' as const }, character }));
+      actions$ = of(QuestsActions.splitQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
+      setup();
+
+      effects.splitQuest$.subscribe((action) => {
+        expect(questApi.split).toHaveBeenCalledWith('q1', 'key-1');
+        expect(action).toEqual(
+          QuestsActions.splitQuestSuccess({ quest: { ...quest, status: 'SPLIT' }, xp: 10, coins: 5 }),
+        );
+        done();
+      });
+    });
+
+    it('emits splitQuestFailure on error', (done) => {
+      questApi.split.mockReturnValue(throwError(() => new Error('boom')));
+      actions$ = of(QuestsActions.splitQuest({ questId: 'q1', idempotencyKey: 'key-1' }));
+      setup();
+
+      effects.splitQuest$.subscribe((action) => {
+        expect(action.type).toBe(QuestsActions.splitQuestFailure.type);
         done();
       });
     });

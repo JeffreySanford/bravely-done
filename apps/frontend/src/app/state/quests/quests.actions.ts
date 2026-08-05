@@ -23,16 +23,23 @@ export const QuestsActions = createActionGroup({
     'Start Quest Success': props<{ quest: QuestDto }>(),
     'Start Quest Failure': props<{ error: string }>(),
 
-    'Continue Quest': props<{ questId: string }>(),
+    // idempotencyKey is a fresh client-generated UUID per click (see
+    // base-camp.ts) — protects against a duplicate network retry
+    // re-applying the same resolution twice (see QuestService.isDuplicateCall).
+    'Continue Quest': props<{ questId: string; idempotencyKey: string }>(),
     'Continue Quest Success': props<{ quest: QuestDto }>(),
     'Continue Quest Failure': props<{ error: string }>(),
 
-    'Complete Quest': props<{ questId: string }>(),
+    'Complete Quest': props<{ questId: string; idempotencyKey: string }>(),
     'Complete Quest Success': props<{ quest: QuestDto; constructionStage: number; xp: number; coins: number }>(),
     'Complete Quest Failure': props<{ error: string }>(),
 
-    'Retreat Quest': props<{ questId: string }>(),
+    'Retreat Quest': props<{ questId: string; idempotencyKey: string }>(),
     'Retreat Quest Success': props<{ quest: QuestDto }>(),
     'Retreat Quest Failure': props<{ error: string }>(),
+
+    'Split Quest': props<{ questId: string; idempotencyKey: string }>(),
+    'Split Quest Success': props<{ quest: QuestDto; xp: number; coins: number }>(),
+    'Split Quest Failure': props<{ error: string }>(),
   },
 });

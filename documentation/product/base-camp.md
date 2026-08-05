@@ -89,20 +89,26 @@ character select (return visits):
   `POST /characters/:id/forage`), a stream landmark (still visual only), and the quest board/chest/
   treasury/bridge/workbench landmarks. The tent-erect animation is correctly gated to a character's
   true first-ever arrival via a backend flag (`Character.hasArrivedAtCamp`), not just client state. The
-  quest board is a real in-game Kanban board (Backlog/In Progress/Done/Retreated columns,
+  quest board is a real in-game Kanban board (Backlog/In Progress/Done/Split/Retreated columns,
   `apps/frontend/src/app/pages/base-camp/base-camp.html`), opened on demand via a "Quests" toggle
   rather than docked on screen permanently — it used to always cover a large slice of the 3D scene,
   which is exactly the kind of thing the campfire-visibility fix earlier in this doc's history already
   flagged as a real problem, so the board now overlays centered above a dimming backdrop and closes on
   either the backdrop or an explicit Close button. A player creates a quest, moves it into
-  In Progress (`POST /quests/:id/start`), then completes, continues, or retreats from it
+  In Progress (`POST /quests/:id/start`), then completes, continues, retreats, or splits it
   (`apps/backend/src/quest/`); completing one advances real backend progress
   (`Character.campConstructionStage`, `xp`, `coins`) and the bridge visibly repairs, persisting across
   reloads. Retreating is a real, penalty-free resolution available from Backlog or In Progress — no
-  reward, no construction-stage change. Continuing (In Progress cards only, alongside Retreat/Complete)
-  stamps `Quest.lastContinuedAt` and leaves the quest In Progress — also no reward, letting a work
-  session end with real progress logged without forcing a premature complete or retreat. Coins have a
-  first real sink too: clicking the workbench (real
+  reward, no construction-stage change. Continuing (In Progress cards only, alongside Retreat/Split/
+  Complete) stamps `Quest.lastContinuedAt` and leaves the quest In Progress — also no reward, letting a
+  work session end with real progress logged without forcing a premature complete or retreat. Splitting
+  (also In Progress only) grants half the quest's XP/coins (rounded down) and moves it to its own Split
+  column — honest partial credit for real progress that won't finish as scoped, distinct from full-credit
+  Complete and no-credit Retreat. `complete`/`continue`/`retreat`/`split` all accept an optional
+  client-generated idempotency key so a duplicate network retry can't double-apply a resolution. Every
+  reward grant (quest complete/split, sprint Focus XP, encounter Courage XP) now raises a real accessible
+  celebration — a `role="status"`/`aria-live="polite"` toast showing the XP/coins gained, respecting
+  `prefers-reduced-motion`. Coins have a first real sink too: clicking the workbench (real
   raycasting) spends coins on a capped level upgrade (`POST /characters/:id/upgrade-workbench`),
   rejected if unaffordable and a no-op past the cap — and it now has a real capability unlock: each
   level increases how much firewood/forage one chop/forage click grants (1 unit at level 0 up to 4 at
@@ -113,8 +119,8 @@ character select (return visits):
   timestamps, never the client's word) actually reaches the target; sprint completion is separate from
   quest completion, so a quest can span more than one sprint. An active sprint also now has a real,
   gentle scene reaction — a calm halo fades in around the companion while any sprint is running, and
-  fades back out on pause/completion, distinct from the game's celebratory reward pulses since a sprint
-  is sustained focus, not a momentary win. A quest can also hold small Encounters — a checklist of
+  fades back out on pause/completion, distinct from the celebration toast above since a sprint is
+  sustained focus, not a momentary win. A quest can also hold small Encounters — a checklist of
   small actionable steps (`apps/backend/src/encounter/`), shown on Backlog/In Progress cards, with no
   bearing on the quest's own resolution (no gating, no retreat-equivalent); completing one grants a
   small flat Courage XP. Base Camp's header shows the character's level, XP, and coins. Quest,
@@ -123,7 +129,7 @@ character select (return visits):
   `apps/frontend/src/app/state/sprints/`, `apps/frontend/src/app/state/encounters/`), not local
   component state.
 - **Not yet built**: wandering-animal interaction, and the
-  "split"/"call party" resolutions on top of quests (see
+  "call party" resolution on top of quests (needs the social/guild system — see
   [Plan 03](../../planning/03-first-brave-step.md)), and the animation director's fuller event set
   (quest accepted, loot reveal, etc. — arrival, quest-completion, tree-chopping, foraging, companion
   upkeep, workbench upgrades, and sprint focus are wired so far). See

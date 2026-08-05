@@ -86,12 +86,17 @@ enum QuestStatus {
   /// construction, but is a deliberate, real resolution, not a failure
   /// state.
   RETREATED
+  /// Partial credit — "meaningful progress made, but the quest as scoped
+  /// won't be finished" (game-loop.md's five resolutions). Grants half
+  /// QUEST_XP_REWARD/QUEST_COIN_REWARD (rounded down) via QuestService.split
+  /// and resolves the quest, distinct from both Complete (full credit) and
+  /// Retreat (no credit).
+  SPLIT
 }
 
 /// Deliberately minimal first slice of the real quest system (see planning/
 /// 03-first-brave-step.md): a title, a status, and (once completed) a
-/// deterministic reward. Idempotency keys are a later milestone layered on
-/// top of this, not built yet.
+/// deterministic reward.
 model Quest {
   id          String      @id @default(uuid())
   characterId String
@@ -107,6 +112,14 @@ model Quest {
   /// (same reward-free precedent as retreat); this is durable history for
   /// a future Chronicle/session-summary feature, not shown prominently yet.
   lastContinuedAt DateTime?
+  /// The client-supplied idempotency key from the most recently processed
+  /// resolution call (complete/continue/retreat/split) on this quest, if
+  /// any. A duplicate network retry carrying the same key as the last one
+  /// processed is returned as-is without re-executing the mutation — this
+  /// matters most for continue(), which is deliberately NOT idempotent by
+  /// status alone (it re-stamps on every real call), so without a key a
+  /// retry would be indistinguishable from a second genuine continue.
+  lastIdempotencyKey String?
   sprints     Sprint[]
   encounters  Encounter[]
 

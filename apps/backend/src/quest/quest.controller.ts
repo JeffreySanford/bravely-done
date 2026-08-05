@@ -7,6 +7,7 @@ import type { JwtPayload } from '../auth/jwt-payload.interface';
 import { CompleteQuestResponseDto } from './dto/complete-quest-response.dto';
 import { CreateQuestDto } from './dto/create-quest.dto';
 import { QuestDto } from './dto/quest.dto';
+import { ResolveQuestDto } from './dto/resolve-quest.dto';
 import { toQuestDto } from './quest.mapper';
 import { QuestService } from './quest.service';
 
@@ -48,27 +49,54 @@ export class QuestController {
   @Post('quests/:id/continue')
   @ApiOperation({ summary: 'Record an honest "made progress, ending the session here" resolution' })
   @ApiOkResponse({ type: QuestDto })
-  async continue(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<QuestDto> {
-    const quest = await this.quests.continue(user.sub, id);
+  async continue(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: ResolveQuestDto,
+  ): Promise<QuestDto> {
+    const quest = await this.quests.continue(user.sub, id, dto.idempotencyKey);
     return toQuestDto(quest);
   }
 
   @Post('quests/:id/complete')
   @ApiOperation({ summary: 'Complete a quest and advance the camp construction stage' })
   @ApiOkResponse({ type: CompleteQuestResponseDto })
-  async complete(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<CompleteQuestResponseDto> {
-    const { quest, character } = await this.quests.complete(user.sub, id);
-    const dto = new CompleteQuestResponseDto();
-    dto.quest = toQuestDto(quest);
-    dto.character = toCharacterDto(character);
-    return dto;
+  async complete(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: ResolveQuestDto,
+  ): Promise<CompleteQuestResponseDto> {
+    const { quest, character } = await this.quests.complete(user.sub, id, dto.idempotencyKey);
+    const response = new CompleteQuestResponseDto();
+    response.quest = toQuestDto(quest);
+    response.character = toCharacterDto(character);
+    return response;
   }
 
   @Post('quests/:id/retreat')
   @ApiOperation({ summary: 'Retreat from a quest with no penalty and no reward' })
   @ApiOkResponse({ type: QuestDto })
-  async retreat(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<QuestDto> {
-    const quest = await this.quests.retreat(user.sub, id);
+  async retreat(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: ResolveQuestDto,
+  ): Promise<QuestDto> {
+    const quest = await this.quests.retreat(user.sub, id, dto.idempotencyKey);
     return toQuestDto(quest);
+  }
+
+  @Post('quests/:id/split')
+  @ApiOperation({ summary: 'Split a quest for partial credit — half reward, resolved' })
+  @ApiOkResponse({ type: CompleteQuestResponseDto })
+  async split(
+    @CurrentUser() user: JwtPayload,
+    @Param('id') id: string,
+    @Body() dto: ResolveQuestDto,
+  ): Promise<CompleteQuestResponseDto> {
+    const { quest, character } = await this.quests.split(user.sub, id, dto.idempotencyKey);
+    const response = new CompleteQuestResponseDto();
+    response.quest = toQuestDto(quest);
+    response.character = toCharacterDto(character);
+    return response;
   }
 }

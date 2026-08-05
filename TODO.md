@@ -110,27 +110,38 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       idle timers. Verified live via direct API calls (including backdating a real Postgres row to prove
       the success path, not just the rejection path) and a 3-engine Playwright e2e run covering the
       full start/pause/resume flow with "Finish sprint" asserted disabled throughout.
-- [x] Resolve complete, continue, or retreat — three of four resolutions are real (`POST /quests/:id/
-      complete`, `POST /quests/:id/continue`, `POST /quests/:id/retreat`), all accepting a quest from
-      `OPEN` or `IN_PROGRESS`; "split"/"call party" (need the social system) are still open. Continue
-      stamps `Quest.lastContinuedAt` (re-stamped on every call, not just the first) and leaves the quest
-      `IN_PROGRESS` with no reward — same reward-free precedent as retreat, durable history for a future
-      session-summary feature rather than something surfaced prominently today. A "Continue" button
-      sits alongside Retreat/Complete on In Progress Kanban cards only. Verified live via direct API
-      calls (moves OPEN→IN_PROGRESS+stamps, re-stamps on repeat calls, no-op once COMPLETED/RETREATED)
-      and a 3-engine Playwright e2e run asserting a Continue click leaves the quest in the In Progress
-      column before it's completed normally.
+- [x] Resolve complete, continue, retreat, or split — four of five resolutions are real (`POST /quests/
+      :id/complete`, `POST /quests/:id/continue`, `POST /quests/:id/retreat`, `POST /quests/:id/split`),
+      all accepting a quest from `OPEN` or `IN_PROGRESS`; "call party" (needs the social system) is still
+      open. Continue stamps `Quest.lastContinuedAt` (re-stamped on every call, not just the first) and
+      leaves the quest `IN_PROGRESS` with no reward — same reward-free precedent as retreat, durable
+      history for a future session-summary feature rather than something surfaced prominently today. A
+      "Continue" button sits alongside Retreat/Split/Complete on In Progress Kanban cards only. Split
+      grants half `QUEST_XP_REWARD`/`QUEST_COIN_REWARD` (rounded down) and moves the quest to a real
+      Split Kanban column — partial credit for real progress that won't finish as scoped, distinct from
+      full-credit Complete and no-credit Retreat. Verified live via direct API calls (Continue:
+      moves OPEN→IN_PROGRESS+stamps, re-stamps on repeat calls, no-op once COMPLETED/RETREATED/SPLIT;
+      Split: half reward granted, idempotent on repeat) and a 3-engine Playwright e2e run asserting a
+      Continue click leaves a quest in the In Progress column before it's completed normally, and a
+      Split click moves another to the Split column with the correct half reward and an accessible
+      celebration toast.
 - [x] Grant deterministic XP and coins (`QUEST_XP_REWARD` = 20, `QUEST_COIN_REWARD` = 10 per
-      completion) — a level number now displays in Base Camp (`Level {n} — {xp} XP — {coins} coins`).
-      "Materials" are represented by the existing bridge construction stage, not a separate counter.
+      completion, `SPLIT_XP_REWARD`/`SPLIT_COIN_REWARD` = half that, rounded down, per split) — a level
+      number now displays in Base Camp (`Level {n} — {xp} XP — {coins} coins`). "Materials" are
+      represented by the existing bridge construction stage, not a separate counter.
 - [x] Make reward application transactional — the quest-status update and the xp/coins/construction-
-      stage grant happen in one `prisma.$transaction`, so a quest can't end up completed without its
-      reward. Client-supplied idempotency keys (for duplicate-request protection beyond the natural
-      "already resolved" check) are still open.
-- [x] Verify quest creation, completion, retreat, and reward persistence through unit and Playwright
-      tests (backend + NgRx unit tests, a 3-engine e2e run that retreats one quest, completes three,
-      and confirms XP/coins/level survive a reload). No API integration test tier exists yet — still
-      open.
+      stage grant happen in one `prisma.$transaction`, so a quest can't end up completed (or split)
+      without its reward. `complete`/`continue`/`retreat`/`split` all accept an optional client-generated
+      `idempotencyKey` (a fresh UUID per click); `Quest.lastIdempotencyKey` stores the last one
+      processed, and a duplicate network retry carrying the same key is returned as-is without
+      re-executing the mutation — matters most for `continue()`, which deliberately isn't idempotent by
+      status alone. Verified live: same key twice leaves state unchanged, a fresh key re-applies
+      normally.
+- [x] Verify quest creation, completion, retreat, split, and reward persistence through unit,
+      integration, and Playwright tests (backend + NgRx unit tests including the idempotency-key
+      dedupe and the celebration `lastReward` delta; a real API integration tier in `apps/backend-e2e`
+      hitting the actual running backend + Postgres, not mocked Prisma; a 3-engine e2e run that retreats
+      one quest, splits another, completes three, and confirms XP/coins/level survive a reload).
 - [x] Give coins a real sink: workbench upgrades (`POST /characters/:id/upgrade-workbench`, capped at
       `WORKBENCH_MAX_LEVEL`, costs in `WORKBENCH_UPGRADE_COSTS`) — see [Plan 02](planning/
       02-base-camp-animations.md) for the scene wiring. Verified live: affordable/unaffordable/
@@ -167,6 +178,11 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       `(ngSubmit)` never fired because the component only imported `ReactiveFormsModule`, not
       `FormsModule`, so the browser fell back to a native full-page form submission; fixed by importing
       `FormsModule` too.
+- [x] Trigger an accessible celebration on every reward grant (quest complete/split, sprint Focus XP,
+      encounter Courage XP) — a `role="status"`/`aria-live="polite"` toast (`.celebration-toast`) showing
+      the actual XP/coins gained, computed once as a delta in the NgRx reducer (`QuestsState.lastReward`)
+      so a page load or a workbench-upgrade coin spend never falsely triggers one. Respects
+      `prefers-reduced-motion` (same ~2.4s duration, no movement in the reduced variant).
 
 ## Later milestones
 

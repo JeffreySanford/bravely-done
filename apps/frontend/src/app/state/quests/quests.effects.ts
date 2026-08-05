@@ -50,8 +50,8 @@ export class QuestsEffects {
   continueQuest$ = createEffect(() =>
     this.actions$.pipe(
       ofType(QuestsActions.continueQuest),
-      exhaustMap(({ questId }) =>
-        this.questApi.continue(questId).pipe(
+      exhaustMap(({ questId, idempotencyKey }) =>
+        this.questApi.continue(questId, idempotencyKey).pipe(
           map((quest) => QuestsActions.continueQuestSuccess({ quest })),
           catchError(() => of(QuestsActions.continueQuestFailure({ error: GENERIC_ERROR }))),
         ),
@@ -62,8 +62,8 @@ export class QuestsEffects {
   completeQuest$ = createEffect(() =>
     this.actions$.pipe(
       ofType(QuestsActions.completeQuest),
-      exhaustMap(({ questId }) =>
-        this.questApi.complete(questId).pipe(
+      exhaustMap(({ questId, idempotencyKey }) =>
+        this.questApi.complete(questId, idempotencyKey).pipe(
           map(({ quest, character }) =>
             QuestsActions.completeQuestSuccess({
               quest,
@@ -81,10 +81,24 @@ export class QuestsEffects {
   retreatQuest$ = createEffect(() =>
     this.actions$.pipe(
       ofType(QuestsActions.retreatQuest),
-      exhaustMap(({ questId }) =>
-        this.questApi.retreat(questId).pipe(
+      exhaustMap(({ questId, idempotencyKey }) =>
+        this.questApi.retreat(questId, idempotencyKey).pipe(
           map((quest) => QuestsActions.retreatQuestSuccess({ quest })),
           catchError(() => of(QuestsActions.retreatQuestFailure({ error: GENERIC_ERROR }))),
+        ),
+      ),
+    ),
+  );
+
+  splitQuest$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(QuestsActions.splitQuest),
+      exhaustMap(({ questId, idempotencyKey }) =>
+        this.questApi.split(questId, idempotencyKey).pipe(
+          map(({ quest, character }) =>
+            QuestsActions.splitQuestSuccess({ quest, xp: character.xp, coins: character.coins }),
+          ),
+          catchError(() => of(QuestsActions.splitQuestFailure({ error: GENERIC_ERROR }))),
         ),
       ),
     ),

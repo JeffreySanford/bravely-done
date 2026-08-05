@@ -28,8 +28,15 @@ import { MAX_CONSTRUCTION_STAGE } from './construction-stage';
  * system with per-level unlocks to design around. */
 const XP_PER_LEVEL = 100;
 import { CampActions } from '../../state/camp/camp.actions';
-import { selectFirewoodCount, selectForageCount } from '../../state/camp/camp.reducer';
+import {
+  selectError as selectCampError,
+  selectFirewoodCount,
+  selectForageCount,
+  selectUpgradingWorkbench,
+  selectWorkbenchLevel,
+} from '../../state/camp/camp.reducer';
 import { QuestsActions } from '../../state/quests/quests.actions';
+import { WORKBENCH_MAX_LEVEL, WORKBENCH_UPGRADE_COSTS } from './workbench-level';
 import {
   selectCoins,
   selectConstructionStage,
@@ -72,6 +79,15 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly level = computed(() => Math.floor(this.xp() / XP_PER_LEVEL) + 1);
   readonly firewoodCount = this.store.selectSignal(selectFirewoodCount);
   readonly forageCount = this.store.selectSignal(selectForageCount);
+  readonly workbenchLevel = this.store.selectSignal(selectWorkbenchLevel);
+  readonly upgradingWorkbench = this.store.selectSignal(selectUpgradingWorkbench);
+  readonly campError = this.store.selectSignal(selectCampError);
+  readonly workbenchMaxLevel = WORKBENCH_MAX_LEVEL;
+  readonly nextWorkbenchCost = computed(() => WORKBENCH_UPGRADE_COSTS[this.workbenchLevel()] ?? null);
+  readonly canAffordWorkbenchUpgrade = computed(() => {
+    const cost = this.nextWorkbenchCost();
+    return cost !== null && this.coins() >= cost;
+  });
 
   readonly newQuestForm = new FormGroup({
     title: new FormControl('', {
@@ -101,6 +117,12 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
         this.director?.dispatch({ type: 'forage' });
         this.director?.dispatch({ type: 'forageGathered', totalForage: forageCount });
       });
+
+    this.actions$
+      .pipe(ofType(CampActions.upgradeWorkbenchSuccess), takeUntilDestroyed(this.destroyRef))
+      .subscribe(({ workbenchLevel }) => {
+        this.director?.dispatch({ type: 'workbenchUpgraded', workbenchLevel });
+      });
   }
 
   ngOnInit(): void {
@@ -126,6 +148,7 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
             characterId: character.id,
             firewoodCount: character.firewoodCount,
             forageCount: character.forageCount,
+            workbenchLevel: character.workbenchLevel,
           }),
         );
         this.mountRendererIfReady();
@@ -160,6 +183,13 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     this.store.dispatch(QuestsActions.retreatQuest({ questId }));
   }
 
+  upgradeWorkbench(): void {
+    if (!this.characterId) {
+      return;
+    }
+    this.store.dispatch(CampActions.upgradeWorkbench({ characterId: this.characterId }));
+  }
+
   private mountRendererIfReady(): void {
     if (!this.renderScene || !this.canvasRef || this.renderer || this.characterName() === null) {
       return;
@@ -174,8 +204,10 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       constructionStage: this.constructionStage(),
       initialFirewoodCount: this.firewoodCount(),
       initialForageCount: this.forageCount(),
+      initialWorkbenchLevel: this.workbenchLevel(),
       onChopTree: () => this.store.dispatch(CampActions.chopTree({ characterId })),
       onForage: () => this.store.dispatch(CampActions.forage({ characterId })),
+      onUpgradeWorkbench: () => this.upgradeWorkbench(),
     });
     this.director = scene.director;
     this.renderer = new RendererLifecycle(this.canvasRef.nativeElement, motionMode, scene.handlers);

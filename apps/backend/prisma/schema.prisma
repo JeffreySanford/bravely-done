@@ -58,9 +58,14 @@ model Character {
   /// Focus/Wisdom XP require sprint and resolution variety this project
   /// doesn't have yet.
   xp    Int @default(0)
-  /// Coins for ordinary progress (see rewards-retention.md). Not spendable
-  /// on anything yet — no shop/upgrade system exists.
+  /// Coins for ordinary progress (see rewards-retention.md). Spent on
+  /// workbench upgrades — see CharacterService.WORKBENCH_UPGRADE_COSTS.
   coins Int @default(0)
+  /// Capacity upgrades at Base Camp's workbench landmark (see planning/
+  /// 02-base-camp-animations.md), capped at
+  /// CharacterService.WORKBENCH_MAX_LEVEL. Deliberately just a level
+  /// number for now — no actual capability unlocks are wired to it yet.
+  workbenchLevel Int @default(0)
   quests    Quest[]
 
   @@map("characters")

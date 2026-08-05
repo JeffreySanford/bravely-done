@@ -16,6 +16,7 @@ describe('CharacterController', () => {
     forageCount: 0,
     xp: 0,
     coins: 0,
+    workbenchLevel: 0,
   };
 
   function buildController() {
@@ -25,6 +26,7 @@ describe('CharacterController', () => {
       arrive: jest.fn().mockResolvedValue({ firstArrival: true, character }),
       chopTree: jest.fn().mockResolvedValue({ ...character, firewoodCount: 1 }),
       forage: jest.fn().mockResolvedValue({ ...character, forageCount: 1 }),
+      upgradeWorkbench: jest.fn().mockResolvedValue({ ...character, coins: 0, workbenchLevel: 1 }),
     } as unknown as CharacterService;
     return { controller: new CharacterController(characters), characters };
   }
@@ -39,6 +41,7 @@ describe('CharacterController', () => {
     forageCount: character.forageCount,
     xp: character.xp,
     coins: character.coins,
+    workbenchLevel: character.workbenchLevel,
   };
 
   it('create delegates to the service with the current user and returns the public shape', async () => {
@@ -84,5 +87,14 @@ describe('CharacterController', () => {
 
     expect(characters.forage).toHaveBeenCalledWith('user-1', 'char-1');
     expect(result).toEqual({ ...publicShape, forageCount: 1 });
+  });
+
+  it('upgradeWorkbench delegates to the service and returns the public shape', async () => {
+    const { controller, characters } = buildController();
+
+    const result = await controller.upgradeWorkbench(user, 'char-1');
+
+    expect(characters.upgradeWorkbench).toHaveBeenCalledWith('user-1', 'char-1');
+    expect(result).toEqual({ ...publicShape, coins: 0, workbenchLevel: 1 });
   });
 });

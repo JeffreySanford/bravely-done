@@ -58,4 +58,12 @@ export class CharacterController {
     const character = await this.characters.forage(user.sub, id);
     return toCharacterDto(character);
   }
+
+  @Post(':id/upgrade-workbench')
+  @ApiOperation({ summary: 'Spend coins to upgrade the workbench at Base Camp' })
+  @ApiOkResponse({ type: CharacterDto })
+  async upgradeWorkbench(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<CharacterDto> {
+    const character = await this.characters.upgradeWorkbench(user.sub, id);
+    return toCharacterDto(character);
+  }
 }

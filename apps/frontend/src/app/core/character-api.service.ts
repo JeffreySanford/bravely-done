@@ -7,6 +7,7 @@ import { characterControllerChopTree } from '../api/fn/characters/character-cont
 import { characterControllerCreate } from '../api/fn/characters/character-controller-create';
 import { characterControllerForage } from '../api/fn/characters/character-controller-forage';
 import { characterControllerList } from '../api/fn/characters/character-controller-list';
+import { characterControllerUpgradeWorkbench } from '../api/fn/characters/character-controller-upgrade-workbench';
 import { ArriveResponseDto } from '../api/models/arrive-response-dto';
 import { CharacterDto } from '../api/models/character-dto';
 import { CreateCharacterDto } from '../api/models/create-character-dto';
@@ -40,6 +41,12 @@ export class CharacterApiService {
 
   forage(id: string): Observable<CharacterDto> {
     return characterControllerForage(this.http, this.config.rootUrl, { id }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  upgradeWorkbench(id: string): Observable<CharacterDto> {
+    return characterControllerUpgradeWorkbench(this.http, this.config.rootUrl, { id }).pipe(
       map((res) => res.body),
     );
   }

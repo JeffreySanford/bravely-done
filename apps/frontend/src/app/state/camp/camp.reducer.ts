@@ -5,8 +5,10 @@ export interface CampState {
   characterId: string | null;
   firewoodCount: number;
   forageCount: number;
+  workbenchLevel: number;
   chopping: boolean;
   foraging: boolean;
+  upgradingWorkbench: boolean;
   error: string | null;
 }
 
@@ -14,8 +16,10 @@ export const initialCampState: CampState = {
   characterId: null,
   firewoodCount: 0,
   forageCount: 0,
+  workbenchLevel: 0,
   chopping: false,
   foraging: false,
+  upgradingWorkbench: false,
   error: null,
 };
 
@@ -24,11 +28,12 @@ export const campFeature = createFeature({
   reducer: createReducer(
     initialCampState,
 
-    on(CampActions.setCharacterContext, (state, { characterId, firewoodCount, forageCount }): CampState => ({
+    on(CampActions.setCharacterContext, (state, { characterId, firewoodCount, forageCount, workbenchLevel }): CampState => ({
       ...initialCampState,
       characterId,
       firewoodCount,
       forageCount,
+      workbenchLevel,
     })),
 
     on(CampActions.chopTree, (state): CampState => ({ ...state, chopping: true, error: null })),
@@ -54,6 +59,18 @@ export const campFeature = createFeature({
       foraging: false,
       error,
     })),
+
+    on(CampActions.upgradeWorkbench, (state): CampState => ({ ...state, upgradingWorkbench: true, error: null })),
+    on(CampActions.upgradeWorkbenchSuccess, (state, { workbenchLevel }): CampState => ({
+      ...state,
+      workbenchLevel,
+      upgradingWorkbench: false,
+    })),
+    on(CampActions.upgradeWorkbenchFailure, (state, { error }): CampState => ({
+      ...state,
+      upgradingWorkbench: false,
+      error,
+    })),
   ),
 });
 
@@ -64,7 +81,9 @@ export const {
   selectCharacterId,
   selectFirewoodCount,
   selectForageCount,
+  selectWorkbenchLevel,
   selectChopping,
   selectForaging,
+  selectUpgradingWorkbench,
   selectError,
 } = campFeature;

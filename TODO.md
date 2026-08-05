@@ -63,8 +63,8 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       `/basecamp/:characterId` — clicking a character on character select, or finishing character
       creation, lands the character's avatar in Base Camp. Verified via a 3-engine Playwright e2e
       journey covering both entry paths.
-- [x] Add companion placeholder, quest board, chest, treasury, and bridge landmarks. Workbench still
-      open.
+- [x] Add companion placeholder, quest board, chest, treasury, bridge, and workbench landmarks — the
+      workbench is now clickable too, spending coins on a real capped level (see below).
 - [x] Add ambient animation and full/reduced/minimal motion modes (reuses the character-select scene's
       motion-mode plumbing).
 - [x] Add a minimal animation director (`AnimationDirector`/`AnimationSequence`) driven by domain
@@ -116,6 +116,12 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       tests (backend + NgRx unit tests, a 3-engine e2e run that retreats one quest, completes three,
       and confirms XP/coins/level survive a reload). No API integration test tier exists yet — still
       open.
+- [x] Give coins a real sink: workbench upgrades (`POST /characters/:id/upgrade-workbench`, capped at
+      `WORKBENCH_MAX_LEVEL`, costs in `WORKBENCH_UPGRADE_COSTS`) — see [Plan 02](planning/
+      02-base-camp-animations.md) for the scene wiring. Verified live: affordable/unaffordable/
+      already-maxed all behave correctly via direct API calls, and a Playwright e2e run earns coins from
+      quests, upgrades once, and confirms the level and remaining coins survive a reload. Still just a
+      level number — no actual capability unlock is wired to it yet.
 
 ## Later milestones
 

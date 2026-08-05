@@ -1,7 +1,14 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Character } from '../generated/prisma/client';
 import { CreateCharacterDto } from './dto/create-character.dto';
+
+/** Workbench is fully upgraded once this many upgrades have been bought. */
+export const WORKBENCH_MAX_LEVEL = 3;
+/** Coin cost to go from level i to i+1 — index 0 is the cost of the first
+ * upgrade. Deterministic and increasing, no randomness. No actual
+ * capability unlocks are wired to workbenchLevel yet — see planning/02. */
+export const WORKBENCH_UPGRADE_COSTS = [10, 20, 30];
 
 @Injectable()
 export class CharacterService {
@@ -55,6 +62,29 @@ export class CharacterService {
     return this.prisma.character.update({
       where: { id: characterId },
       data: { forageCount: { increment: 1 } },
+    });
+  }
+
+  /** Spends coins for a workbench upgrade. Already-maxed workbenches are
+   * returned as-is (idempotent, same pattern as arrive()/quest resolution).
+   * Throws BadRequestException — not silently ignored — when the character
+   * can't afford the next level, so the frontend gets a real error to
+   * surface rather than a false success. */
+  async upgradeWorkbench(userId: string, characterId: string): Promise<Character> {
+    const character = await this.findOwned(userId, characterId);
+
+    if (character.workbenchLevel >= WORKBENCH_MAX_LEVEL) {
+      return character;
+    }
+
+    const cost = WORKBENCH_UPGRADE_COSTS[character.workbenchLevel];
+    if (character.coins < cost) {
+      throw new BadRequestException('Not enough coins for the next workbench upgrade');
+    }
+
+    return this.prisma.character.update({
+      where: { id: characterId },
+      data: { coins: { decrement: cost }, workbenchLevel: { increment: 1 } },
     });
   }
 

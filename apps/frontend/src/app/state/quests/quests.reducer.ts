@@ -1,5 +1,6 @@
 import { createFeature, createReducer, on } from '@ngrx/store';
 import { QuestDto } from '../../api/models/quest-dto';
+import { CampActions } from '../camp/camp.actions';
 import { QuestsActions } from './quests.actions';
 
 export interface QuestsState {
@@ -84,6 +85,15 @@ export const questsFeature = createFeature({
       ...state,
       resolvingQuestId: null,
       error,
+    })),
+
+    // Coins live here (alongside xp) since both are quest-reward currency,
+    // but they're also spent by the camp feature's workbench upgrade — the
+    // quests reducer listens for that success action too, rather than
+    // duplicating a second "coins" value in camp state.
+    on(CampActions.upgradeWorkbenchSuccess, (state, { coins }): QuestsState => ({
+      ...state,
+      coins,
     })),
   ),
 });

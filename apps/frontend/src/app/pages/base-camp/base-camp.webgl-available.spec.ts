@@ -66,14 +66,17 @@ describe('BaseCamp (WebGL available)', () => {
             arrive: jest.fn().mockReturnValue(
               of({
                 firstArrival: true,
-                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 1, xp: 0, coins: 0 },
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 1, xp: 0, coins: 20, workbenchLevel: 0 },
               }),
             ),
             chopTree: jest.fn().mockReturnValue(
-              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 3, forageCount: 1, xp: 0, coins: 0 }),
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 3, forageCount: 1, xp: 0, coins: 20, workbenchLevel: 0 }),
             ),
             forage: jest.fn().mockReturnValue(
-              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 2, xp: 0, coins: 0 }),
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 2, xp: 0, coins: 20, workbenchLevel: 0 }),
+            ),
+            upgradeWorkbench: jest.fn().mockReturnValue(
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 1, xp: 0, coins: 10, workbenchLevel: 1 }),
             ),
           },
         },
@@ -168,6 +171,19 @@ describe('BaseCamp (WebGL available)', () => {
 
     expect(fixture.componentInstance.xp()).toBe(20);
     expect(fixture.componentInstance.coins()).toBe(10);
+  });
+
+  it('forwards a workbench upgrade attempt to the store, and workbenchUpgraded to the director once it succeeds', () => {
+    const dispatchSpy = jest.spyOn(mockDirector, 'dispatch');
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+
+    lastSceneOptions?.onUpgradeWorkbench();
+
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'workbenchUpgraded', workbenchLevel: 1 });
+    expect(fixture.componentInstance.workbenchLevel()).toBe(1);
+    expect(fixture.componentInstance.coins()).toBe(10);
+    dispatchSpy.mockRestore();
   });
 
   it('retreats a quest without dispatching any scene event', () => {

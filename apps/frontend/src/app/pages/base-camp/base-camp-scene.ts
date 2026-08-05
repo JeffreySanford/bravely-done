@@ -3,6 +3,7 @@ import { AnimationDirector, AnimationSequence, BaseCampAnimationEvent } from '..
 import { MotionMode } from '../../game-rendering/motion-mode';
 import { SceneHandlers } from '../../game-rendering/renderer-lifecycle';
 import { MAX_CONSTRUCTION_STAGE } from './construction-stage';
+import { WORKBENCH_MAX_LEVEL } from './workbench-level';
 
 const CYAN = 0x00e5ff;
 const VIOLET = 0x8b5cf6;
@@ -39,6 +40,12 @@ export interface BaseCampSceneOptions {
   onChopTree: () => void;
   /** Same optimistic-then-real pattern as onChopTree, for the foraging bush. */
   onForage: () => void;
+  initialWorkbenchLevel: number;
+  /** Unlike onChopTree/onForage, an upgrade can fail (insufficient coins),
+   * so the scene does not play an optimistic success animation on click —
+   * it just forwards the attempt. The caller dispatches the
+   * 'workbenchUpgraded' event back once the backend actually confirms it. */
+  onUpgradeWorkbench: () => void;
 }
 
 export interface BaseCampScene {
@@ -78,6 +85,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
   let bridgeSequence: BridgeSequence;
   let campfireSequence: CampfireSequence;
   let bushSequence: BushSequence;
+  let workbenchSequence: WorkbenchSequence;
   const treeSequences: TreeSequence[] = [];
 
   const handlers: SceneHandlers = {
@@ -152,6 +160,11 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       ctx.scene.add(bridgeSequence.group);
       director.register(bridgeSequence);
 
+      workbenchSequence = new WorkbenchSequence(options.initialWorkbenchLevel);
+      workbenchSequence.group.position.set(3.2, 0, -3.5);
+      ctx.scene.add(workbenchSequence.group);
+      director.register(workbenchSequence);
+
       raycaster = new THREE.Raycaster();
       clickListener = (event: MouseEvent) => {
         const rect = canvasRef.getBoundingClientRect();
@@ -161,7 +174,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
         );
         raycaster.setFromCamera(pointer, camera);
 
-        const clickable = [...treeMeshes, bushSequence.group];
+        const clickable = [...treeMeshes, bushSequence.group, workbenchSequence.group];
         const hit = raycaster.intersectObjects(clickable, true)[0];
         if (!hit) {
           return;
@@ -170,6 +183,11 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
         if (isDescendantOf(hit.object, bushSequence.group)) {
           director.dispatch({ type: 'forage' });
           options.onForage();
+          return;
+        }
+
+        if (isDescendantOf(hit.object, workbenchSequence.group)) {
+          options.onUpgradeWorkbench();
           return;
         }
 
@@ -190,6 +208,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       bridgeSequence.onFrame(deltaSeconds);
       treeSequences.forEach((tree) => tree.onFrame(deltaSeconds));
       bushSequence.onFrame(deltaSeconds);
+      workbenchSequence.onFrame(deltaSeconds);
 
       companionSequence.onFrame(elapsed);
 
@@ -446,6 +465,54 @@ class BridgeSequence implements AnimationSequence {
   }
 }
 
+/** A clickable workbench: its glow ring steps up in brightness and count
+ * with workbenchLevel (0-WORKBENCH_MAX_LEVEL), and a successful upgrade
+ * plays a brief celebratory pulse. Clicking never plays that pulse
+ * optimistically — an upgrade can be rejected (insufficient coins), unlike
+ * chopping/foraging, so the pulse only fires once the caller confirms the
+ * backend accepted it via the 'workbenchUpgraded' event. */
+class WorkbenchSequence implements AnimationSequence {
+  readonly group: THREE.Group;
+  private readonly rings: THREE.Mesh[];
+  private level: number;
+  private pulseRemaining = 0;
+
+  constructor(initialLevel: number) {
+    const built = buildWorkbench();
+    this.group = built.group;
+    this.rings = built.rings;
+    this.level = initialLevel;
+    this.applyLevel();
+  }
+
+  onEvent(event: BaseCampAnimationEvent): void {
+    if (event.type === 'workbenchUpgraded' && event.workbenchLevel > this.level) {
+      this.level = event.workbenchLevel;
+      this.applyLevel();
+      this.pulseRemaining = 0.6;
+    }
+  }
+
+  onFrame(deltaSeconds: number): void {
+    if (this.pulseRemaining <= 0) {
+      return;
+    }
+    this.pulseRemaining = Math.max(this.pulseRemaining - deltaSeconds, 0);
+    const boost = (this.pulseRemaining / 0.6) * 0.8;
+    this.rings.forEach((ring, i) => {
+      const material = ring.material as THREE.MeshStandardMaterial;
+      material.emissiveIntensity = (i < this.level ? 0.5 : 0.05) + boost;
+    });
+  }
+
+  private applyLevel(): void {
+    this.rings.forEach((ring, i) => {
+      const material = ring.material as THREE.MeshStandardMaterial;
+      material.emissiveIntensity = i < this.level ? 0.5 : 0.05;
+    });
+  }
+}
+
 function buildGround(): THREE.Mesh {
   const geometry = new THREE.CircleGeometry(14, 48);
   const material = new THREE.MeshStandardMaterial({
@@ -671,4 +738,43 @@ function buildTreasury(): THREE.Group {
   group.add(coin);
 
   return group;
+}
+
+/** A simple bench with WORKBENCH_MAX_LEVEL glow rings above it — each ring
+ * lights up as workbenchLevel rises, giving upgrade progress a visible,
+ * countable form rather than just a number in the UI. */
+function buildWorkbench(): { group: THREE.Group; rings: THREE.Mesh[] } {
+  const group = new THREE.Group();
+
+  const topGeometry = new THREE.BoxGeometry(1.1, 0.1, 0.55);
+  const legGeometry = new THREE.BoxGeometry(0.08, 0.4, 0.08);
+  const woodMaterial = new THREE.MeshStandardMaterial({ color: 0x3a2417, roughness: 0.9 });
+
+  const top = new THREE.Mesh(topGeometry, woodMaterial);
+  top.position.y = 0.45;
+  group.add(top);
+
+  for (const [x, z] of [
+    [0.48, 0.22],
+    [-0.48, 0.22],
+    [0.48, -0.22],
+    [-0.48, -0.22],
+  ] as const) {
+    const leg = new THREE.Mesh(legGeometry, woodMaterial);
+    leg.position.set(x, 0.2, z);
+    group.add(leg);
+  }
+
+  const rings: THREE.Mesh[] = [];
+  const ringGeometry = new THREE.TorusGeometry(0.14, 0.03, 8, 16);
+  for (let i = 0; i < WORKBENCH_MAX_LEVEL; i++) {
+    const ringMaterial = new THREE.MeshStandardMaterial({ color: CYAN, emissive: CYAN, emissiveIntensity: 0.05 });
+    const ring = new THREE.Mesh(ringGeometry, ringMaterial);
+    ring.rotation.x = Math.PI / 2;
+    ring.position.set((i - (WORKBENCH_MAX_LEVEL - 1) / 2) * 0.36, 0.62, 0);
+    group.add(ring);
+    rings.push(ring);
+  }
+
+  return { group, rings };
 }

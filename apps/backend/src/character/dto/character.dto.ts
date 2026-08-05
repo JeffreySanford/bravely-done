@@ -27,4 +27,7 @@ export class CharacterDto {
 
   @ApiProperty()
   coins!: number;
+
+  @ApiProperty()
+  workbenchLevel!: number;
 }

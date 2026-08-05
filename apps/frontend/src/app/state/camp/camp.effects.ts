@@ -1,10 +1,23 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Actions, createEffect, ofType } from '@ngrx/effects';
-import { catchError, map, mergeMap, of } from 'rxjs';
+import { catchError, exhaustMap, map, mergeMap, of } from 'rxjs';
 import { CharacterApiService } from '../../core/character-api.service';
 import { CampActions } from './camp.actions';
 
 const GENERIC_ERROR = 'Something went wrong. Please try again.';
+
+/** Surfaces the backend's actual message (e.g. "Not enough coins for the
+ * next workbench upgrade") when present, instead of always falling back
+ * to a generic one — the workbench upgrade is the one camp action with a
+ * real, user-actionable failure mode (insufficient funds), not just a
+ * transient network error. */
+function errorMessage(err: unknown): string {
+  if (err instanceof HttpErrorResponse && typeof err.error?.message === 'string') {
+    return err.error.message;
+  }
+  return GENERIC_ERROR;
+}
 
 @Injectable()
 export class CampEffects {
@@ -34,6 +47,23 @@ export class CampEffects {
         this.characterApi.forage(characterId).pipe(
           map((character) => CampActions.forageSuccess({ forageCount: character.forageCount })),
           catchError(() => of(CampActions.forageFailure({ error: GENERIC_ERROR }))),
+        ),
+      ),
+    ),
+  );
+
+  // exhaustMap (not mergeMap): a purchase, not an ambient action — ignore
+  // repeat clicks while one upgrade request is already in flight rather
+  // than risk firing two in quick succession.
+  upgradeWorkbench$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(CampActions.upgradeWorkbench),
+      exhaustMap(({ characterId }) =>
+        this.characterApi.upgradeWorkbench(characterId).pipe(
+          map((character) =>
+            CampActions.upgradeWorkbenchSuccess({ workbenchLevel: character.workbenchLevel, coins: character.coins }),
+          ),
+          catchError((err) => of(CampActions.upgradeWorkbenchFailure({ error: errorMessage(err) }))),
         ),
       ),
     ),

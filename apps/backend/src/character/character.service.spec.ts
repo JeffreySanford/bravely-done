@@ -1,6 +1,6 @@
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CharacterService } from './character.service';
+import { CharacterService, WORKBENCH_MAX_LEVEL, WORKBENCH_UPGRADE_COSTS } from './character.service';
 
 function buildPrismaMock() {
   return {
@@ -24,6 +24,9 @@ function buildCharacter(overrides: Record<string, unknown> = {}) {
     campConstructionStage: 0,
     firewoodCount: 0,
     forageCount: 0,
+    xp: 0,
+    coins: 0,
+    workbenchLevel: 0,
     ...overrides,
   };
 }
@@ -145,6 +148,47 @@ describe('CharacterService', () => {
 
       await expect(service.forage('user-1', 'char-1')).rejects.toThrow(NotFoundException);
       expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('upgradeWorkbench', () => {
+    it('spends coins and increments workbenchLevel when affordable', async () => {
+      const cost = WORKBENCH_UPGRADE_COSTS[0];
+      prisma.character.findFirst.mockResolvedValue(buildCharacter({ coins: cost, workbenchLevel: 0 }));
+      const updated = buildCharacter({ coins: 0, workbenchLevel: 1 });
+      prisma.character.update.mockResolvedValue(updated);
+
+      const result = await service.upgradeWorkbench('user-1', 'char-1');
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: 'char-1' },
+        data: { coins: { decrement: cost }, workbenchLevel: { increment: 1 } },
+      });
+      expect(result).toEqual(updated);
+    });
+
+    it('throws BadRequestException when the character cannot afford the next level', async () => {
+      const cost = WORKBENCH_UPGRADE_COSTS[0];
+      prisma.character.findFirst.mockResolvedValue(buildCharacter({ coins: cost - 1, workbenchLevel: 0 }));
+
+      await expect(service.upgradeWorkbench('user-1', 'char-1')).rejects.toThrow(BadRequestException);
+      expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+
+    it('does not upgrade again once already at WORKBENCH_MAX_LEVEL', async () => {
+      const maxed = buildCharacter({ coins: 1000, workbenchLevel: WORKBENCH_MAX_LEVEL });
+      prisma.character.findFirst.mockResolvedValue(maxed);
+
+      const result = await service.upgradeWorkbench('user-1', 'char-1');
+
+      expect(prisma.character.update).not.toHaveBeenCalled();
+      expect(result).toEqual(maxed);
+    });
+
+    it('throws NotFoundException when the character is not owned by the user', async () => {
+      prisma.character.findFirst.mockResolvedValue(null);
+
+      await expect(service.upgradeWorkbench('user-1', 'char-1')).rejects.toThrow(NotFoundException);
     });
   });
 });

@@ -78,6 +78,27 @@
       }
     </div>
 
+    <div class="workbench-panel">
+      <p class="workbench-panel__label">
+        Workbench: level {{ workbenchLevel() }} / {{ workbenchMaxLevel }}
+      </p>
+      @if (nextWorkbenchCost(); as cost) {
+        <button
+          type="button"
+          class="bd-button"
+          [disabled]="upgradingWorkbench() || !canAffordWorkbenchUpgrade()"
+          (click)="upgradeWorkbench()"
+        >
+          Upgrade for {{ cost }} coins
+        </button>
+      } @else {
+        <span class="workbench-panel__maxed">Fully upgraded</span>
+      }
+      @if (campError(); as error) {
+        <p class="workbench-panel__error">{{ error }}</p>
+      }
+    </div>
+
     <a routerLink="/characters" class="bd-button bd-button--ghost stage__back">Back to characters</a>
   </div>
 </div>

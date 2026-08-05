@@ -13,7 +13,8 @@ export type BaseCampAnimationEvent =
   | { type: 'chopTree'; treeIndex: number }
   | { type: 'firewoodGathered'; totalFirewood: number }
   | { type: 'forage' }
-  | { type: 'forageGathered'; totalForage: number };
+  | { type: 'forageGathered'; totalForage: number }
+  | { type: 'workbenchUpgraded'; workbenchLevel: number };
 
 export interface AnimationSequence {
   onEvent(event: BaseCampAnimationEvent): void;

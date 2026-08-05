@@ -1,3 +1,4 @@
+import { CampActions } from '../camp/camp.actions';
 import { QuestsActions } from './quests.actions';
 import { initialQuestsState, questsFeature } from './quests.reducer';
 
@@ -145,5 +146,14 @@ describe('questsFeature reducer', () => {
 
     expect(state.error).toBe('boom');
     expect(state.resolvingQuestId).toBeNull();
+  });
+
+  it('syncs coins when the camp feature reports a successful workbench upgrade', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, coins: 30 },
+      CampActions.upgradeWorkbenchSuccess({ workbenchLevel: 1, coins: 20 }),
+    );
+
+    expect(state.coins).toBe(20);
   });
 });

@@ -12,10 +12,16 @@ describe('campFeature reducer', () => {
 
     const state = campFeature.reducer(
       dirty,
-      CampActions.setCharacterContext({ characterId: 'c1', firewoodCount: 2, forageCount: 1 }),
+      CampActions.setCharacterContext({ characterId: 'c1', firewoodCount: 2, forageCount: 1, workbenchLevel: 1 }),
     );
 
-    expect(state).toEqual({ ...initialCampState, characterId: 'c1', firewoodCount: 2, forageCount: 1 });
+    expect(state).toEqual({
+      ...initialCampState,
+      characterId: 'c1',
+      firewoodCount: 2,
+      forageCount: 1,
+      workbenchLevel: 1,
+    });
   });
 
   it('chopTree sets chopping and clears any prior error', () => {
@@ -76,5 +82,35 @@ describe('campFeature reducer', () => {
 
     expect(state.error).toBe('boom');
     expect(state.foraging).toBe(false);
+  });
+
+  it('upgradeWorkbench sets upgradingWorkbench and clears any prior error', () => {
+    const state = campFeature.reducer(
+      { ...initialCampState, error: 'boom' },
+      CampActions.upgradeWorkbench({ characterId: 'c1' }),
+    );
+
+    expect(state.upgradingWorkbench).toBe(true);
+    expect(state.error).toBeNull();
+  });
+
+  it('upgradeWorkbenchSuccess stores the new workbench level and clears upgradingWorkbench', () => {
+    const state = campFeature.reducer(
+      { ...initialCampState, upgradingWorkbench: true },
+      CampActions.upgradeWorkbenchSuccess({ workbenchLevel: 1, coins: 0 }),
+    );
+
+    expect(state.workbenchLevel).toBe(1);
+    expect(state.upgradingWorkbench).toBe(false);
+  });
+
+  it('upgradeWorkbenchFailure stores the error and clears upgradingWorkbench', () => {
+    const state = campFeature.reducer(
+      { ...initialCampState, upgradingWorkbench: true },
+      CampActions.upgradeWorkbenchFailure({ error: 'Not enough coins' }),
+    );
+
+    expect(state.error).toBe('Not enough coins');
+    expect(state.upgradingWorkbench).toBe(false);
   });
 });

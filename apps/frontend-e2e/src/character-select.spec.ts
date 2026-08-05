@@ -142,5 +142,20 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // first-ever arrival captured by the backend's hasArrivedAtCamp flag.
   await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
 
+  // Workbench/coins-spend slice: 30 coins covers exactly the first upgrade
+  // (10 coins — see WORKBENCH_UPGRADE_COSTS in apps/backend/src/character/
+  // character.service.ts), which should also show up as a spend against the
+  // same coins total the quest board reads (cross-reducer sync between the
+  // camp and quests NgRx features).
+  await expect(page.getByText('Workbench: level 0 / 3')).toBeVisible();
+  await page.getByRole('button', { name: 'Upgrade for 10 coins' }).click();
+  await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
+  await expect(page.getByText('Level 1 — 60 XP — 20 coins')).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
+  await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
+  await expect(page.getByText('Level 1 — 60 XP — 20 coins')).toBeVisible();
+
   expect(consoleErrors).toEqual([]);
 });

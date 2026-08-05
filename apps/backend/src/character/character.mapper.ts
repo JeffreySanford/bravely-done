@@ -12,5 +12,6 @@ export function toCharacterDto(character: Character): CharacterDto {
   dto.forageCount = character.forageCount;
   dto.xp = character.xp;
   dto.coins = character.coins;
+  dto.workbenchLevel = character.workbenchLevel;
   return dto;
 }

@@ -23,6 +23,7 @@ function buildCharacter(overrides: Record<string, unknown> = {}) {
     forageCount: 0,
     xp: 0,
     coins: 0,
+    workbenchLevel: 0,
     ...overrides,
   };
 }
@@ -113,6 +114,30 @@ describe('BaseCamp', () => {
     expect(component.level()).toBe(3);
   });
 
+  it('seeds workbench level from the arrive response and derives the next upgrade cost', () => {
+    const arrive = jest
+      .fn()
+      .mockReturnValue(of({ firstArrival: true, character: buildCharacter({ workbenchLevel: 1, coins: 15 }) }));
+    const { component } = setup({ arrive });
+
+    component.ngOnInit();
+
+    expect(component.workbenchLevel()).toBe(1);
+    expect(component.nextWorkbenchCost()).toBe(20);
+    expect(component.canAffordWorkbenchUpgrade()).toBe(false);
+  });
+
+  it('reports no further upgrade cost once the workbench is maxed', () => {
+    const arrive = jest
+      .fn()
+      .mockReturnValue(of({ firstArrival: true, character: buildCharacter({ workbenchLevel: 3 }) }));
+    const { component } = setup({ arrive });
+
+    component.ngOnInit();
+
+    expect(component.nextWorkbenchCost()).toBeNull();
+  });
+
   it('does not call the API when the route has no characterId', () => {
     const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
     const { component } = setup({ arrive }, {}, null);
@@ -149,6 +174,43 @@ describe('BaseCamp', () => {
     const store = TestBed.inject(Store);
     expect(() => store.dispatch(CampActions.forageSuccess({ forageCount: 1 }))).not.toThrow();
     fixture.destroy();
+  });
+
+  it('an upgradeWorkbenchSuccess dispatched with no scene mounted is a safe no-op', () => {
+    const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+    const { component, fixture } = setup({ arrive });
+    component.ngOnInit();
+
+    const store = TestBed.inject(Store);
+    expect(() =>
+      store.dispatch(CampActions.upgradeWorkbenchSuccess({ workbenchLevel: 1, coins: 0 })),
+    ).not.toThrow();
+    fixture.destroy();
+  });
+
+  describe('upgradeWorkbench', () => {
+    it('dispatches CampActions.upgradeWorkbench with the current character id', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      component.ngOnInit();
+      const store = TestBed.inject(Store);
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+      component.upgradeWorkbench();
+
+      expect(dispatchSpy).toHaveBeenCalledWith(CampActions.upgradeWorkbench({ characterId: 'c1' }));
+    });
+
+    it('is a no-op when no character has arrived yet', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive }, {}, null);
+      const store = TestBed.inject(Store);
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+      component.upgradeWorkbench();
+
+      expect(dispatchSpy).not.toHaveBeenCalled();
+    });
   });
 
   it('disposing is a no-op when no renderer was ever mounted', () => {

@@ -29,7 +29,13 @@
       verification" below for the bug this fixes.
 - [x] Companion placeholder: an idle, bobbing, slowly-rotating landmark near the fire, whose glow and
       liveliness now scale with forage gathered ("upkeep" — see "Resource loop" below).
-- [x] Quest Board, chest, treasury, and bridge landmarks. Workbench still open.
+- [x] Quest Board, chest, treasury, bridge, and workbench landmarks. The workbench is clickable (real
+      raycasting) and spends real coins on a capped upgrade (`POST /characters/:id/upgrade-workbench`,
+      `WORKBENCH_MAX_LEVEL`/`WORKBENCH_UPGRADE_COSTS` in `apps/backend/src/character/character.
+      service.ts`) — its glow rings light up one at a time as `workbenchLevel` rises. Deliberately just a
+      level number for now: no actual capability unlock (faster chopping, bigger inventory, etc.) is
+      wired to it yet, same honest gap as construction stage advancing the bridge without unlocking new
+      mechanics.
 - [x] Per-character tent gated to true first-ever arrival: `Character.hasArrivedAtCamp` (backend,
       `POST /characters/:id/arrive`) is checked before the scene is built, and the erect animation only
       plays when this is the character's first arrival. Returning visits render the tent already
@@ -64,6 +70,18 @@
 - [x] Persist harvested/gathered resources per character — firewood and forage are both real
       Postgres-backed fields, verified live via direct API calls (harvest, then a fresh unrelated
       fetch confirms the count).
+- [x] Give coins a real sink: the workbench upgrade (see above) is the first way coins can be spent,
+      not just earned from quests. Unlike chop/forage, an upgrade can be rejected (insufficient coins),
+      so the click handler does not play an optimistic success animation — `WorkbenchSequence` only
+      pulses once the backend actually confirms the upgrade via the `workbenchUpgraded` event, and the
+      backend's real "Not enough coins for the next workbench upgrade" error surfaces in the UI (not a
+      generic fallback). `coins` itself lives in the quests NgRx feature (it's quest-reward currency)
+      but the camp feature's `upgradeWorkbenchSuccess` action is cross-reducer-synced into it, since
+      spending happens via camp/workbench. Verified live via direct API calls: an unaffordable upgrade
+      is rejected with the coins/level unchanged, an affordable one deducts coins and increments the
+      level atomically, and repeating the request past `WORKBENCH_MAX_LEVEL` is a safe no-op (same
+      idempotent-resolution pattern as quest complete/retreat) — plus a full Playwright e2e run
+      (earn 30 coins from quests, upgrade once for 10, confirm the level/coins both persist on reload).
 
 ## Animation director
 
@@ -82,6 +100,9 @@
       `firewoodGathered` (campfire reacts by recomputing its fuel reserve), `forage` (the bush's own
       sequence plays a harvest pulse), and `forageGathered` (the companion reacts by updating its
       upkeep-driven glow) are all wired. Catch animal is not — no animal interaction exists yet.
+- [x] Workbench upgraded: `WorkbenchSequence` reacts to a `workbenchUpgraded` event (dispatched only
+      after the backend confirms — see "Resource loop" above) by stepping up its glow rings and playing
+      a brief celebratory pulse.
 - [ ] Continue, split, retreat, and comeback.
 - [ ] Skip safely to final state.
 

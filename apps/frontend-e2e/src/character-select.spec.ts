@@ -125,6 +125,31 @@ test('signup through to a rendered Base Camp, and back again via character selec
     await page.locator('.kanban-card', { hasText: title }).getByRole('button', { name: 'Start' }).click();
     const inProgressCard = page.locator('.kanban-card', { hasText: title });
     await expect(inProgressCard.getByRole('button', { name: 'Complete' })).toBeVisible();
+
+    if (title === 'Chop firewood') {
+      // Adventure Sprint slice: real start/pause/resume round trips against
+      // the backend, plus the idle-timer-resistance guarantee made visible
+      // in the UI — "Finish sprint" stays disabled because real elapsed
+      // time hasn't reached the target. Reaching the success-after-target
+      // path needs the sprint's target duration to actually elapse (the
+      // shortest preset is 15 real minutes), which isn't practical for an
+      // e2e run; that path is covered instead by SprintService's unit
+      // tests and a live verification against Postgres (backdating a real
+      // stored timestamp, not a mocked clock) — see planning/03-first-
+      // brave-step.md.
+      await inProgressCard.getByRole('button', { name: '15 min' }).click();
+      await expect(inProgressCard.getByRole('button', { name: 'Pause' })).toBeVisible();
+      const finishSprintButton = inProgressCard.getByRole('button', { name: 'Finish sprint' });
+      await expect(finishSprintButton).toBeDisabled();
+
+      await inProgressCard.getByRole('button', { name: 'Pause' }).click();
+      await expect(inProgressCard.getByRole('button', { name: 'Resume' })).toBeVisible();
+      await expect(finishSprintButton).toBeDisabled();
+
+      await inProgressCard.getByRole('button', { name: 'Resume' }).click();
+      await expect(inProgressCard.getByRole('button', { name: 'Pause' })).toBeVisible();
+    }
+
     await inProgressCard.getByRole('button', { name: 'Complete' }).click();
     await expect(page.getByText(`Bridge repair: ${index + 1} / 3`)).toBeVisible();
     await expect(page.locator('.kanban-card', { hasText: title }).getByText('Done')).toBeVisible();

@@ -71,8 +71,66 @@
           <div class="kanban-column">
             <p class="kanban-column__title">In Progress<span class="kanban-column__sub">Sprint</span></p>
             @for (quest of inProgressQuests(); track quest.id) {
+              @let sprint = sprintFor(quest.id);
               <div class="kanban-card">
                 <span class="kanban-card__title">{{ quest.title }}</span>
+
+                @if (!sprint || sprint.status === 'COMPLETED') {
+                  <div class="sprint-picker">
+                    <span class="kanban-column__sub">Start a sprint:</span>
+                    <span class="sprint-picker__options">
+                      @for (preset of sprintDurationPresets; track preset) {
+                        <button
+                          type="button"
+                          class="bd-button bd-button--ghost"
+                          [disabled]="startingSprintQuestId() === quest.id"
+                          (click)="startSprint(quest.id, preset)"
+                        >
+                          {{ formatSprintDuration(preset) }}
+                        </button>
+                      }
+                    </span>
+                  </div>
+                } @else {
+                  <div class="sprint-timer">
+                    <span class="sprint-timer__time">
+                      @if (sprint.status === 'PAUSED') {
+                        Paused —
+                      }
+                      {{ remainingSecondsFor(sprint) }}s left
+                    </span>
+                    <span class="kanban-card__actions">
+                      @if (sprint.status === 'ACTIVE') {
+                        <button
+                          type="button"
+                          class="bd-button bd-button--ghost"
+                          [disabled]="transitioningSprintId() === sprint.id"
+                          (click)="pauseSprint(sprint.id)"
+                        >
+                          Pause
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="bd-button bd-button--ghost"
+                          [disabled]="transitioningSprintId() === sprint.id"
+                          (click)="resumeSprint(sprint.id)"
+                        >
+                          Resume
+                        </button>
+                      }
+                      <button
+                        type="button"
+                        class="bd-button"
+                        [disabled]="transitioningSprintId() === sprint.id || !canCompleteSprint(sprint)"
+                        (click)="completeSprint(sprint.id)"
+                      >
+                        Finish sprint
+                      </button>
+                    </span>
+                  </div>
+                }
+
                 <span class="kanban-card__actions">
                   <button
                     type="button"
@@ -94,6 +152,9 @@
               </div>
             } @empty {
               <p class="kanban-column__empty">Nothing in flight.</p>
+            }
+            @if (sprintsError(); as error) {
+              <p class="kanban-column__empty">{{ error }}</p>
             }
           </div>
 

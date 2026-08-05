@@ -101,10 +101,19 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [x] Create a quest in under 20 seconds — a real quest (title + status), not an encounter/sprint yet.
       See [Plan 03](planning/03-first-brave-step.md) for exactly what this first slice does and doesn't
       cover.
-- [ ] Run a resilient Adventure Sprint.
+- [x] Run a resilient Adventure Sprint — a real `Sprint` tied to an in-progress quest
+      (`apps/backend/src/sprint/`), with start/pause/resume/complete all timestamp-authoritative:
+      elapsed active time is always recomputed server-side from `startedAt`/`pausedAt`/`pausedSeconds`,
+      never trusted from the client, so a reload recovers the true timer and completion can't be faked.
+      `complete` rejects until real elapsed time reaches the chosen target (one of four presets — 15/25/
+      45/60 min), which is what makes the flat Focus XP reward (`FOCUS_XP_REWARD` = 15) resistant to
+      idle timers. Verified live via direct API calls (including backdating a real Postgres row to prove
+      the success path, not just the rejection path) and a 3-engine Playwright e2e run covering the
+      full start/pause/resume flow with "Finish sprint" asserted disabled throughout.
 - [x] Resolve complete or retreat — two of four resolutions are real (`POST /quests/:id/complete`,
-      `POST /quests/:id/retreat`); "continue" (sprint pause/resume) and "split"/"call party" (need
-      sprints and the social system respectively) are still open.
+      `POST /quests/:id/retreat`), both now also accepting a quest that's mid-sprint (`IN_PROGRESS`);
+      "continue" (a formal quest-level resolution built on top of sprint history) and "split"/"call
+      party" (need the social system) are still open.
 - [x] Grant deterministic XP and coins (`QUEST_XP_REWARD` = 20, `QUEST_COIN_REWARD` = 10 per
       completion) — a level number now displays in Base Camp (`Level {n} — {xp} XP — {coins} coins`).
       "Materials" are represented by the existing bridge construction stage, not a separate counter.

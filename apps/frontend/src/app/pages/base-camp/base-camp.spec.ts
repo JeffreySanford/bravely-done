@@ -11,6 +11,8 @@ import { CampEffects } from '../../state/camp/camp.effects';
 import { campFeature } from '../../state/camp/camp.reducer';
 import { QuestsEffects } from '../../state/quests/quests.effects';
 import { questsFeature } from '../../state/quests/quests.reducer';
+import { SprintsActions } from '../../state/sprints/sprints.actions';
+import { sprintsFeature } from '../../state/sprints/sprints.reducer';
 
 function buildCharacter(overrides: Record<string, unknown> = {}) {
   return {
@@ -41,6 +43,7 @@ describe('BaseCamp', () => {
         provideStore({
           [questsFeature.name]: questsFeature.reducer,
           [campFeature.name]: campFeature.reducer,
+          [sprintsFeature.name]: sprintsFeature.reducer,
         }),
         provideEffects(QuestsEffects, CampEffects),
         { provide: CharacterApiService, useValue: characterApi },
@@ -309,5 +312,79 @@ describe('BaseCamp', () => {
     component.ngOnInit();
 
     expect(() => component.completeQuest('q1')).not.toThrow();
+  });
+
+  describe('sprints', () => {
+    const sprint = {
+      id: 's1',
+      questId: 'q1',
+      targetSeconds: 900,
+      startedAt: new Date(Date.now() - 500_000).toISOString(),
+      pausedAt: null,
+      pausedSeconds: 0,
+      status: 'ACTIVE' as const,
+      completedAt: null,
+      createdAt: new Date().toISOString(),
+    };
+
+    it('dispatches loadSprints for each in-progress quest once quests load', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const list = jest.fn().mockReturnValue(
+        of([{ id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'IN_PROGRESS', createdAt: '2026-01-01', completedAt: null }]),
+      );
+      const { component } = setup({ arrive }, { list });
+      const store = TestBed.inject(Store);
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+      component.ngOnInit();
+
+      expect(dispatchSpy).toHaveBeenCalledWith(SprintsActions.loadSprints({ questId: 'q1' }));
+    });
+
+    it('sprintFor reflects the sprint stored for that quest', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      const store = TestBed.inject(Store);
+
+      expect(component.sprintFor('q1')).toBeUndefined();
+
+      store.dispatch(SprintsActions.startSprintSuccess({ sprint }));
+
+      expect(component.sprintFor('q1')).toEqual(sprint);
+    });
+
+    it('computes elapsed/remaining seconds from the sprint timestamps, not a client counter', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+
+      expect(component.elapsedSecondsFor(sprint)).toBeGreaterThanOrEqual(499);
+      expect(component.remainingSecondsFor(sprint)).toBeLessThanOrEqual(401);
+      expect(component.canCompleteSprint(sprint)).toBe(false);
+    });
+
+    it('canCompleteSprint is true once elapsed time reaches the target', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      const finishedSprint = { ...sprint, startedAt: new Date(Date.now() - 901_000).toISOString() };
+
+      expect(component.canCompleteSprint(finishedSprint)).toBe(true);
+    });
+
+    it('dispatches startSprint/pauseSprint/resumeSprint/completeSprint', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      const store = TestBed.inject(Store);
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+      component.startSprint('q1', 900);
+      component.pauseSprint('s1');
+      component.resumeSprint('s1');
+      component.completeSprint('s1');
+
+      expect(dispatchSpy).toHaveBeenCalledWith(SprintsActions.startSprint({ questId: 'q1', targetSeconds: 900 }));
+      expect(dispatchSpy).toHaveBeenCalledWith(SprintsActions.pauseSprint({ sprintId: 's1' }));
+      expect(dispatchSpy).toHaveBeenCalledWith(SprintsActions.resumeSprint({ sprintId: 's1' }));
+      expect(dispatchSpy).toHaveBeenCalledWith(SprintsActions.completeSprint({ sprintId: 's1' }));
+    });
   });
 });

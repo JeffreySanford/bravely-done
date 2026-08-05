@@ -203,11 +203,6 @@
   flex-wrap: wrap;
 }
 
-.kanban-card__actions .bd-button {
-  padding: 4px 8px;
-  font-size: 11px;
-}
-
 .kanban-card__done {
   color: var(--bd-cyan);
   font-family: var(--bd-font-mono);
@@ -218,6 +213,30 @@
   color: var(--bd-text-muted);
   font-family: var(--bd-font-mono);
   font-size: 11px;
+}
+
+.sprint-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sprint-picker__options {
+  display: flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.sprint-picker__options .bd-button,
+.kanban-card__actions .bd-button {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+.sprint-timer__time {
+  font-family: var(--bd-font-mono);
+  font-size: 11px;
+  color: var(--bd-cyan);
 }
 
 .workbench-panel {

@@ -1,4 +1,5 @@
 import { CampActions } from '../camp/camp.actions';
+import { SprintsActions } from '../sprints/sprints.actions';
 import { QuestsActions } from './quests.actions';
 import { initialQuestsState, questsFeature } from './quests.reducer';
 
@@ -187,5 +188,25 @@ describe('questsFeature reducer', () => {
     );
 
     expect(state.coins).toBe(20);
+  });
+
+  it('syncs xp when the sprints feature reports a successful sprint completion', () => {
+    const sprint = {
+      id: 's1',
+      questId: 'q1',
+      targetSeconds: 900,
+      startedAt: '2026-01-01T00:00:00.000Z',
+      pausedAt: null,
+      pausedSeconds: 0,
+      status: 'COMPLETED' as const,
+      completedAt: '2026-01-01T00:15:00.000Z',
+      createdAt: '2026-01-01T00:00:00.000Z',
+    };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, xp: 20 },
+      SprintsActions.completeSprintSuccess({ sprint, xp: 35 }),
+    );
+
+    expect(state.xp).toBe(35);
   });
 });

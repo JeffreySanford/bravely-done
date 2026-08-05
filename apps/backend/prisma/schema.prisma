@@ -53,10 +53,11 @@ model Character {
   /// Deliberately simple, mirrors firewoodCount: one resource type, no
   /// depletion, harvesting is an infinite ambient action.
   forageCount Int @default(0)
-  /// Quest XP (see documentation/product/rewards-retention.md's reward
-  /// categories). Deliberately just one XP category for now — Courage/
-  /// Focus/Wisdom XP require sprint and resolution variety this project
-  /// doesn't have yet.
+  /// XP (see documentation/product/rewards-retention.md's reward
+  /// categories). One aggregate counter fed by multiple reward categories —
+  /// Quest XP (QuestService.QUEST_XP_REWARD) and Focus XP
+  /// (SprintService.FOCUS_XP_REWARD) both add here; Courage/Wisdom XP need
+  /// resolution variety this project doesn't have yet.
   xp    Int @default(0)
   /// Coins for ordinary progress (see rewards-retention.md). Spent on
   /// workbench upgrades — see CharacterService.WORKBENCH_UPGRADE_COSTS.
@@ -98,8 +99,43 @@ model Quest {
   status      QuestStatus @default(OPEN)
   createdAt   DateTime    @default(now())
   completedAt DateTime?
+  sprints     Sprint[]
 
   @@map("quests")
+}
+
+enum SprintStatus {
+  ACTIVE
+  PAUSED
+  COMPLETED
+}
+
+/// A focused work session against a quest — "Adventure Sprint" in
+/// documentation/product/agile-safe-progression.md's dual-labeled
+/// vocabulary. Deliberately timestamp-authoritative, not a client-trusted
+/// countdown: elapsed active time is always recomputed server-side from
+/// startedAt/pausedAt/pausedSeconds (see SprintService), both so a reload
+/// can recover the true state and so the completion reward can't be
+/// inflated by a client claiming more elapsed time than actually passed —
+/// see rewards-retention.md's "resist idle timers" rule.
+model Sprint {
+  id            String       @id @default(uuid())
+  questId       String
+  quest         Quest        @relation(fields: [questId], references: [id], onDelete: Cascade)
+  /// One of SprintService.SPRINT_DURATION_PRESETS_SECONDS — validated at
+  /// creation, not an arbitrary player-supplied value.
+  targetSeconds Int
+  startedAt     DateTime     @default(now())
+  /// Set while status is PAUSED; null otherwise. Combined with
+  /// pausedSeconds to compute total paused time without losing precision
+  /// across multiple pause/resume cycles.
+  pausedAt      DateTime?
+  pausedSeconds Int          @default(0)
+  status        SprintStatus @default(ACTIVE)
+  completedAt   DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@map("sprints")
 }
 
 /// One row per refresh-token session. Refresh tokens are DB-backed (not

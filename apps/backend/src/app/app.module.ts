@@ -3,11 +3,12 @@ import { AuthModule } from '../auth/auth.module';
 import { CharacterModule } from '../character/character.module';
 import { PrismaModule } from '../prisma/prisma.module';
 import { QuestModule } from '../quest/quest.module';
+import { SprintModule } from '../sprint/sprint.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 
 @Module({
-  imports: [PrismaModule, AuthModule, CharacterModule, QuestModule],
+  imports: [PrismaModule, AuthModule, CharacterModule, QuestModule, SprintModule],
   controllers: [AppController],
   providers: [AppService],
 })

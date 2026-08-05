@@ -100,6 +100,13 @@ model Quest {
   status      QuestStatus @default(OPEN)
   createdAt   DateTime    @default(now())
   completedAt DateTime?
+  /// Stamped by QuestService.continue() — the "Continue" resolution
+  /// (game-loop.md: "meaningful progress made; another encounter remains").
+  /// Updated on every continue, not just the first, since a player may
+  /// continue the same quest across many sessions. No reward attached
+  /// (same reward-free precedent as retreat); this is durable history for
+  /// a future Chronicle/session-summary feature, not shown prominently yet.
+  lastContinuedAt DateTime?
   sprints     Sprint[]
   encounters  Encounter[]
 

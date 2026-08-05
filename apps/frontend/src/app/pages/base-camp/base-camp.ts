@@ -274,6 +274,10 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     this.store.dispatch(QuestsActions.startQuest({ questId }));
   }
 
+  continueQuest(questId: string): void {
+    this.store.dispatch(QuestsActions.continueQuest({ questId }));
+  }
+
   completeQuest(questId: string): void {
     this.store.dispatch(QuestsActions.completeQuest({ questId }));
   }

@@ -11,6 +11,7 @@ describe('QuestController', () => {
     status: QuestStatus.OPEN,
     createdAt: new Date(),
     completedAt: null,
+    lastContinuedAt: null,
   };
   const character = {
     id: 'char-1',
@@ -31,6 +32,7 @@ describe('QuestController', () => {
       create: jest.fn().mockResolvedValue(quest),
       listForCharacter: jest.fn().mockResolvedValue([quest]),
       start: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.IN_PROGRESS }),
+      continue: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.IN_PROGRESS, lastContinuedAt: new Date() }),
       complete: jest.fn().mockResolvedValue({ quest: { ...quest, status: QuestStatus.COMPLETED }, character }),
       retreat: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.RETREATED }),
     } as unknown as QuestService;
@@ -44,6 +46,7 @@ describe('QuestController', () => {
     status: quest.status,
     createdAt: quest.createdAt,
     completedAt: quest.completedAt,
+    lastContinuedAt: quest.lastContinuedAt,
   };
 
   const publicCharacterShape = {
@@ -83,6 +86,17 @@ describe('QuestController', () => {
 
     expect(quests.start).toHaveBeenCalledWith('user-1', 'quest-1');
     expect(result).toEqual({ ...publicQuestShape, status: QuestStatus.IN_PROGRESS });
+  });
+
+  it('continue delegates to the service and returns the public shape', async () => {
+    const { controller, quests } = buildController();
+
+    const result = await controller.continue(user, 'quest-1');
+
+    expect(quests.continue).toHaveBeenCalledWith('user-1', 'quest-1');
+    expect(result).toEqual(
+      expect.objectContaining({ status: QuestStatus.IN_PROGRESS, lastContinuedAt: expect.any(Date) }),
+    );
   });
 
   it('complete delegates to the service and returns both public shapes', async () => {

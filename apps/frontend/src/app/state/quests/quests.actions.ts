@@ -23,6 +23,10 @@ export const QuestsActions = createActionGroup({
     'Start Quest Success': props<{ quest: QuestDto }>(),
     'Start Quest Failure': props<{ error: string }>(),
 
+    'Continue Quest': props<{ questId: string }>(),
+    'Continue Quest Success': props<{ quest: QuestDto }>(),
+    'Continue Quest Failure': props<{ error: string }>(),
+
     'Complete Quest': props<{ questId: string }>(),
     'Complete Quest Success': props<{ quest: QuestDto; constructionStage: number; xp: number; coins: number }>(),
     'Complete Quest Failure': props<{ error: string }>(),

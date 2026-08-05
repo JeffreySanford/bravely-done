@@ -45,6 +45,14 @@ export class QuestController {
     return toQuestDto(quest);
   }
 
+  @Post('quests/:id/continue')
+  @ApiOperation({ summary: 'Record an honest "made progress, ending the session here" resolution' })
+  @ApiOkResponse({ type: QuestDto })
+  async continue(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<QuestDto> {
+    const quest = await this.quests.continue(user.sub, id);
+    return toQuestDto(quest);
+  }
+
   @Post('quests/:id/complete')
   @ApiOperation({ summary: 'Complete a quest and advance the camp construction stage' })
   @ApiOkResponse({ type: CompleteQuestResponseDto })

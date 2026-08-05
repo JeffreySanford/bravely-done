@@ -9,5 +9,6 @@ export function toQuestDto(quest: Quest): QuestDto {
   dto.status = quest.status;
   dto.createdAt = quest.createdAt;
   dto.completedAt = quest.completedAt;
+  dto.lastContinuedAt = quest.lastContinuedAt;
   return dto;
 }

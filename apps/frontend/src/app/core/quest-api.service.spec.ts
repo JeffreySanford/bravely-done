@@ -66,6 +66,18 @@ describe('QuestApiService', () => {
     expect(result).toEqual(started);
   });
 
+  it('continue posts to /quests/:id/continue', () => {
+    let result: unknown;
+    service.continue('q1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('http://test/quests/q1/continue');
+    expect(req.request.method).toBe('POST');
+    const continued = { ...quest, status: 'IN_PROGRESS', lastContinuedAt: '2026-01-01T00:05:00.000Z' };
+    req.flush(continued);
+
+    expect(result).toEqual(continued);
+  });
+
   it('complete posts to /quests/:id/complete', () => {
     let result: unknown;
     service.complete('q1').subscribe((res) => (result = res));

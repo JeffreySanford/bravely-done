@@ -95,11 +95,14 @@ character select (return visits):
   which is exactly the kind of thing the campfire-visibility fix earlier in this doc's history already
   flagged as a real problem, so the board now overlays centered above a dimming backdrop and closes on
   either the backdrop or an explicit Close button. A player creates a quest, moves it into
-  In Progress (`POST /quests/:id/start`), then completes or retreats from it
+  In Progress (`POST /quests/:id/start`), then completes, continues, or retreats from it
   (`apps/backend/src/quest/`); completing one advances real backend progress
   (`Character.campConstructionStage`, `xp`, `coins`) and the bridge visibly repairs, persisting across
   reloads. Retreating is a real, penalty-free resolution available from Backlog or In Progress — no
-  reward, no construction-stage change. Coins have a first real sink too: clicking the workbench (real
+  reward, no construction-stage change. Continuing (In Progress cards only, alongside Retreat/Complete)
+  stamps `Quest.lastContinuedAt` and leaves the quest In Progress — also no reward, letting a work
+  session end with real progress logged without forcing a premature complete or retreat. Coins have a
+  first real sink too: clicking the workbench (real
   raycasting) spends coins on a capped level upgrade (`POST /characters/:id/upgrade-workbench`),
   rejected if unaffordable and a no-op past the cap — and it now has a real capability unlock: each
   level increases how much firewood/forage one chop/forage click grants (1 unit at level 0 up to 4 at
@@ -120,7 +123,7 @@ character select (return visits):
   `apps/frontend/src/app/state/sprints/`, `apps/frontend/src/app/state/encounters/`), not local
   component state.
 - **Not yet built**: wandering-animal interaction, and the
-  "continue"/"split"/"call party" resolutions on top of quests (see
+  "split"/"call party" resolutions on top of quests (see
   [Plan 03](../../planning/03-first-brave-step.md)), and the animation director's fuller event set
   (quest accepted, loot reveal, etc. — arrival, quest-completion, tree-chopping, foraging, companion
   upkeep, workbench upgrades, and sprint focus are wired so far). See

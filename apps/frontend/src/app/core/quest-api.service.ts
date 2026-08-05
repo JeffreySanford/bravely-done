@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { ApiConfiguration } from '../api/api-configuration';
 import { questControllerComplete } from '../api/fn/quests/quest-controller-complete';
+import { questControllerContinue } from '../api/fn/quests/quest-controller-continue';
 import { questControllerCreate } from '../api/fn/quests/quest-controller-create';
 import { questControllerList } from '../api/fn/quests/quest-controller-list';
 import { questControllerRetreat } from '../api/fn/quests/quest-controller-retreat';
@@ -30,6 +31,12 @@ export class QuestApiService {
 
   start(id: string): Observable<QuestDto> {
     return questControllerStart(this.http, this.config.rootUrl, { id }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  continue(id: string): Observable<QuestDto> {
+    return questControllerContinue(this.http, this.config.rootUrl, { id }).pipe(
       map((res) => res.body),
     );
   }

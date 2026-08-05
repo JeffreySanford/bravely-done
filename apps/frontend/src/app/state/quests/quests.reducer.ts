@@ -12,9 +12,9 @@ export interface QuestsState {
   coins: number;
   quests: QuestDto[];
   loading: boolean;
-  /** The quest currently being started, completed, or retreated from — a
-   * quest can only be in one transition at a time, so one field covers
-   * all three. */
+  /** The quest currently being started, continued, completed, or retreated
+   * from — a quest can only be in one transition at a time, so one field
+   * covers all four. */
   resolvingQuestId: string | null;
   error: string | null;
 }
@@ -66,6 +66,22 @@ export const questsFeature = createFeature({
       resolvingQuestId: null,
     })),
     on(QuestsActions.startQuestFailure, (state, { error }): QuestsState => ({
+      ...state,
+      resolvingQuestId: null,
+      error,
+    })),
+
+    on(QuestsActions.continueQuest, (state, { questId }): QuestsState => ({
+      ...state,
+      resolvingQuestId: questId,
+      error: null,
+    })),
+    on(QuestsActions.continueQuestSuccess, (state, { quest }): QuestsState => ({
+      ...state,
+      quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
+      resolvingQuestId: null,
+    })),
+    on(QuestsActions.continueQuestFailure, (state, { error }): QuestsState => ({
       ...state,
       resolvingQuestId: null,
       error,

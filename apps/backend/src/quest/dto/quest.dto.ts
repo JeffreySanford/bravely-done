@@ -19,4 +19,7 @@ export class QuestDto {
 
   @ApiProperty({ type: Date, required: false, nullable: true })
   completedAt!: Date | null;
+
+  @ApiProperty({ type: Date, required: false, nullable: true })
+  lastContinuedAt!: Date | null;
 }

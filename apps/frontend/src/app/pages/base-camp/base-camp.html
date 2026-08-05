@@ -221,6 +221,14 @@
                   </button>
                   <button
                     type="button"
+                    class="bd-button bd-button--ghost"
+                    [disabled]="resolvingQuestId() === quest.id"
+                    (click)="continueQuest(quest.id)"
+                  >
+                    Continue
+                  </button>
+                  <button
+                    type="button"
                     class="bd-button"
                     [disabled]="resolvingQuestId() === quest.id"
                     (click)="completeQuest(quest.id)"

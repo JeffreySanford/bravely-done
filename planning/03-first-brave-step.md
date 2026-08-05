@@ -37,15 +37,20 @@
       and abuse surface small for this first slice. Sprint completion is deliberately a separate action
       from quest completion (granting Focus XP, not touching quest status or camp construction) — a
       quest can span more than one sprint, matching the still-open "Continue" resolution.
-- [x] Resolve complete or retreat — two of Plan 03's original five resolutions (complete, continue,
-      split, retreat, call party) are real: `POST /quests/:id/complete` and `POST /quests/:id/retreat`
-      (`apps/backend/src/quest/quest.service.ts`), both accepting a quest from either `OPEN` or
-      `IN_PROGRESS`. Retreat is a deliberate, penalty-free resolution ("rest days and comeback quests
-      are legitimate play" — documentation/product/rewards-retention.md's ethical rules), not a failure
-      state. "Continue" as a formal quest resolution (ending a session having made partial progress,
-      distinct from the sprint pause/resume mechanism above), "split" (partial credit), and "call party"
-      (needs the social/guild system, a later milestone) are still open — sprints now exist, but nothing
-      yet uses them to drive a quest-level resolution beyond complete/retreat.
+- [x] Resolve complete, continue, or retreat — three of Plan 03's original five resolutions (complete,
+      continue, split, retreat, call party) are real: `POST /quests/:id/complete`, `POST /quests/:id/
+      continue`, and `POST /quests/:id/retreat` (`apps/backend/src/quest/quest.service.ts`), all three
+      accepting a quest from either `OPEN` or `IN_PROGRESS`. Continue moves an `OPEN` quest to
+      `IN_PROGRESS` (same as start) and re-stamps an already-`IN_PROGRESS` one; it's a genuine no-op only
+      once the quest has moved on to `COMPLETED`/`RETREATED`. Retreat is a deliberate,
+      penalty-free resolution ("rest days and comeback quests are legitimate play" —
+      documentation/product/rewards-retention.md's ethical rules), not a failure state. Continue stamps
+      `Quest.lastContinuedAt` (re-stamped on every call, not just the first, since a player may continue
+      the same quest across many sessions) and leaves the quest `IN_PROGRESS` — no reward, matching
+      retreat's reward-free precedent, and no column change on the Kanban board (a "Continue" button
+      just sits alongside Retreat/Complete on In Progress cards). It's durable history for a future
+      Chronicle/session-summary feature, not surfaced prominently yet. "Split" (partial credit) and
+      "call party" (needs the social/guild system, a later milestone) are still open.
 - [ ] Submit resolution with idempotency key. (complete/retreat are naturally idempotent by status
       check — re-calling either on an already-resolved quest is a safe no-op — but there's no
       client-supplied idempotency key protecting against duplicate network retries specifically.)
@@ -87,7 +92,9 @@
       an encounter straight from the Backlog column (Courage XP), retreats one quest, starts and
       completes three others via the Kanban board — including a full start/pause/resume sprint round
       trip on one of them, with "Finish sprint" asserted disabled the whole time as visible proof of the
-      idle-timer-resistance guarantee — then confirms the XP/coins/level display and bridge stage,
+      idle-timer-resistance guarantee, and a Continue click on another asserted to leave it in the
+      In Progress column with no reward before it's completed normally — then confirms the XP/coins/level
+      display and bridge stage,
       reloads, and confirms everything persisted). Reaching the sprint's success-after-target-duration
       path isn't practical in an e2e run (the shortest preset is 15 real minutes); that path is instead
       verified live against a real Postgres row (backdating `startedAt` directly, not mocking the
@@ -101,15 +108,15 @@
 
 ## What "finished" means here
 
-This plan is not fully done — the "continue"/"split"/"call party" quest resolutions, idempotency keys,
-and celebration moments are all still open, and are real, separate pieces of work, not rounding errors.
+This plan is not fully done — the "split"/"call party" quest resolutions, idempotency keys, and
+celebration moments are all still open, and are real, separate pieces of work, not rounding errors.
 What's done is the core value: a quest can be created, visibly started, broken into small encounters,
-worked on in a real timed sprint, resolved two different honest ways, and all three (quest, sprint,
-encounter) grant real, deterministic, transactionally-safe rewards that persist — which is what makes
-completing a quest (and sitting through an honest sprint, and taking a small brave step via an
-encounter) feel like it matters, rather than just checking a box. The Kanban board is a first honest
-step toward the player tracking their own stories/quests the way the app teaches Agile/SAFe to work,
-sprints give the "In Progress" column something real happening inside it, and encounters give a quest
-real internal structure — but there's still no swimlanes, WIP limits, story points, or a formal
-"Continue" resolution tying a quest's sprint/encounter history back into its own status. Everything
-still open builds on this foundation rather than replacing it.
+worked on in a real timed sprint, resolved three different honest ways (complete, continue, retreat),
+and all three of quest/sprint/encounter grant real, deterministic, transactionally-safe rewards that
+persist — which is what makes completing a quest (and sitting through an honest sprint, and taking a
+small brave step via an encounter) feel like it matters, rather than just checking a box. The Kanban
+board is a first honest step toward the player tracking their own stories/quests the way the app
+teaches Agile/SAFe to work, sprints give the "In Progress" column something real happening inside it,
+encounters give a quest real internal structure, and Continue lets a session end with real progress
+logged without forcing a premature complete/retreat — but there's still no swimlanes, WIP limits, or
+story points. Everything still open builds on this foundation rather than replacing it.

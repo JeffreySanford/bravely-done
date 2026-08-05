@@ -110,10 +110,16 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       idle timers. Verified live via direct API calls (including backdating a real Postgres row to prove
       the success path, not just the rejection path) and a 3-engine Playwright e2e run covering the
       full start/pause/resume flow with "Finish sprint" asserted disabled throughout.
-- [x] Resolve complete or retreat — two of four resolutions are real (`POST /quests/:id/complete`,
-      `POST /quests/:id/retreat`), both now also accepting a quest that's mid-sprint (`IN_PROGRESS`);
-      "continue" (a formal quest-level resolution built on top of sprint history) and "split"/"call
-      party" (need the social system) are still open.
+- [x] Resolve complete, continue, or retreat — three of four resolutions are real (`POST /quests/:id/
+      complete`, `POST /quests/:id/continue`, `POST /quests/:id/retreat`), all accepting a quest from
+      `OPEN` or `IN_PROGRESS`; "split"/"call party" (need the social system) are still open. Continue
+      stamps `Quest.lastContinuedAt` (re-stamped on every call, not just the first) and leaves the quest
+      `IN_PROGRESS` with no reward — same reward-free precedent as retreat, durable history for a future
+      session-summary feature rather than something surfaced prominently today. A "Continue" button
+      sits alongside Retreat/Complete on In Progress Kanban cards only. Verified live via direct API
+      calls (moves OPEN→IN_PROGRESS+stamps, re-stamps on repeat calls, no-op once COMPLETED/RETREATED)
+      and a 3-engine Playwright e2e run asserting a Continue click leaves the quest in the In Progress
+      column before it's completed normally.
 - [x] Grant deterministic XP and coins (`QUEST_XP_REWARD` = 20, `QUEST_COIN_REWARD` = 10 per
       completion) — a level number now displays in Base Camp (`Level {n} — {xp} XP — {coins} coins`).
       "Materials" are represented by the existing bridge construction stage, not a separate counter.

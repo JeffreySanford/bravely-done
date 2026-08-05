@@ -175,6 +175,16 @@ test('signup through to a rendered Base Camp, and back again via character selec
       await expect(inProgressCard.getByRole('button', { name: 'Pause' })).toBeVisible();
     }
 
+    if (title === 'Answer three emails') {
+      // The "Continue" resolution (game-loop.md: "meaningful progress made;
+      // another encounter remains") stamps a timestamp but does not move
+      // the quest off the board or grant any reward — it's a no-op on
+      // status/column, distinct from Complete/Retreat.
+      await inProgressCard.getByRole('button', { name: 'Continue' }).click();
+      await expect(inProgressCard.getByRole('button', { name: 'Complete' })).toBeVisible();
+      await expect(page.locator('.kanban-card', { hasText: title }).getByText('Done')).not.toBeVisible();
+    }
+
     await inProgressCard.getByRole('button', { name: 'Complete' }).click();
     await expect(page.getByText(`Bridge repair: ${index + 1} / 3`)).toBeVisible();
     await expect(page.locator('.kanban-card', { hasText: title }).getByText('Done')).toBeVisible();

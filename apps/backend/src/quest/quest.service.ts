@@ -51,6 +51,28 @@ export class QuestService {
     });
   }
 
+  /** The "Continue" resolution (game-loop.md: "meaningful progress made;
+   * another encounter remains") — an honest way to end a work session on a
+   * quest that isn't done, distinct from Retreat's "no progress needed"
+   * framing. Ensures the quest is at least IN_PROGRESS (same forward-only
+   * move as start()) and stamps lastContinuedAt. Unlike start/complete/
+   * retreat, repeated calls are meaningful, not just a no-op — a player may
+   * continue the same quest across many sessions, so the timestamp updates
+   * every time. Grants no reward, same precedent as retreat. Already-
+   * resolved quests (completed or retreated) are returned as-is. */
+  async continue(userId: string, questId: string): Promise<Quest> {
+    const quest = await this.findOwnedQuest(userId, questId);
+
+    if (quest.status === QuestStatus.COMPLETED || quest.status === QuestStatus.RETREATED) {
+      return quest;
+    }
+
+    return this.prisma.quest.update({
+      where: { id: questId },
+      data: { status: QuestStatus.IN_PROGRESS, lastContinuedAt: new Date() },
+    });
+  }
+
   /** Completes an open or in-progress quest: advances the owning character's
    * bridge construction stage by one (capped at MAX_CONSTRUCTION_STAGE) and
    * grants a deterministic XP/coin reward, applied together in one

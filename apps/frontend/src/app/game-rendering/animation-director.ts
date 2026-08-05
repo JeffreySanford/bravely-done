@@ -14,7 +14,8 @@ export type BaseCampAnimationEvent =
   | { type: 'firewoodGathered'; totalFirewood: number }
   | { type: 'forage' }
   | { type: 'forageGathered'; totalForage: number }
-  | { type: 'workbenchUpgraded'; workbenchLevel: number };
+  | { type: 'workbenchUpgraded'; workbenchLevel: number }
+  | { type: 'sprintFocusChanged'; active: boolean };
 
 export interface AnimationSequence {
   onEvent(event: BaseCampAnimationEvent): void;

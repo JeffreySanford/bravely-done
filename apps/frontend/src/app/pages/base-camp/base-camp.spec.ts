@@ -405,5 +405,19 @@ describe('BaseCamp', () => {
       expect(dispatchSpy).toHaveBeenCalledWith(SprintsActions.resumeSprint({ sprintId: 's1' }));
       expect(dispatchSpy).toHaveBeenCalledWith(SprintsActions.completeSprint({ sprintId: 's1' }));
     });
+
+    it('anySprintActive reflects whether any tracked sprint is ACTIVE', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      const store = TestBed.inject(Store);
+
+      expect(component.anySprintActive()).toBe(false);
+
+      store.dispatch(SprintsActions.startSprintSuccess({ sprint }));
+      expect(component.anySprintActive()).toBe(true);
+
+      store.dispatch(SprintsActions.pauseSprintSuccess({ sprint: { ...sprint, status: 'PAUSED', pausedAt: new Date().toISOString() } }));
+      expect(component.anySprintActive()).toBe(false);
+    });
   });
 });

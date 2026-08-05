@@ -3,6 +3,7 @@ import {
   Component,
   computed,
   DestroyRef,
+  effect,
   ElementRef,
   OnDestroy,
   OnInit,
@@ -112,6 +113,13 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   });
 
   readonly sprintsByQuestId = this.store.selectSignal(selectSprintsByQuestId);
+  /** Drives the scene's "calm focus" halo (see base-camp-scene.ts's
+   * FocusSequence) — true while any quest has an ACTIVE sprint, regardless
+   * of which one, since the halo is a single ambient companion effect, not
+   * per-quest. */
+  readonly anySprintActive = computed(() =>
+    Object.values(this.sprintsByQuestId()).some((sprint) => sprint?.status === 'ACTIVE'),
+  );
   readonly startingSprintQuestId = this.store.selectSignal(selectStartingQuestId);
   readonly transitioningSprintId = this.store.selectSignal(selectTransitioningSprintId);
   readonly sprintsError = this.store.selectSignal(selectSprintsError);
@@ -172,6 +180,14 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       });
 
     this.nowIntervalId = setInterval(() => this.now.set(Date.now()), 1000);
+
+    // Reacts to anySprintActive() rather than individual sprint actions
+    // (start/pause/resume/complete all change it) — one signal, one place
+    // that decides whether the scene's calm-focus halo should be lit.
+    effect(() => {
+      const active = this.anySprintActive();
+      this.director?.dispatch({ type: 'sprintFocusChanged', active });
+    });
   }
 
   ngOnInit(): void {

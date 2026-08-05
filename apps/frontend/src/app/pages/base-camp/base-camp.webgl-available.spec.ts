@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter } from '@angular/router';
 import { provideEffects } from '@ngrx/effects';
-import { provideStore } from '@ngrx/store';
+import { provideStore, Store } from '@ngrx/store';
 import { of } from 'rxjs';
 import { CharacterApiService } from '../../core/character-api.service';
 import { QuestApiService } from '../../core/quest-api.service';
@@ -10,6 +10,7 @@ import { CampEffects } from '../../state/camp/camp.effects';
 import { campFeature } from '../../state/camp/camp.reducer';
 import { QuestsEffects } from '../../state/quests/quests.effects';
 import { questsFeature } from '../../state/quests/quests.reducer';
+import { SprintsActions } from '../../state/sprints/sprints.actions';
 import { sprintsFeature } from '../../state/sprints/sprints.reducer';
 import type { BaseCampSceneOptions } from './base-camp-scene';
 
@@ -185,6 +186,36 @@ describe('BaseCamp (WebGL available)', () => {
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'workbenchUpgraded', workbenchLevel: 1 });
     expect(fixture.componentInstance.workbenchLevel()).toBe(1);
     expect(fixture.componentInstance.coins()).toBe(10);
+    dispatchSpy.mockRestore();
+  });
+
+  it('dispatches sprintFocusChanged to the director when a sprint becomes active, and again when it stops', () => {
+    const dispatchSpy = jest.spyOn(mockDirector, 'dispatch');
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+    dispatchSpy.mockClear();
+
+    const store = TestBed.inject(Store);
+    const sprint = {
+      id: 's1',
+      questId: 'q1',
+      targetSeconds: 900,
+      startedAt: new Date().toISOString(),
+      pausedAt: null,
+      pausedSeconds: 0,
+      status: 'ACTIVE' as const,
+      completedAt: null,
+      createdAt: new Date().toISOString(),
+    };
+
+    store.dispatch(SprintsActions.startSprintSuccess({ sprint }));
+    fixture.detectChanges();
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'sprintFocusChanged', active: true });
+
+    store.dispatch(SprintsActions.pauseSprintSuccess({ sprint: { ...sprint, status: 'PAUSED', pausedAt: new Date().toISOString() } }));
+    fixture.detectChanges();
+    expect(dispatchSpy).toHaveBeenCalledWith({ type: 'sprintFocusChanged', active: false });
+
     dispatchSpy.mockRestore();
   });
 

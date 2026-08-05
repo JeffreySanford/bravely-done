@@ -28,6 +28,11 @@ const FORAGE_PULSE_SECONDS = 0.5;
  * loop: "foraged plants... feed future systems (companion upkeep...)".
  * Caps out at this many units so upkeep doesn't scale unboundedly. */
 const COMPANION_UPKEEP_CAP = 10;
+/** How long the focus halo takes to fade fully in or out — see
+ * FocusSequence. Deliberately slower than the reward-style pulses
+ * (CHOP_WOBBLE_SECONDS, FORAGE_PULSE_SECONDS) elsewhere in this file: a
+ * sprint is sustained focus, not a momentary celebration. */
+const FOCUS_FADE_SECONDS = 0.6;
 
 export interface BaseCampSceneOptions {
   firstArrival: boolean;
@@ -86,6 +91,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
   let campfireSequence: CampfireSequence;
   let bushSequence: BushSequence;
   let workbenchSequence: WorkbenchSequence;
+  let focusSequence: FocusSequence;
   const treeSequences: TreeSequence[] = [];
 
   const handlers: SceneHandlers = {
@@ -124,6 +130,10 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       companionSequence.mesh.position.set(-1.8, 0.55, -1.6);
       ctx.scene.add(companionSequence.mesh);
       director.register(companionSequence);
+
+      focusSequence = new FocusSequence();
+      companionSequence.mesh.add(focusSequence.ring);
+      director.register(focusSequence);
 
       TREE_POSITIONS.forEach((position, index) => {
         const treeSequence = new TreeSequence(index);
@@ -211,6 +221,7 @@ export function buildBaseCampScene(motionMode: MotionMode, options: BaseCampScen
       workbenchSequence.onFrame(deltaSeconds);
 
       companionSequence.onFrame(elapsed);
+      focusSequence.onFrame(elapsed, deltaSeconds);
 
       if (motionMode !== 'minimal') {
         const streamPositions = stream.geometry.attributes['position'] as THREE.BufferAttribute;
@@ -384,6 +395,39 @@ class CompanionSequence implements AnimationSequence {
     this.mesh.position.y = 0.55 + Math.sin(elapsed * 1.6) * bobAmplitude;
     this.mesh.rotation.y = elapsed * (0.3 + upkeep * 0.3);
     (this.mesh.material as THREE.MeshStandardMaterial).emissiveIntensity = 0.5 + upkeep * 0.6;
+  }
+}
+
+/** A calm, slow-tumbling halo around the companion, reacting to whether an
+ * Adventure Sprint (planning/03-first-brave-step.md) is currently ACTIVE
+ * for this character — "sprint started and calm focus" from planning/02's
+ * animation-director section. Fades gently in and out (FOCUS_FADE_SECONDS)
+ * rather than snapping on/off, since a sprint is sustained focus, not a
+ * momentary reward — deliberately distinct from the celebratory pulses
+ * used elsewhere (BridgeSequence, WorkbenchSequence). Whether any sprint
+ * is active is a base-camp.ts-level concern (it can belong to any
+ * in-progress quest, not a specific scene landmark), so this sequence just
+ * reacts to the boolean the caller determined. */
+class FocusSequence implements AnimationSequence {
+  readonly ring = buildFocusRing();
+  private active = false;
+  private opacity = 0;
+
+  onEvent(event: BaseCampAnimationEvent): void {
+    if (event.type === 'sprintFocusChanged') {
+      this.active = event.active;
+    }
+  }
+
+  onFrame(elapsed: number, deltaSeconds: number): void {
+    const target = this.active ? 0.55 : 0;
+    const maxStep = deltaSeconds / FOCUS_FADE_SECONDS;
+    const delta = target - this.opacity;
+    this.opacity += Math.sign(delta) * Math.min(Math.abs(delta), maxStep);
+
+    (this.ring.material as THREE.MeshBasicMaterial).opacity = this.opacity;
+    this.ring.visible = this.opacity > 0.001;
+    this.ring.rotation.z = elapsed * 0.15;
   }
 }
 
@@ -637,6 +681,16 @@ function buildCompanion(): THREE.Mesh {
     roughness: 0.3,
   });
   return new THREE.Mesh(geometry, material);
+}
+
+/** Starts invisible/transparent — FocusSequence fades it in only while an
+ * Adventure Sprint is active. */
+function buildFocusRing(): THREE.Mesh {
+  const geometry = new THREE.TorusGeometry(0.45, 0.015, 8, 32);
+  const material = new THREE.MeshBasicMaterial({ color: CYAN, transparent: true, opacity: 0 });
+  const ring = new THREE.Mesh(geometry, material);
+  ring.visible = false;
+  return ring;
 }
 
 function buildTree(): THREE.Group {

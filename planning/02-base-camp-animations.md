@@ -91,7 +91,19 @@
 - [x] Player returned (tent sequence — resolved by firstArrival at construction time).
 - [x] Tent erection (first arrival for a given character only — gated by backend state, see above).
 - [ ] Quest accepted.
-- [ ] Sprint started and calm focus.
+- [x] Sprint started and calm focus: `FocusSequence` (`apps/frontend/src/app/pages/base-camp/
+      base-camp-scene.ts`) reacts to a `sprintFocusChanged` event with a calm, slow-tumbling halo around
+      the companion — fading gently in while any Adventure Sprint is `ACTIVE` and fading back out
+      otherwise (`FOCUS_FADE_SECONDS` = 0.6s), deliberately distinct from the celebratory pulses used
+      for quest/workbench rewards elsewhere in this file, since a sprint is sustained focus, not a
+      momentary reward. `base-camp.ts` computes `anySprintActive` from the sprints NgRx state and
+      dispatches the event via a signal `effect()` whenever it changes, so pausing/resuming/completing
+      any in-progress quest's sprint all correctly fade the halo — not just start/stop. Verified via a
+      dedicated unit test asserting the director receives the event on both the on and off transitions,
+      and the full Playwright e2e suite (which genuinely renders WebGL and exercises a real sprint
+      start/pause) ran clean with no runtime errors. Live visual confirmation in a real browser wasn't
+      possible this pass — this session's Browser pane tooling wasn't compositing frames — so this
+      relies on that compensating evidence rather than a screenshot; a manual look is still open.
 - [x] Quest completed: `BridgeSequence` reacts to a `questCompleted` event, reveals the next bridge
       plank, and pulses it — driven by the real Quest domain (`POST /quests/:id/complete`, see
       [Plan 03](03-first-brave-step.md)), not a mock stub.

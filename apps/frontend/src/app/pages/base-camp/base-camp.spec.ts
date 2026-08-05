@@ -264,6 +264,25 @@ describe('BaseCamp', () => {
     });
   });
 
+  describe('board toggle', () => {
+    it('starts closed, and toggleBoard/closeBoard flip it as expected', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+
+      expect(component.boardOpen()).toBe(false);
+
+      component.toggleBoard();
+      expect(component.boardOpen()).toBe(true);
+
+      component.toggleBoard();
+      expect(component.boardOpen()).toBe(false);
+
+      component.toggleBoard();
+      component.closeBoard();
+      expect(component.boardOpen()).toBe(false);
+    });
+  });
+
   describe('completeQuest', () => {
     it('dispatches completeQuest and updates construction stage, xp, and coins', () => {
       const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));

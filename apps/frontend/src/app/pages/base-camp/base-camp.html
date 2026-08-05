@@ -22,9 +22,15 @@
     }
   </header>
 
-  <div class="stage__footer">
+  @if (boardOpen()) {
+    <button type="button" class="board-backdrop" aria-label="Dismiss quest board" (click)="closeBoard()"></button>
     <div class="kanban-board">
-      <p class="kanban-board__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
+      <div class="kanban-board__header">
+        <p class="kanban-board__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
+        <button type="button" class="bd-button bd-button--ghost kanban-board__close" (click)="closeBoard()">
+          Close
+        </button>
+      </div>
 
       <form class="kanban-board__form" [formGroup]="newQuestForm" (ngSubmit)="createQuest()">
         <input
@@ -186,6 +192,15 @@
         <p class="kanban-board__empty">No quests yet — add one above.</p>
       }
     </div>
+  }
+
+  <div class="stage__footer">
+    <button type="button" class="bd-button board-toggle" (click)="toggleBoard()">
+      Quests
+      @if (quests().length > 0) {
+        ({{ quests().length }})
+      }
+    </button>
 
     <div class="workbench-panel">
       <p class="workbench-panel__label">

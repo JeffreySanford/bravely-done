@@ -98,19 +98,54 @@
   pointer-events: auto;
 }
 
+/* An on-demand overlay (opened via the "Quests" toggle in .stage__footer)
+   rather than an always-docked panel — it used to sit permanently over a
+   large slice of the 3D scene, which is exactly the "quest dialog covering
+   the campfire" complaint the scene's visual verification pass already
+   fixed once for the older single-quest dialog (see planning/02-base-camp-
+   animations.md). Fixed + centered, above a dimming backdrop that also
+   closes it on click. */
+.board-backdrop {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  border: none;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.55);
+  cursor: default;
+  z-index: 20;
+}
+
 .kanban-board {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 21;
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 12px;
   padding: 16px 20px;
   width: min(880px, 94vw);
-  max-height: min(340px, 44vh);
+  max-height: min(520px, 80vh);
   overflow-y: auto;
   border-radius: var(--bd-radius);
   background: var(--bd-surface);
   border: 1px solid var(--bd-surface-border);
   backdrop-filter: blur(14px);
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
+.kanban-board__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.kanban-board__close {
+  flex-shrink: 0;
 }
 
 .kanban-board__label {
@@ -237,6 +272,10 @@
   font-family: var(--bd-font-mono);
   font-size: 11px;
   color: var(--bd-cyan);
+}
+
+.board-toggle {
+  font-family: var(--bd-font-mono);
 }
 
 .workbench-panel {

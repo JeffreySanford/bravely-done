@@ -139,6 +139,12 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       direct API calls (start, re-start is a no-op, complete from in-progress, start-a-completed-quest
       is a no-op) and a 3-engine Playwright e2e run covering the full board flow. No drag-and-drop,
       WIP limits, or sprint/story-point association yet — that's future scope, not this slice.
+- [x] Turned the board into an on-demand overlay instead of an always-docked panel, after direct
+      feedback that it was taking over the whole screen — a "Quests" toggle button in `.stage__footer`
+      opens it centered over a dimming backdrop; clicking the backdrop or a Close button dismisses it.
+      No new domain logic, just a `boardOpen` signal — verified via a Playwright e2e round trip
+      (open → close → reopen → confirms persisted state survives a reload with the board starting
+      closed again each time).
 
 ## Later milestones
 

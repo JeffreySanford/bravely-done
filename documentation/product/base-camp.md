@@ -90,7 +90,11 @@ character select (return visits):
   treasury/bridge/workbench landmarks. The tent-erect animation is correctly gated to a character's
   true first-ever arrival via a backend flag (`Character.hasArrivedAtCamp`), not just client state. The
   quest board is a real in-game Kanban board (Backlog/In Progress/Done/Retreated columns,
-  `apps/frontend/src/app/pages/base-camp/base-camp.html`) — a player creates a quest, moves it into
+  `apps/frontend/src/app/pages/base-camp/base-camp.html`), opened on demand via a "Quests" toggle
+  rather than docked on screen permanently — it used to always cover a large slice of the 3D scene,
+  which is exactly the kind of thing the campfire-visibility fix earlier in this doc's history already
+  flagged as a real problem, so the board now overlays centered above a dimming backdrop and closes on
+  either the backdrop or an explicit Close button. A player creates a quest, moves it into
   In Progress (`POST /quests/:id/start`), then completes or retreats from it
   (`apps/backend/src/quest/`); completing one advances real backend progress
   (`Character.campConstructionStage`, `xp`, `coins`) and the bridge visibly repairs, persisting across

@@ -79,6 +79,12 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   /** Only true when WebGL is actually available — gates the <canvas> in the template. */
   readonly renderScene = isWebglAvailable();
 
+  /** The board defaults to closed — it's an on-demand overlay (a "Quests"
+   * toggle button) rather than an always-visible panel, so it doesn't
+   * compete with the 3D scene for screen space when the player isn't
+   * actively managing quests. */
+  readonly boardOpen = signal(false);
+
   readonly quests = this.store.selectSignal(selectQuests);
   /** The Kanban board's four columns — Backlog/In Progress/Done/Retreated —
    * derived from the same quest list the old flat panel used, just grouped
@@ -209,6 +215,14 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     if (this.nowIntervalId !== null) {
       clearInterval(this.nowIntervalId);
     }
+  }
+
+  toggleBoard(): void {
+    this.boardOpen.update((open) => !open);
+  }
+
+  closeBoard(): void {
+    this.boardOpen.set(false);
   }
 
   createQuest(): void {

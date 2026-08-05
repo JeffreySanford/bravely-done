@@ -85,8 +85,18 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
   await expectSceneMounted(page);
-  await expect(page.getByText('Bridge repair: 0 / 3')).toBeVisible();
   await expect(page.getByText('Level 1 — 0 XP — 0 coins')).toBeVisible();
+
+  // The Kanban board is an on-demand overlay (a "Quests" toggle), not an
+  // always-docked panel, so it never competes with the 3D scene for screen
+  // space when the player isn't actively managing quests. Open it, confirm
+  // Close actually closes it, then reopen for the rest of the quest flow.
+  await page.getByRole('button', { name: 'Quests' }).click();
+  await expect(page.getByText('Bridge repair: 0 / 3')).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
+  await expect(page.getByText('Bridge repair: 0 / 3')).toBeHidden();
+  await page.getByRole('button', { name: 'Quests' }).click();
+  await expect(page.getByText('Bridge repair: 0 / 3')).toBeVisible();
 
   // The firewood/forage hint only renders when the WebGL scene actually
   // mounted (see expectSceneMounted's Firefox/CI note above) — where it
@@ -161,11 +171,17 @@ test('signup through to a rendered Base Camp, and back again via character selec
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
-  await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
   await expect(page.getByText('Level 1 — 60 XP — 30 coins')).toBeVisible();
+
+  // The board defaults to closed again after a reload — reopening it is
+  // what proves the underlying quest/sprint state persisted, not just the
+  // header stats.
+  await page.getByRole('button', { name: 'Quests' }).click();
+  await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
   await expect(page.getByText('Chop firewood')).toBeVisible();
   await expect(page.locator('.kanban-card', { hasText: 'Chop firewood' }).getByText('Done')).toBeVisible();
   await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
+  await page.getByRole('button', { name: 'Close' }).click();
 
   // A returning character does not replay the tent-erect animation — the
   // subtitle still reads "has arrived", but this is a repeat, not the

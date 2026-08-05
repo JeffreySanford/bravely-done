@@ -319,6 +319,80 @@
   font-size: 11px;
 }
 
+/* A small checklist of Encounters (small actionable steps) within a
+   Backlog/In Progress quest card — deliberately understated compared to
+   the sprint UI below it, since these are just a checklist, not their own
+   resolution flow (see EncounterService). */
+.encounter-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.encounter-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+}
+
+.encounter-item--done .encounter-item__title {
+  color: var(--bd-text-muted);
+  text-decoration: line-through;
+}
+
+.encounter-item__check {
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border-radius: 4px;
+  border: 1px solid var(--bd-surface-border);
+  background: transparent;
+  color: var(--bd-cyan);
+  font-size: 10px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.encounter-item__check:disabled {
+  cursor: default;
+}
+
+.encounter-item__title {
+  word-break: break-word;
+}
+
+.encounter-form {
+  display: flex;
+  gap: 4px;
+}
+
+.encounter-form__input {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 11px;
+  color: var(--bd-text);
+  background: var(--bd-bg-elevated);
+  border: 1px solid var(--bd-surface-border);
+  border-radius: 6px;
+  padding: 4px 6px;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.encounter-form__input:focus {
+  border-color: var(--bd-cyan);
+}
+
+.encounter-form__submit {
+  width: auto;
+  flex-shrink: 0;
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
 .sprint-picker {
   display: flex;
   flex-direction: column;

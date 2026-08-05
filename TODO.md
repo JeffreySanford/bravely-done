@@ -151,6 +151,16 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       No new domain logic, just a `boardOpen` signal — verified via a Playwright e2e round trip
       (open → close → reopen → confirms persisted state survives a reload with the board starting
       closed again each time).
+- [x] Suggest a small first encounter — a real `Encounter` checklist item under a quest
+      (`apps/backend/src/encounter/`, `POST /quests/:questId/encounters`, `.../complete`), independent
+      of the quest's own resolution (no gating, no retreat-equivalent) and granting a flat
+      `COURAGE_XP_REWARD` = 5 on completion, making the "Courage XP for beginning avoided work" reward
+      category real. Rendered as a small checklist on Backlog/In Progress Kanban cards. Verified live
+      (create/list/complete, idempotent re-complete, quest status genuinely untouched) and via a
+      3-engine Playwright e2e run — which caught a real bug along the way: the encounter form's
+      `(ngSubmit)` never fired because the component only imported `ReactiveFormsModule`, not
+      `FormsModule`, so the browser fell back to a native full-page form submission; fixed by importing
+      `FormsModule` too.
 
 ## Later milestones
 

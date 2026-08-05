@@ -50,6 +50,43 @@
             @for (quest of backlogQuests(); track quest.id) {
               <div class="kanban-card">
                 <span class="kanban-card__title">{{ quest.title }}</span>
+
+                <div class="encounter-list">
+                  @for (encounter of encountersFor(quest.id); track encounter.id) {
+                    <div class="encounter-item" [class.encounter-item--done]="encounter.status === 'COMPLETED'">
+                      <button
+                        type="button"
+                        class="encounter-item__check"
+                        [attr.aria-pressed]="encounter.status === 'COMPLETED'"
+                        [disabled]="encounter.status === 'COMPLETED' || transitioningEncounterId() === encounter.id"
+                        (click)="completeEncounter(encounter.id)"
+                      >
+                        @if (encounter.status === 'COMPLETED') { ✓ } @else { ○ }
+                      </button>
+                      <span class="encounter-item__title">{{ encounter.title }}</span>
+                    </div>
+                  }
+                  <form
+                    class="encounter-form"
+                    (ngSubmit)="addEncounter(quest.id, draftInput.value); draftInput.value = ''"
+                  >
+                    <input
+                      #draftInput
+                      type="text"
+                      class="encounter-form__input"
+                      placeholder="Add a step…"
+                      [attr.aria-label]="'Add a step to ' + quest.title"
+                    />
+                    <button
+                      type="submit"
+                      class="bd-button bd-button--ghost encounter-form__submit"
+                      [disabled]="creatingEncounterQuestId() === quest.id"
+                    >
+                      +
+                    </button>
+                  </form>
+                </div>
+
                 <span class="kanban-card__actions">
                   <button
                     type="button"
@@ -80,6 +117,42 @@
               @let sprint = sprintFor(quest.id);
               <div class="kanban-card">
                 <span class="kanban-card__title">{{ quest.title }}</span>
+
+                <div class="encounter-list">
+                  @for (encounter of encountersFor(quest.id); track encounter.id) {
+                    <div class="encounter-item" [class.encounter-item--done]="encounter.status === 'COMPLETED'">
+                      <button
+                        type="button"
+                        class="encounter-item__check"
+                        [attr.aria-pressed]="encounter.status === 'COMPLETED'"
+                        [disabled]="encounter.status === 'COMPLETED' || transitioningEncounterId() === encounter.id"
+                        (click)="completeEncounter(encounter.id)"
+                      >
+                        @if (encounter.status === 'COMPLETED') { ✓ } @else { ○ }
+                      </button>
+                      <span class="encounter-item__title">{{ encounter.title }}</span>
+                    </div>
+                  }
+                  <form
+                    class="encounter-form"
+                    (ngSubmit)="addEncounter(quest.id, draftInput.value); draftInput.value = ''"
+                  >
+                    <input
+                      #draftInput
+                      type="text"
+                      class="encounter-form__input"
+                      placeholder="Add a step…"
+                      [attr.aria-label]="'Add a step to ' + quest.title"
+                    />
+                    <button
+                      type="submit"
+                      class="bd-button bd-button--ghost encounter-form__submit"
+                      [disabled]="creatingEncounterQuestId() === quest.id"
+                    >
+                      +
+                    </button>
+                  </form>
+                </div>
 
                 @if (!sprint || sprint.status === 'COMPLETED') {
                   <div class="sprint-picker">
@@ -190,6 +263,9 @@
         </div>
       } @else if (!questsLoading()) {
         <p class="kanban-board__empty">No quests yet — add one above.</p>
+      }
+      @if (encountersError(); as error) {
+        <p class="kanban-board__empty">{{ error }}</p>
       }
     </div>
   }

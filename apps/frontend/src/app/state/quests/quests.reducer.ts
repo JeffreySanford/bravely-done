@@ -1,6 +1,7 @@
 import { createFeature, createReducer, on } from '@ngrx/store';
 import { QuestDto } from '../../api/models/quest-dto';
 import { CampActions } from '../camp/camp.actions';
+import { EncountersActions } from '../encounters/encounters.actions';
 import { SprintsActions } from '../sprints/sprints.actions';
 import { QuestsActions } from './quests.actions';
 
@@ -119,6 +120,14 @@ export const questsFeature = createFeature({
     // but adds to the same Character.xp counter Quest XP does — the
     // quests reducer is xp's single source of truth on the frontend too.
     on(SprintsActions.completeSprintSuccess, (state, { xp }): QuestsState => ({
+      ...state,
+      xp,
+    })),
+
+    // Same cross-feature sync again: Courage XP is granted by the
+    // encounters feature (see EncounterService.COURAGE_XP_REWARD) but adds
+    // to the same Character.xp counter.
+    on(EncountersActions.completeEncounterSuccess, (state, { xp }): QuestsState => ({
       ...state,
       xp,
     })),

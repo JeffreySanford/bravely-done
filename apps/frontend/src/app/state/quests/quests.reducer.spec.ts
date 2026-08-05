@@ -1,4 +1,5 @@
 import { CampActions } from '../camp/camp.actions';
+import { EncountersActions } from '../encounters/encounters.actions';
 import { SprintsActions } from '../sprints/sprints.actions';
 import { QuestsActions } from './quests.actions';
 import { initialQuestsState, questsFeature } from './quests.reducer';
@@ -208,5 +209,22 @@ describe('questsFeature reducer', () => {
     );
 
     expect(state.xp).toBe(35);
+  });
+
+  it('syncs xp when the encounters feature reports a successful encounter completion', () => {
+    const encounter = {
+      id: 'enc-1',
+      questId: 'q1',
+      title: 'Draft the reply',
+      status: 'COMPLETED' as const,
+      createdAt: '2026-01-01T00:00:00.000Z',
+      completedAt: '2026-01-01T00:05:00.000Z',
+    };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, xp: 20 },
+      EncountersActions.completeEncounterSuccess({ encounter, xp: 25 }),
+    );
+
+    expect(state.xp).toBe(25);
   });
 });

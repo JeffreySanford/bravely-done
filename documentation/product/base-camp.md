@@ -111,12 +111,15 @@ character select (return visits):
   quest completion, so a quest can span more than one sprint. An active sprint also now has a real,
   gentle scene reaction — a calm halo fades in around the companion while any sprint is running, and
   fades back out on pause/completion, distinct from the game's celebratory reward pulses since a sprint
-  is sustained focus, not a momentary win. Base Camp's header shows the character's level, XP, and
-  coins. Quest, construction-stage, reward, and camp-resource (firewood/forage/workbench) state all
-  live in this project's NgRx store (`apps/frontend/src/app/state/quests/`,
-  `apps/frontend/src/app/state/camp/`, `apps/frontend/src/app/state/sprints/`), not local component
-  state.
-- **Not yet built**: wandering-animal interaction, encounters and the
+  is sustained focus, not a momentary win. A quest can also hold small Encounters — a checklist of
+  small actionable steps (`apps/backend/src/encounter/`), shown on Backlog/In Progress cards, with no
+  bearing on the quest's own resolution (no gating, no retreat-equivalent); completing one grants a
+  small flat Courage XP. Base Camp's header shows the character's level, XP, and coins. Quest,
+  construction-stage, reward, and camp-resource (firewood/forage/workbench) state all live in this
+  project's NgRx store (`apps/frontend/src/app/state/quests/`, `apps/frontend/src/app/state/camp/`,
+  `apps/frontend/src/app/state/sprints/`, `apps/frontend/src/app/state/encounters/`), not local
+  component state.
+- **Not yet built**: wandering-animal interaction, and the
   "continue"/"split"/"call party" resolutions on top of quests (see
   [Plan 03](../../planning/03-first-brave-step.md)), and the animation director's fuller event set
   (quest accepted, loot reveal, etc. — arrival, quest-completion, tree-chopping, foraging, companion

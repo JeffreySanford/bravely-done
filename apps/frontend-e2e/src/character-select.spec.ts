@@ -125,11 +125,26 @@ test('signup through to a rendered Base Camp, and back again via character selec
     await expect(page.getByText(title)).toBeVisible();
   }
 
+  // Encounters (small actionable steps within a quest) work straight from
+  // the Backlog column, independent of the quest's own resolution — adding
+  // and completing one grants Courage XP without touching quest status.
+  const emailsCard = page.locator('.kanban-card', { hasText: 'Answer three emails' });
+  const encounterInput = emailsCard.getByPlaceholder('Add a step…');
+  await encounterInput.fill('Draft the reply');
+  await encounterInput.press('Enter');
+  await expect(emailsCard.getByText('Draft the reply')).toBeVisible();
+  const encounterCheck = emailsCard.locator('.encounter-item__check');
+  await encounterCheck.click();
+  await expect(encounterCheck).toBeDisabled();
+  // COURAGE_XP_REWARD = 5 (apps/backend/src/encounter/encounter.service.ts).
+  await expect(page.getByText('Level 1 — 5 XP — 0 coins')).toBeVisible();
+  await expect(emailsCard.getByRole('button', { name: 'Start' })).toBeVisible();
+
   // Retreating straight from the Backlog column — no Start required first.
   const restDayCard = page.locator('.kanban-card', { hasText: 'Take a rest day' });
   await restDayCard.getByRole('button', { name: 'Retreat' }).click();
   await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
-  await expect(page.getByText('Level 1 — 0 XP — 0 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 5 XP — 0 coins')).toBeVisible();
 
   for (const [index, title] of ['Chop firewood', 'Answer three emails', 'Forage berries'].entries()) {
     await page.locator('.kanban-card', { hasText: title }).getByRole('button', { name: 'Start' }).click();
@@ -166,21 +181,26 @@ test('signup through to a rendered Base Camp, and back again via character selec
   }
 
   // 3 completed quests x 20 XP / 10 coins each (see QUEST_XP_REWARD /
-  // QUEST_COIN_REWARD in apps/backend/src/quest/quest.service.ts).
-  await expect(page.getByText('Level 1 — 60 XP — 30 coins')).toBeVisible();
+  // QUEST_COIN_REWARD in apps/backend/src/quest/quest.service.ts), plus the
+  // 5 Courage XP from the encounter above.
+  await expect(page.getByText('Level 1 — 65 XP — 30 coins')).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
-  await expect(page.getByText('Level 1 — 60 XP — 30 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 65 XP — 30 coins')).toBeVisible();
 
   // The board defaults to closed again after a reload — reopening it is
-  // what proves the underlying quest/sprint state persisted, not just the
-  // header stats.
+  // what proves the underlying quest/sprint/encounter state persisted, not
+  // just the header stats.
   await page.getByRole('button', { name: 'Quests' }).click();
   await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
   await expect(page.getByText('Chop firewood')).toBeVisible();
   await expect(page.locator('.kanban-card', { hasText: 'Chop firewood' }).getByText('Done')).toBeVisible();
   await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
+  // Encounters only render on Backlog/In Progress cards (Done/Retreated are
+  // already resolved), so the completed encounter's persistence is proven
+  // by the surviving 65 XP total above rather than by re-finding the
+  // checklist on a card that's now moved to Done.
   await page.getByRole('button', { name: 'Close' }).click();
 
   // A returning character does not replay the tent-erect animation — the
@@ -196,12 +216,12 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.getByText('Workbench: level 0 / 3')).toBeVisible();
   await page.getByRole('button', { name: 'Upgrade for 10 coins' }).click();
   await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
-  await expect(page.getByText('Level 1 — 60 XP — 20 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 65 XP — 20 coins')).toBeVisible();
 
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
-  await expect(page.getByText('Level 1 — 60 XP — 20 coins')).toBeVisible();
+  await expect(page.getByText('Level 1 — 65 XP — 20 coins')).toBeVisible();
 
   expect(consoleErrors).toEqual([]);
 });

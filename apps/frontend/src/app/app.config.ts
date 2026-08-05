@@ -19,6 +19,8 @@ import { questsFeature } from './state/quests/quests.reducer';
 import { QuestsEffects } from './state/quests/quests.effects';
 import { sprintsFeature } from './state/sprints/sprints.reducer';
 import { SprintsEffects } from './state/sprints/sprints.effects';
+import { encountersFeature } from './state/encounters/encounters.reducer';
+import { EncountersEffects } from './state/encounters/encounters.effects';
 
 export function restoreSessionInitializer(): Promise<void> {
   return inject(AuthStateService).restoreSession();
@@ -37,7 +39,8 @@ export const appConfig: ApplicationConfig = {
       [questsFeature.name]: questsFeature.reducer,
       [campFeature.name]: campFeature.reducer,
       [sprintsFeature.name]: sprintsFeature.reducer,
+      [encountersFeature.name]: encountersFeature.reducer,
     }),
-    provideEffects(QuestsEffects, CampEffects, SprintsEffects),
+    provideEffects(QuestsEffects, CampEffects, SprintsEffects, EncountersEffects),
   ],
 };

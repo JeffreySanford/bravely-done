@@ -12,6 +12,7 @@ import { QuestsEffects } from '../../state/quests/quests.effects';
 import { questsFeature } from '../../state/quests/quests.reducer';
 import { SprintsActions } from '../../state/sprints/sprints.actions';
 import { sprintsFeature } from '../../state/sprints/sprints.reducer';
+import { encountersFeature } from '../../state/encounters/encounters.reducer';
 import type { BaseCampSceneOptions } from './base-camp-scene';
 
 // Module-level mocks so `isWebglAvailable()` (evaluated at class-field
@@ -61,6 +62,7 @@ describe('BaseCamp (WebGL available)', () => {
           [questsFeature.name]: questsFeature.reducer,
           [campFeature.name]: campFeature.reducer,
           [sprintsFeature.name]: sprintsFeature.reducer,
+          [encountersFeature.name]: encountersFeature.reducer,
         }),
         provideEffects(QuestsEffects, CampEffects),
         {

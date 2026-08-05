@@ -13,6 +13,8 @@ import { QuestsEffects } from '../../state/quests/quests.effects';
 import { questsFeature } from '../../state/quests/quests.reducer';
 import { SprintsActions } from '../../state/sprints/sprints.actions';
 import { sprintsFeature } from '../../state/sprints/sprints.reducer';
+import { EncountersActions } from '../../state/encounters/encounters.actions';
+import { encountersFeature } from '../../state/encounters/encounters.reducer';
 
 function buildCharacter(overrides: Record<string, unknown> = {}) {
   return {
@@ -44,6 +46,7 @@ describe('BaseCamp', () => {
           [questsFeature.name]: questsFeature.reducer,
           [campFeature.name]: campFeature.reducer,
           [sprintsFeature.name]: sprintsFeature.reducer,
+          [encountersFeature.name]: encountersFeature.reducer,
         }),
         provideEffects(QuestsEffects, CampEffects),
         { provide: CharacterApiService, useValue: characterApi },
@@ -418,6 +421,73 @@ describe('BaseCamp', () => {
 
       store.dispatch(SprintsActions.pauseSprintSuccess({ sprint: { ...sprint, status: 'PAUSED', pausedAt: new Date().toISOString() } }));
       expect(component.anySprintActive()).toBe(false);
+    });
+  });
+
+  describe('encounters', () => {
+    const encounter = {
+      id: 'enc-1',
+      questId: 'q1',
+      title: 'Draft the reply',
+      status: 'OPEN' as const,
+      createdAt: new Date().toISOString(),
+      completedAt: null,
+    };
+
+    it('dispatches loadEncounters for each open and in-progress quest once quests load', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const list = jest.fn().mockReturnValue(
+        of([
+          { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'OPEN', createdAt: '2026-01-01', completedAt: null },
+          { id: 'q2', characterId: 'c1', title: 'Forage berries', status: 'IN_PROGRESS', createdAt: '2026-01-01', completedAt: null },
+          { id: 'q3', characterId: 'c1', title: 'Already done', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
+        ]),
+      );
+      const { component } = setup({ arrive }, { list });
+      const store = TestBed.inject(Store);
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+      component.ngOnInit();
+
+      expect(dispatchSpy).toHaveBeenCalledWith(EncountersActions.loadEncounters({ questId: 'q1' }));
+      expect(dispatchSpy).toHaveBeenCalledWith(EncountersActions.loadEncounters({ questId: 'q2' }));
+      expect(dispatchSpy).not.toHaveBeenCalledWith(EncountersActions.loadEncounters({ questId: 'q3' }));
+    });
+
+    it('encountersFor reflects the encounters stored for that quest, defaulting to an empty list', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      const store = TestBed.inject(Store);
+
+      expect(component.encountersFor('q1')).toEqual([]);
+
+      store.dispatch(EncountersActions.createEncounterSuccess({ encounter }));
+
+      expect(component.encountersFor('q1')).toEqual([encounter]);
+    });
+
+    it('addEncounter dispatches createEncounter with a trimmed title, and is a no-op for blank input', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      const store = TestBed.inject(Store);
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+      component.addEncounter('q1', '  Draft the reply  ');
+      component.addEncounter('q1', '   ');
+
+      expect(dispatchSpy).toHaveBeenCalledWith(EncountersActions.createEncounter({ questId: 'q1', title: 'Draft the reply' }));
+      expect(dispatchSpy).not.toHaveBeenCalledWith(EncountersActions.createEncounter({ questId: 'q1', title: '' }));
+    });
+
+    it('completeEncounter dispatches completeEncounter', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const { component } = setup({ arrive });
+      const store = TestBed.inject(Store);
+      const dispatchSpy = jest.spyOn(store, 'dispatch');
+
+      component.completeEncounter('enc-1');
+
+      expect(dispatchSpy).toHaveBeenCalledWith(EncountersActions.completeEncounter({ encounterId: 'enc-1' }));
     });
   });
 });

@@ -55,8 +55,9 @@ model Character {
   forageCount Int @default(0)
   /// XP (see documentation/product/rewards-retention.md's reward
   /// categories). One aggregate counter fed by multiple reward categories —
-  /// Quest XP (QuestService.QUEST_XP_REWARD) and Focus XP
-  /// (SprintService.FOCUS_XP_REWARD) both add here; Courage/Wisdom XP need
+  /// Quest XP (QuestService.QUEST_XP_REWARD), Focus XP
+  /// (SprintService.FOCUS_XP_REWARD), and Courage XP
+  /// (EncounterService.COURAGE_XP_REWARD) all add here; Wisdom XP needs
   /// resolution variety this project doesn't have yet.
   xp    Int @default(0)
   /// Coins for ordinary progress (see rewards-retention.md). Spent on
@@ -89,8 +90,8 @@ enum QuestStatus {
 
 /// Deliberately minimal first slice of the real quest system (see planning/
 /// 03-first-brave-step.md): a title, a status, and (once completed) a
-/// deterministic reward. Sprint scheduling, encounters, and idempotency
-/// keys are later milestones layered on top of this, not built yet.
+/// deterministic reward. Idempotency keys are a later milestone layered on
+/// top of this, not built yet.
 model Quest {
   id          String      @id @default(uuid())
   characterId String
@@ -100,8 +101,34 @@ model Quest {
   createdAt   DateTime    @default(now())
   completedAt DateTime?
   sprints     Sprint[]
+  encounters  Encounter[]
 
   @@map("quests")
+}
+
+enum EncounterStatus {
+  OPEN
+  COMPLETED
+}
+
+/// A small actionable step within a quest — "Encounter" in documentation/
+/// product/agile-safe-progression.md's dual-labeled vocabulary
+/// (Subtask → Encounter). Deliberately simple for this first slice: a
+/// checklist item, not its own resolution flow like Quest or Sprint — no
+/// retreat-equivalent, and completing one never gates or auto-triggers
+/// quest completion (see EncounterService). Completing one grants a small
+/// flat Courage XP reward ("Courage XP for beginning avoided work" —
+/// rewards-retention.md), making that reward category real.
+model Encounter {
+  id          String          @id @default(uuid())
+  questId     String
+  quest       Quest           @relation(fields: [questId], references: [id], onDelete: Cascade)
+  title       String
+  status      EncounterStatus @default(OPEN)
+  createdAt   DateTime        @default(now())
+  completedAt DateTime?
+
+  @@map("encounters")
 }
 
 enum SprintStatus {

@@ -12,7 +12,7 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
@@ -55,10 +55,18 @@ import {
   selectTransitioningSprintId,
 } from '../../state/sprints/sprints.reducer';
 import { SPRINT_DURATION_PRESETS_SECONDS, formatSprintDuration } from './sprint-duration';
+import { EncounterDto } from '../../api/models/encounter-dto';
+import { EncountersActions } from '../../state/encounters/encounters.actions';
+import {
+  selectByQuestId as selectEncountersByQuestId,
+  selectCreatingQuestId as selectCreatingEncounterQuestId,
+  selectError as selectEncountersError,
+  selectTransitioningEncounterId,
+} from '../../state/encounters/encounters.reducer';
 
 @Component({
   selector: 'app-base-camp',
-  imports: [RouterLink, ReactiveFormsModule],
+  imports: [RouterLink, ReactiveFormsModule, FormsModule],
   templateUrl: './base-camp.html',
   styleUrl: './base-camp.scss',
 })
@@ -132,6 +140,11 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   private readonly now = signal(Date.now());
   private nowIntervalId: ReturnType<typeof setInterval> | null = null;
 
+  readonly encountersByQuestId = this.store.selectSignal(selectEncountersByQuestId);
+  readonly creatingEncounterQuestId = this.store.selectSignal(selectCreatingEncounterQuestId);
+  readonly transitioningEncounterId = this.store.selectSignal(selectTransitioningEncounterId);
+  readonly encountersError = this.store.selectSignal(selectEncountersError);
+
   readonly newQuestForm = new FormGroup({
     title: new FormControl('', {
       nonNullable: true,
@@ -177,6 +190,12 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
         quests
           .filter((quest) => quest.status === 'IN_PROGRESS')
           .forEach((quest) => this.store.dispatch(SprintsActions.loadSprints({ questId: quest.id })));
+
+        // Encounters show on Backlog and In Progress cards (not Done/
+        // Retreated, which are already resolved), so load for both columns.
+        quests
+          .filter((quest) => quest.status === 'OPEN' || quest.status === 'IN_PROGRESS')
+          .forEach((quest) => this.store.dispatch(EncountersActions.loadEncounters({ questId: quest.id })));
       });
 
     this.nowIntervalId = setInterval(() => this.now.set(Date.now()), 1000);
@@ -309,6 +328,22 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
 
   completeSprint(sprintId: string): void {
     this.store.dispatch(SprintsActions.completeSprint({ sprintId }));
+  }
+
+  encountersFor(questId: string): EncounterDto[] {
+    return this.encountersByQuestId()[questId] ?? [];
+  }
+
+  addEncounter(questId: string, title: string): void {
+    const trimmed = title.trim();
+    if (!trimmed) {
+      return;
+    }
+    this.store.dispatch(EncountersActions.createEncounter({ questId, title: trimmed }));
+  }
+
+  completeEncounter(encounterId: string): void {
+    this.store.dispatch(EncountersActions.completeEncounter({ encounterId }));
   }
 
   private mountRendererIfReady(): void {

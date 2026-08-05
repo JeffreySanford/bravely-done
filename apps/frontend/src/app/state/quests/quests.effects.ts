@@ -41,9 +41,26 @@ export class QuestsEffects {
       exhaustMap(({ questId }) =>
         this.questApi.complete(questId).pipe(
           map(({ quest, character }) =>
-            QuestsActions.completeQuestSuccess({ quest, constructionStage: character.campConstructionStage }),
+            QuestsActions.completeQuestSuccess({
+              quest,
+              constructionStage: character.campConstructionStage,
+              xp: character.xp,
+              coins: character.coins,
+            }),
           ),
           catchError(() => of(QuestsActions.completeQuestFailure({ error: GENERIC_ERROR }))),
+        ),
+      ),
+    ),
+  );
+
+  retreatQuest$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(QuestsActions.retreatQuest),
+      exhaustMap(({ questId }) =>
+        this.questApi.retreat(questId).pipe(
+          map((quest) => QuestsActions.retreatQuestSuccess({ quest })),
+          catchError(() => of(QuestsActions.retreatQuestFailure({ error: GENERIC_ERROR }))),
         ),
       ),
     ),

@@ -6,6 +6,15 @@ import { CreateQuestDto } from './dto/create-quest.dto';
 /** Bridge is fully repaired once this many quests have been completed. */
 export const MAX_CONSTRUCTION_STAGE = 3;
 
+/** Deterministic per-quest reward (see documentation/product/rewards-
+ * retention.md's reward categories: "Quest XP for completion", "Coins for
+ * ordinary progress"). Not randomized — the same completion always grants
+ * the same amount, matching TODO.md's "Grant deterministic XP, coins, and
+ * materials" (materials are represented by campConstructionStage, not a
+ * separate counter — see planning/02-base-camp-animations.md). */
+export const QUEST_XP_REWARD = 20;
+export const QUEST_COIN_REWARD = 10;
+
 @Injectable()
 export class QuestService {
   constructor(private readonly prisma: PrismaService) {}
@@ -25,10 +34,58 @@ export class QuestService {
     });
   }
 
-  /** Completes an open quest and advances the owning character's bridge
-   * construction stage by one, capped at MAX_CONSTRUCTION_STAGE. Already-
-   * completed quests are returned as-is without advancing the stage again. */
+  /** Completes an open quest: advances the owning character's bridge
+   * construction stage by one (capped at MAX_CONSTRUCTION_STAGE) and grants
+   * a deterministic XP/coin reward, applied together in one transaction so
+   * a quest can never end up "completed" without its reward or vice versa.
+   * Already-resolved quests (completed or retreated) are returned as-is
+   * without granting a reward again. */
   async complete(userId: string, questId: string): Promise<{ quest: Quest; character: Character }> {
+    const quest = await this.findOwnedQuest(userId, questId);
+
+    if (quest.status !== QuestStatus.OPEN) {
+      const { character, ...rest } = quest;
+      return { quest: rest, character };
+    }
+
+    const nextStage = Math.min(quest.character.campConstructionStage + 1, MAX_CONSTRUCTION_STAGE);
+    const [completedQuest, character] = await this.prisma.$transaction([
+      this.prisma.quest.update({
+        where: { id: questId },
+        data: { status: QuestStatus.COMPLETED, completedAt: new Date() },
+      }),
+      this.prisma.character.update({
+        where: { id: quest.characterId },
+        data: {
+          campConstructionStage: nextStage,
+          xp: { increment: QUEST_XP_REWARD },
+          coins: { increment: QUEST_COIN_REWARD },
+        },
+      }),
+    ]);
+
+    return { quest: completedQuest, character };
+  }
+
+  /** Retreats from an open quest: a deliberate, penalty-free resolution
+   * (see documentation/product/rewards-retention.md's ethical rules —
+   * "rest days and comeback quests are legitimate play"). Grants no
+   * reward and does not touch camp construction. Already-resolved quests
+   * are returned as-is, same idempotent pattern as complete(). */
+  async retreat(userId: string, questId: string): Promise<Quest> {
+    const quest = await this.findOwnedQuest(userId, questId);
+
+    if (quest.status !== QuestStatus.OPEN) {
+      return quest;
+    }
+
+    return this.prisma.quest.update({
+      where: { id: questId },
+      data: { status: QuestStatus.RETREATED },
+    });
+  }
+
+  private async findOwnedQuest(userId: string, questId: string): Promise<Quest & { character: Character }> {
     const quest = await this.prisma.quest.findFirst({
       where: { id: questId, character: { userId } },
       include: { character: true },
@@ -36,24 +93,7 @@ export class QuestService {
     if (!quest) {
       throw new NotFoundException('Quest not found');
     }
-
-    if (quest.status === QuestStatus.COMPLETED) {
-      const { character, ...rest } = quest;
-      return { quest: rest, character };
-    }
-
-    const completedQuest = await this.prisma.quest.update({
-      where: { id: questId },
-      data: { status: QuestStatus.COMPLETED, completedAt: new Date() },
-    });
-
-    const nextStage = Math.min(quest.character.campConstructionStage + 1, MAX_CONSTRUCTION_STAGE);
-    const character = await this.prisma.character.update({
-      where: { id: quest.characterId },
-      data: { campConstructionStage: nextStage },
-    });
-
-    return { quest: completedQuest, character };
+    return quest;
   }
 
   private async findOwnedCharacter(userId: string, characterId: string): Promise<Character> {

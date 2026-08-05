@@ -13,6 +13,7 @@
     } @else {
       <p class="stage__subtitle">Welcome back.</p>
     }
+    <p class="stage__stats">Level {{ level() }} — {{ xp() }} XP — {{ coins() }} coins</p>
     @if (renderScene) {
       <p class="stage__hint">
         Firewood: {{ firewoodCount() }} — click a tree to chop one. Forage: {{ forageCount() }} —
@@ -39,19 +40,35 @@
       @if (quests().length > 0) {
         <ul class="quest-board__list">
           @for (quest of quests(); track quest.id) {
-            <li class="quest-board__item" [class.quest-board__item--completed]="quest.status === 'COMPLETED'">
+            <li class="quest-board__item" [class.quest-board__item--resolved]="quest.status !== 'OPEN'">
               <span>{{ quest.title }}</span>
-              @if (quest.status === 'COMPLETED') {
-                <span class="quest-board__done">Done</span>
-              } @else {
-                <button
-                  type="button"
-                  class="bd-button bd-button--ghost"
-                  [disabled]="completingQuestId() === quest.id"
-                  (click)="completeQuest(quest.id)"
-                >
-                  Complete
-                </button>
+              @switch (quest.status) {
+                @case ('COMPLETED') {
+                  <span class="quest-board__done">Done</span>
+                }
+                @case ('RETREATED') {
+                  <span class="quest-board__retreated">Retreated</span>
+                }
+                @default {
+                  <span class="quest-board__actions">
+                    <button
+                      type="button"
+                      class="bd-button bd-button--ghost"
+                      [disabled]="resolvingQuestId() === quest.id"
+                      (click)="retreatQuest(quest.id)"
+                    >
+                      Retreat
+                    </button>
+                    <button
+                      type="button"
+                      class="bd-button"
+                      [disabled]="resolvingQuestId() === quest.id"
+                      (click)="completeQuest(quest.id)"
+                    >
+                      Complete
+                    </button>
+                  </span>
+                }
               }
             </li>
           }

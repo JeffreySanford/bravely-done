@@ -12,9 +12,12 @@ describe('questsFeature reducer', () => {
   it('setCharacterContext resets to a fresh state for the given character', () => {
     const dirty = questsFeature.reducer(initialQuestsState, QuestsActions.loadQuestsSuccess({ quests: [quest] }));
 
-    const state = questsFeature.reducer(dirty, QuestsActions.setCharacterContext({ characterId: 'c1', constructionStage: 2 }));
+    const state = questsFeature.reducer(
+      dirty,
+      QuestsActions.setCharacterContext({ characterId: 'c1', constructionStage: 2, xp: 40, coins: 20 }),
+    );
 
-    expect(state).toEqual({ ...initialQuestsState, characterId: 'c1', constructionStage: 2 });
+    expect(state).toEqual({ ...initialQuestsState, characterId: 'c1', constructionStage: 2, xp: 40, coins: 20 });
   });
 
   it('loadQuests sets loading and clears any prior error', () => {
@@ -77,36 +80,70 @@ describe('questsFeature reducer', () => {
     expect(state.loading).toBe(false);
   });
 
-  it('completeQuest tracks which quest is completing and clears any prior error', () => {
+  it('completeQuest tracks which quest is resolving and clears any prior error', () => {
     const state = questsFeature.reducer(
       { ...initialQuestsState, error: 'boom' },
       QuestsActions.completeQuest({ questId: 'q1' }),
     );
 
-    expect(state.completingQuestId).toBe('q1');
+    expect(state.resolvingQuestId).toBe('q1');
     expect(state.error).toBeNull();
   });
 
-  it('completeQuestSuccess replaces only the matching quest, updates the construction stage, and clears completingQuestId', () => {
+  it('completeQuestSuccess replaces only the matching quest, updates construction stage/xp/coins, and clears resolvingQuestId', () => {
     const otherQuest = { ...quest, id: 'q2', title: 'Forage plants' };
     const completed = { ...quest, status: 'COMPLETED' as const };
     const state = questsFeature.reducer(
-      { ...initialQuestsState, quests: [quest, otherQuest], completingQuestId: 'q1' },
-      QuestsActions.completeQuestSuccess({ quest: completed, constructionStage: 1 }),
+      { ...initialQuestsState, quests: [quest, otherQuest], resolvingQuestId: 'q1' },
+      QuestsActions.completeQuestSuccess({ quest: completed, constructionStage: 1, xp: 20, coins: 10 }),
     );
 
     expect(state.quests).toEqual([completed, otherQuest]);
     expect(state.constructionStage).toBe(1);
-    expect(state.completingQuestId).toBeNull();
+    expect(state.xp).toBe(20);
+    expect(state.coins).toBe(10);
+    expect(state.resolvingQuestId).toBeNull();
   });
 
-  it('completeQuestFailure stores the error and clears completingQuestId', () => {
+  it('completeQuestFailure stores the error and clears resolvingQuestId', () => {
     const state = questsFeature.reducer(
-      { ...initialQuestsState, completingQuestId: 'q1' },
+      { ...initialQuestsState, resolvingQuestId: 'q1' },
       QuestsActions.completeQuestFailure({ error: 'boom' }),
     );
 
     expect(state.error).toBe('boom');
-    expect(state.completingQuestId).toBeNull();
+    expect(state.resolvingQuestId).toBeNull();
+  });
+
+  it('retreatQuest tracks which quest is resolving and clears any prior error', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, error: 'boom' },
+      QuestsActions.retreatQuest({ questId: 'q1' }),
+    );
+
+    expect(state.resolvingQuestId).toBe('q1');
+    expect(state.error).toBeNull();
+  });
+
+  it('retreatQuestSuccess replaces only the matching quest and clears resolvingQuestId', () => {
+    const otherQuest = { ...quest, id: 'q2', title: 'Forage plants' };
+    const retreated = { ...quest, status: 'RETREATED' as const };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [quest, otherQuest], resolvingQuestId: 'q1' },
+      QuestsActions.retreatQuestSuccess({ quest: retreated }),
+    );
+
+    expect(state.quests).toEqual([retreated, otherQuest]);
+    expect(state.resolvingQuestId).toBeNull();
+  });
+
+  it('retreatQuestFailure stores the error and clears resolvingQuestId', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, resolvingQuestId: 'q1' },
+      QuestsActions.retreatQuestFailure({ error: 'boom' }),
+    );
+
+    expect(state.error).toBe('boom');
+    expect(state.resolvingQuestId).toBeNull();
   });
 });

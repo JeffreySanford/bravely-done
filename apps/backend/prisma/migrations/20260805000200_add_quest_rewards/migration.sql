@@ -1,0 +1,6 @@
+-- AlterEnum
+ALTER TYPE "QuestStatus" ADD VALUE 'RETREATED';
+
+-- AlterTable
+ALTER TABLE "characters" ADD COLUMN     "coins" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "xp" INTEGER NOT NULL DEFAULT 0;

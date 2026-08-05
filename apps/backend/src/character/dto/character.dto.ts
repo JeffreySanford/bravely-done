@@ -21,4 +21,10 @@ export class CharacterDto {
 
   @ApiProperty()
   forageCount!: number;
+
+  @ApiProperty()
+  xp!: number;
+
+  @ApiProperty()
+  coins!: number;
 }

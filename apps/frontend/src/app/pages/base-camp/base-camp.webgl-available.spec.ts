@@ -66,14 +66,14 @@ describe('BaseCamp (WebGL available)', () => {
             arrive: jest.fn().mockReturnValue(
               of({
                 firstArrival: true,
-                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 1 },
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 1, xp: 0, coins: 0 },
               }),
             ),
             chopTree: jest.fn().mockReturnValue(
-              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 3, forageCount: 1 }),
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 3, forageCount: 1, xp: 0, coins: 0 }),
             ),
             forage: jest.fn().mockReturnValue(
-              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 2 }),
+              of({ id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 0, firewoodCount: 2, forageCount: 2, xp: 0, coins: 0 }),
             ),
           },
         },
@@ -84,8 +84,11 @@ describe('BaseCamp (WebGL available)', () => {
             complete: jest.fn().mockReturnValue(
               of({
                 quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
-                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, firewoodCount: 2 },
+                character: { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, firewoodCount: 2, forageCount: 1, xp: 20, coins: 10 },
               }),
+            ),
+            retreat: jest.fn().mockReturnValue(
+              of({ id: 'q2', characterId: 'c1', title: 'Forage berries', status: 'RETREATED', createdAt: '2026-01-01', completedAt: null }),
             ),
           },
         },
@@ -154,6 +157,28 @@ describe('BaseCamp (WebGL available)', () => {
     fixture.componentInstance.completeQuest('q1');
 
     expect(dispatchSpy).toHaveBeenCalledWith({ type: 'questCompleted', constructionStage: 1 });
+    dispatchSpy.mockRestore();
+  });
+
+  it('updates xp, coins, and level once a quest completes', () => {
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+
+    fixture.componentInstance.completeQuest('q1');
+
+    expect(fixture.componentInstance.xp()).toBe(20);
+    expect(fixture.componentInstance.coins()).toBe(10);
+  });
+
+  it('retreats a quest without dispatching any scene event', () => {
+    const dispatchSpy = jest.spyOn(mockDirector, 'dispatch');
+    const fixture = TestBed.createComponent(BaseCamp);
+    fixture.detectChanges();
+    dispatchSpy.mockClear();
+
+    fixture.componentInstance.retreatQuest('q2');
+
+    expect(dispatchSpy).not.toHaveBeenCalled();
     dispatchSpy.mockRestore();
   });
 });

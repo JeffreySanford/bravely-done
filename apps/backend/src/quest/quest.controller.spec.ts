@@ -20,6 +20,10 @@ describe('QuestController', () => {
     updatedAt: new Date(),
     hasArrivedAtCamp: true,
     campConstructionStage: 1,
+    firewoodCount: 0,
+    forageCount: 0,
+    xp: 20,
+    coins: 10,
   };
 
   function buildController() {
@@ -27,6 +31,7 @@ describe('QuestController', () => {
       create: jest.fn().mockResolvedValue(quest),
       listForCharacter: jest.fn().mockResolvedValue([quest]),
       complete: jest.fn().mockResolvedValue({ quest: { ...quest, status: QuestStatus.COMPLETED }, character }),
+      retreat: jest.fn().mockResolvedValue({ ...quest, status: QuestStatus.RETREATED }),
     } as unknown as QuestService;
     return { controller: new QuestController(quests), quests };
   }
@@ -38,6 +43,18 @@ describe('QuestController', () => {
     status: quest.status,
     createdAt: quest.createdAt,
     completedAt: quest.completedAt,
+  };
+
+  const publicCharacterShape = {
+    id: character.id,
+    name: character.name,
+    createdAt: character.createdAt,
+    hasArrivedAtCamp: character.hasArrivedAtCamp,
+    campConstructionStage: character.campConstructionStage,
+    firewoodCount: character.firewoodCount,
+    forageCount: character.forageCount,
+    xp: character.xp,
+    coins: character.coins,
   };
 
   it('create delegates to the service and returns the public shape', async () => {
@@ -66,13 +83,16 @@ describe('QuestController', () => {
     expect(quests.complete).toHaveBeenCalledWith('user-1', 'quest-1');
     expect(result).toEqual({
       quest: { ...publicQuestShape, status: QuestStatus.COMPLETED },
-      character: {
-        id: character.id,
-        name: character.name,
-        createdAt: character.createdAt,
-        hasArrivedAtCamp: character.hasArrivedAtCamp,
-        campConstructionStage: character.campConstructionStage,
-      },
+      character: publicCharacterShape,
     });
+  });
+
+  it('retreat delegates to the service and returns the public shape', async () => {
+    const { controller, quests } = buildController();
+
+    const result = await controller.retreat(user, 'quest-1');
+
+    expect(quests.retreat).toHaveBeenCalledWith('user-1', 'quest-1');
+    expect(result).toEqual({ ...publicQuestShape, status: QuestStatus.RETREATED });
   });
 });

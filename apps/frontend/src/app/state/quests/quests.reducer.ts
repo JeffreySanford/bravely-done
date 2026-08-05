@@ -5,18 +5,24 @@ import { QuestsActions } from './quests.actions';
 export interface QuestsState {
   characterId: string | null;
   constructionStage: number;
+  xp: number;
+  coins: number;
   quests: QuestDto[];
   loading: boolean;
-  completingQuestId: string | null;
+  /** The quest currently being completed or retreated from — a quest can
+   * only be in one resolution at a time, so one field covers both. */
+  resolvingQuestId: string | null;
   error: string | null;
 }
 
 export const initialQuestsState: QuestsState = {
   characterId: null,
   constructionStage: 0,
+  xp: 0,
+  coins: 0,
   quests: [],
   loading: false,
-  completingQuestId: null,
+  resolvingQuestId: null,
   error: null,
 };
 
@@ -25,10 +31,12 @@ export const questsFeature = createFeature({
   reducer: createReducer(
     initialQuestsState,
 
-    on(QuestsActions.setCharacterContext, (state, { characterId, constructionStage }): QuestsState => ({
+    on(QuestsActions.setCharacterContext, (state, { characterId, constructionStage, xp, coins }): QuestsState => ({
       ...initialQuestsState,
       characterId,
       constructionStage,
+      xp,
+      coins,
     })),
 
     on(QuestsActions.loadQuests, (state): QuestsState => ({ ...state, loading: true, error: null })),
@@ -45,18 +53,36 @@ export const questsFeature = createFeature({
 
     on(QuestsActions.completeQuest, (state, { questId }): QuestsState => ({
       ...state,
-      completingQuestId: questId,
+      resolvingQuestId: questId,
       error: null,
     })),
-    on(QuestsActions.completeQuestSuccess, (state, { quest, constructionStage }): QuestsState => ({
+    on(QuestsActions.completeQuestSuccess, (state, { quest, constructionStage, xp, coins }): QuestsState => ({
       ...state,
       quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
       constructionStage,
-      completingQuestId: null,
+      xp,
+      coins,
+      resolvingQuestId: null,
     })),
     on(QuestsActions.completeQuestFailure, (state, { error }): QuestsState => ({
       ...state,
-      completingQuestId: null,
+      resolvingQuestId: null,
+      error,
+    })),
+
+    on(QuestsActions.retreatQuest, (state, { questId }): QuestsState => ({
+      ...state,
+      resolvingQuestId: questId,
+      error: null,
+    })),
+    on(QuestsActions.retreatQuestSuccess, (state, { quest }): QuestsState => ({
+      ...state,
+      quests: state.quests.map((q) => (q.id === quest.id ? quest : q)),
+      resolvingQuestId: null,
+    })),
+    on(QuestsActions.retreatQuestFailure, (state, { error }): QuestsState => ({
+      ...state,
+      resolvingQuestId: null,
       error,
     })),
   ),
@@ -68,8 +94,10 @@ export const {
   selectQuestsState,
   selectCharacterId,
   selectConstructionStage,
+  selectXp,
+  selectCoins,
   selectQuests,
   selectLoading,
-  selectCompletingQuestId,
+  selectResolvingQuestId,
   selectError,
 } = questsFeature;

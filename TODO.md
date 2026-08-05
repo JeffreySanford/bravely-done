@@ -102,11 +102,20 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       See [Plan 03](planning/03-first-brave-step.md) for exactly what this first slice does and doesn't
       cover.
 - [ ] Run a resilient Adventure Sprint.
-- [ ] Resolve complete, continue, split, or retreat — only "complete" exists today.
-- [ ] Grant deterministic XP, coins, and materials.
-- [ ] Make reward application transactional and idempotent.
-- [x] Verify quest creation/completion through unit and Playwright tests (backend + NgRx unit tests, a
-      3-engine e2e run). No API integration test tier exists yet — still open.
+- [x] Resolve complete or retreat — two of four resolutions are real (`POST /quests/:id/complete`,
+      `POST /quests/:id/retreat`); "continue" (sprint pause/resume) and "split"/"call party" (need
+      sprints and the social system respectively) are still open.
+- [x] Grant deterministic XP and coins (`QUEST_XP_REWARD` = 20, `QUEST_COIN_REWARD` = 10 per
+      completion) — a level number now displays in Base Camp (`Level {n} — {xp} XP — {coins} coins`).
+      "Materials" are represented by the existing bridge construction stage, not a separate counter.
+- [x] Make reward application transactional — the quest-status update and the xp/coins/construction-
+      stage grant happen in one `prisma.$transaction`, so a quest can't end up completed without its
+      reward. Client-supplied idempotency keys (for duplicate-request protection beyond the natural
+      "already resolved" check) are still open.
+- [x] Verify quest creation, completion, retreat, and reward persistence through unit and Playwright
+      tests (backend + NgRx unit tests, a 3-engine e2e run that retreats one quest, completes three,
+      and confirms XP/coins/level survive a reload). No API integration test tier exists yet — still
+      open.
 
 ## Later milestones
 

@@ -14,6 +14,8 @@ describe('CharacterController', () => {
     campConstructionStage: 0,
     firewoodCount: 0,
     forageCount: 0,
+    xp: 0,
+    coins: 0,
   };
 
   function buildController() {
@@ -35,6 +37,8 @@ describe('CharacterController', () => {
     campConstructionStage: character.campConstructionStage,
     firewoodCount: character.firewoodCount,
     forageCount: character.forageCount,
+    xp: character.xp,
+    coins: character.coins,
   };
 
   it('create delegates to the service with the current user and returns the public shape', async () => {

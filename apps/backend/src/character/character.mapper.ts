@@ -10,5 +10,7 @@ export function toCharacterDto(character: Character): CharacterDto {
   dto.campConstructionStage = character.campConstructionStage;
   dto.firewoodCount = character.firewoodCount;
   dto.forageCount = character.forageCount;
+  dto.xp = character.xp;
+  dto.coins = character.coins;
   return dto;
 }

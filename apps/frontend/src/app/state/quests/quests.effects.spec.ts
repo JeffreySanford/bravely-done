@@ -10,7 +10,7 @@ const quest = { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'OPEN' 
 describe('QuestsEffects', () => {
   let actions$: Observable<unknown>;
   let effects: QuestsEffects;
-  let questApi: jest.Mocked<Pick<QuestApiService, 'list' | 'create' | 'complete'>>;
+  let questApi: jest.Mocked<Pick<QuestApiService, 'list' | 'create' | 'complete' | 'retreat'>>;
 
   function setup() {
     TestBed.configureTestingModule({
@@ -28,6 +28,7 @@ describe('QuestsEffects', () => {
       list: jest.fn(),
       create: jest.fn(),
       complete: jest.fn(),
+      retreat: jest.fn(),
     };
   });
 
@@ -82,8 +83,8 @@ describe('QuestsEffects', () => {
   });
 
   describe('completeQuest$', () => {
-    it('emits completeQuestSuccess with the new construction stage on success', (done) => {
-      const character = { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1 };
+    it('emits completeQuestSuccess with the new construction stage, xp, and coins on success', (done) => {
+      const character = { id: 'c1', name: 'Ember Scout', createdAt: '2026-01-01', hasArrivedAtCamp: true, campConstructionStage: 1, xp: 20, coins: 10 };
       questApi.complete.mockReturnValue(of({ quest: { ...quest, status: 'COMPLETED' as const }, character }));
       actions$ = of(QuestsActions.completeQuest({ questId: 'q1' }));
       setup();
@@ -91,7 +92,12 @@ describe('QuestsEffects', () => {
       effects.completeQuest$.subscribe((action) => {
         expect(questApi.complete).toHaveBeenCalledWith('q1');
         expect(action).toEqual(
-          QuestsActions.completeQuestSuccess({ quest: { ...quest, status: 'COMPLETED' }, constructionStage: 1 }),
+          QuestsActions.completeQuestSuccess({
+            quest: { ...quest, status: 'COMPLETED' },
+            constructionStage: 1,
+            xp: 20,
+            coins: 10,
+          }),
         );
         done();
       });
@@ -104,6 +110,31 @@ describe('QuestsEffects', () => {
 
       effects.completeQuest$.subscribe((action) => {
         expect(action.type).toBe(QuestsActions.completeQuestFailure.type);
+        done();
+      });
+    });
+  });
+
+  describe('retreatQuest$', () => {
+    it('emits retreatQuestSuccess on success', (done) => {
+      questApi.retreat.mockReturnValue(of({ ...quest, status: 'RETREATED' as const }));
+      actions$ = of(QuestsActions.retreatQuest({ questId: 'q1' }));
+      setup();
+
+      effects.retreatQuest$.subscribe((action) => {
+        expect(questApi.retreat).toHaveBeenCalledWith('q1');
+        expect(action).toEqual(QuestsActions.retreatQuestSuccess({ quest: { ...quest, status: 'RETREATED' } }));
+        done();
+      });
+    });
+
+    it('emits retreatQuestFailure on error', (done) => {
+      questApi.retreat.mockReturnValue(throwError(() => new Error('boom')));
+      actions$ = of(QuestsActions.retreatQuest({ questId: 'q1' }));
+      setup();
+
+      effects.retreatQuest$.subscribe((action) => {
+        expect(action.type).toBe(QuestsActions.retreatQuestFailure.type);
         done();
       });
     });

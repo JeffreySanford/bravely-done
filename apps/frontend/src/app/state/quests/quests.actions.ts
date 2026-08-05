@@ -9,7 +9,7 @@ import { QuestDto } from '../../api/models/quest-dto';
 export const QuestsActions = createActionGroup({
   source: 'Quests',
   events: {
-    'Set Character Context': props<{ characterId: string; constructionStage: number }>(),
+    'Set Character Context': props<{ characterId: string; constructionStage: number; xp: number; coins: number }>(),
 
     'Load Quests': props<{ characterId: string }>(),
     'Load Quests Success': props<{ quests: QuestDto[] }>(),
@@ -20,7 +20,11 @@ export const QuestsActions = createActionGroup({
     'Create Quest Failure': props<{ error: string }>(),
 
     'Complete Quest': props<{ questId: string }>(),
-    'Complete Quest Success': props<{ quest: QuestDto; constructionStage: number }>(),
+    'Complete Quest Success': props<{ quest: QuestDto; constructionStage: number; xp: number; coins: number }>(),
     'Complete Quest Failure': props<{ error: string }>(),
+
+    'Retreat Quest': props<{ questId: string }>(),
+    'Retreat Quest Success': props<{ quest: QuestDto }>(),
+    'Retreat Quest Failure': props<{ error: string }>(),
   },
 });

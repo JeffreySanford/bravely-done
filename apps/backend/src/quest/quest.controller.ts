@@ -47,4 +47,12 @@ export class QuestController {
     dto.character = toCharacterDto(character);
     return dto;
   }
+
+  @Post('quests/:id/retreat')
+  @ApiOperation({ summary: 'Retreat from a quest with no penalty and no reward' })
+  @ApiOkResponse({ type: QuestDto })
+  async retreat(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<QuestDto> {
+    const quest = await this.quests.retreat(user.sub, id);
+    return toQuestDto(quest);
+  }
 }

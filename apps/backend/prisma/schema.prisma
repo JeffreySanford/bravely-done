@@ -53,6 +53,14 @@ model Character {
   /// Deliberately simple, mirrors firewoodCount: one resource type, no
   /// depletion, harvesting is an infinite ambient action.
   forageCount Int @default(0)
+  /// Quest XP (see documentation/product/rewards-retention.md's reward
+  /// categories). Deliberately just one XP category for now — Courage/
+  /// Focus/Wisdom XP require sprint and resolution variety this project
+  /// doesn't have yet.
+  xp    Int @default(0)
+  /// Coins for ordinary progress (see rewards-retention.md). Not spendable
+  /// on anything yet — no shop/upgrade system exists.
+  coins Int @default(0)
   quests    Quest[]
 
   @@map("characters")
@@ -61,12 +69,18 @@ model Character {
 enum QuestStatus {
   OPEN
   COMPLETED
+  /// Abandoned without penalty — "rest days and comeback quests are
+  /// legitimate play" (documentation/product/rewards-retention.md's
+  /// ethical rules). Grants no reward and does not advance camp
+  /// construction, but is a deliberate, real resolution, not a failure
+  /// state.
+  RETREATED
 }
 
 /// Deliberately minimal first slice of the real quest system (see planning/
-/// 03-first-brave-step.md): a title and a status. Sprint scheduling, XP/coin
-/// rewards, and split/retreat resolution are later milestones layered on
-/// top of this, not built yet.
+/// 03-first-brave-step.md): a title, a status, and (once completed) a
+/// deterministic reward. Sprint scheduling, encounters, and idempotency
+/// keys are later milestones layered on top of this, not built yet.
 model Quest {
   id          String      @id @default(uuid())
   characterId String

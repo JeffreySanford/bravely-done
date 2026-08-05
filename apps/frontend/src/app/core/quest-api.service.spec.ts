@@ -71,4 +71,16 @@ describe('QuestApiService', () => {
 
     expect(result).toEqual({ quest: { ...quest, status: 'COMPLETED' }, character });
   });
+
+  it('retreat posts to /quests/:id/retreat', () => {
+    let result: unknown;
+    service.retreat('q1').subscribe((res) => (result = res));
+
+    const req = httpMock.expectOne('http://test/quests/q1/retreat');
+    expect(req.request.method).toBe('POST');
+    const retreated = { ...quest, status: 'RETREATED' };
+    req.flush(retreated);
+
+    expect(result).toEqual(retreated);
+  });
 });

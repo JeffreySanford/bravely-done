@@ -62,6 +62,13 @@
   font-size: 14px;
 }
 
+.stage__stats {
+  margin: 10px 0 0;
+  color: var(--bd-text);
+  font-size: 13px;
+  font-family: var(--bd-font-mono);
+}
+
 .stage__hint {
   margin: 8px 0 0;
   color: var(--bd-cyan);
@@ -144,7 +151,7 @@
   font-size: 13px;
 }
 
-.quest-board__item--completed {
+.quest-board__item--resolved {
   opacity: 0.6;
 }
 
@@ -152,6 +159,18 @@
   color: var(--bd-cyan);
   font-family: var(--bd-font-mono);
   font-size: 12px;
+}
+
+.quest-board__retreated {
+  color: var(--bd-text-muted);
+  font-family: var(--bd-font-mono);
+  font-size: 12px;
+}
+
+.quest-board__actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .quest-board__empty {

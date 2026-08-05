@@ -21,6 +21,8 @@ function buildCharacter(overrides: Record<string, unknown> = {}) {
     campConstructionStage: 0,
     firewoodCount: 0,
     forageCount: 0,
+    xp: 0,
+    coins: 0,
     ...overrides,
   };
 }
@@ -100,6 +102,17 @@ describe('BaseCamp', () => {
     expect(component.forageCount()).toBe(2);
   });
 
+  it('seeds xp, coins, and level from the arrive response', () => {
+    const arrive = jest.fn().mockReturnValue(of({ firstArrival: true, character: buildCharacter({ xp: 250, coins: 30 }) }));
+    const { component } = setup({ arrive });
+
+    component.ngOnInit();
+
+    expect(component.xp()).toBe(250);
+    expect(component.coins()).toBe(30);
+    expect(component.level()).toBe(3);
+  });
+
   it('does not call the API when the route has no characterId', () => {
     const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
     const { component } = setup({ arrive }, {}, null);
@@ -172,12 +185,12 @@ describe('BaseCamp', () => {
   });
 
   describe('completeQuest', () => {
-    it('dispatches completeQuest and updates the construction stage', () => {
+    it('dispatches completeQuest and updates construction stage, xp, and coins', () => {
       const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
       const complete = jest.fn().mockReturnValue(
         of({
           quest: { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'COMPLETED', createdAt: '2026-01-01', completedAt: '2026-01-02' },
-          character: buildCharacter({ campConstructionStage: 1 }),
+          character: buildCharacter({ campConstructionStage: 1, xp: 20, coins: 10 }),
         }),
       );
       const { component } = setup({ arrive }, { complete });
@@ -187,6 +200,23 @@ describe('BaseCamp', () => {
 
       expect(complete).toHaveBeenCalledWith('q1');
       expect(component.constructionStage()).toBe(1);
+      expect(component.xp()).toBe(20);
+      expect(component.coins()).toBe(10);
+    });
+  });
+
+  describe('retreatQuest', () => {
+    it('dispatches retreatQuest', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const retreat = jest.fn().mockReturnValue(
+        of({ id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'RETREATED', createdAt: '2026-01-01', completedAt: null }),
+      );
+      const { component } = setup({ arrive }, { retreat });
+      component.ngOnInit();
+
+      component.retreatQuest('q1');
+
+      expect(retreat).toHaveBeenCalledWith('q1');
     });
   });
 

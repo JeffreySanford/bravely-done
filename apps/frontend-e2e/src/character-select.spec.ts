@@ -86,6 +86,7 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.getByText('Ember Scout has arrived.')).toBeVisible();
   await expectSceneMounted(page);
   await expect(page.getByText('Bridge repair: 0 / 3')).toBeVisible();
+  await expect(page.getByText('Level 1 — 0 XP — 0 coins')).toBeVisible();
 
   // The firewood/forage hint only renders when the WebGL scene actually
   // mounted (see expectSceneMounted's Firefox/CI note above) — where it
@@ -99,15 +100,23 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // Creating and completing real quests advances and persists the bridge
   // construction stage — the vertical slice from planning/02-base-camp-
   // animations.md's acceptance criterion, now driven by the real quest
-  // system (create -> list -> complete), not a mock stub.
+  // system (create -> list -> complete), not a mock stub. Completing also
+  // grants deterministic XP/coins (Plan 03's reward slice), and retreating
+  // is a real second resolution alongside completing — no reward, no
+  // construction-stage change.
   const questTitleInput = page.getByLabel('Quest title');
   const addQuestButton = page.getByRole('button', { name: 'Add quest' });
 
-  for (const title of ['Chop firewood', 'Answer three emails', 'Forage berries']) {
+  for (const title of ['Chop firewood', 'Answer three emails', 'Forage berries', 'Take a rest day']) {
     await questTitleInput.fill(title);
     await addQuestButton.click();
     await expect(page.getByText(title)).toBeVisible();
   }
+
+  const restDayItem = page.locator('.quest-board__item', { hasText: 'Take a rest day' });
+  await restDayItem.getByRole('button', { name: 'Retreat' }).click();
+  await expect(restDayItem.getByText('Retreated')).toBeVisible();
+  await expect(page.getByText('Level 1 — 0 XP — 0 coins')).toBeVisible();
 
   for (const [index, title] of ['Chop firewood', 'Answer three emails', 'Forage berries'].entries()) {
     const questItem = page.locator('.quest-board__item', { hasText: title });
@@ -116,11 +125,17 @@ test('signup through to a rendered Base Camp, and back again via character selec
     await expect(questItem.getByText('Done')).toBeVisible();
   }
 
+  // 3 completed quests x 20 XP / 10 coins each (see QUEST_XP_REWARD /
+  // QUEST_COIN_REWARD in apps/backend/src/quest/quest.service.ts).
+  await expect(page.getByText('Level 1 — 60 XP — 30 coins')).toBeVisible();
+
   await page.reload();
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
+  await expect(page.getByText('Level 1 — 60 XP — 30 coins')).toBeVisible();
   await expect(page.getByText('Chop firewood')).toBeVisible();
   await expect(page.locator('.quest-board__item', { hasText: 'Chop firewood' }).getByText('Done')).toBeVisible();
+  await expect(restDayItem.getByText('Retreated')).toBeVisible();
 
   // A returning character does not replay the tent-erect animation — the
   // subtitle still reads "has arrived", but this is a repeat, not the

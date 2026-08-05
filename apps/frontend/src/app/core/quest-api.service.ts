@@ -5,6 +5,7 @@ import { ApiConfiguration } from '../api/api-configuration';
 import { questControllerComplete } from '../api/fn/quests/quest-controller-complete';
 import { questControllerCreate } from '../api/fn/quests/quest-controller-create';
 import { questControllerList } from '../api/fn/quests/quest-controller-list';
+import { questControllerRetreat } from '../api/fn/quests/quest-controller-retreat';
 import { CompleteQuestResponseDto } from '../api/models/complete-quest-response-dto';
 import { CreateQuestDto } from '../api/models/create-quest-dto';
 import { QuestDto } from '../api/models/quest-dto';
@@ -28,6 +29,12 @@ export class QuestApiService {
 
   complete(id: string): Observable<CompleteQuestResponseDto> {
     return questControllerComplete(this.http, this.config.rootUrl, { id }).pipe(
+      map((res) => res.body),
+    );
+  }
+
+  retreat(id: string): Observable<QuestDto> {
+    return questControllerRetreat(this.http, this.config.rootUrl, { id }).pipe(
       map((res) => res.body),
     );
   }

@@ -1,6 +1,7 @@
 import {
   AfterViewInit,
   Component,
+  computed,
   DestroyRef,
   ElementRef,
   OnDestroy,
@@ -21,14 +22,21 @@ import { RendererLifecycle } from '../../game-rendering/renderer-lifecycle';
 import { isWebglAvailable } from '../../game-rendering/webgl-support';
 import { buildBaseCampScene } from './base-camp-scene';
 import { MAX_CONSTRUCTION_STAGE } from './construction-stage';
+
+/** Purely a display convenience — the backend only tracks raw xp. Deliberately
+ * simple (linear, no diminishing curve) until there's an actual leveling
+ * system with per-level unlocks to design around. */
+const XP_PER_LEVEL = 100;
 import { CampActions } from '../../state/camp/camp.actions';
 import { selectFirewoodCount, selectForageCount } from '../../state/camp/camp.reducer';
 import { QuestsActions } from '../../state/quests/quests.actions';
 import {
-  selectCompletingQuestId,
+  selectCoins,
   selectConstructionStage,
   selectLoading,
   selectQuests,
+  selectResolvingQuestId,
+  selectXp,
 } from '../../state/quests/quests.reducer';
 
 @Component({
@@ -58,7 +66,10 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly quests = this.store.selectSignal(selectQuests);
   readonly constructionStage = this.store.selectSignal(selectConstructionStage);
   readonly questsLoading = this.store.selectSignal(selectLoading);
-  readonly completingQuestId = this.store.selectSignal(selectCompletingQuestId);
+  readonly resolvingQuestId = this.store.selectSignal(selectResolvingQuestId);
+  readonly xp = this.store.selectSignal(selectXp);
+  readonly coins = this.store.selectSignal(selectCoins);
+  readonly level = computed(() => Math.floor(this.xp() / XP_PER_LEVEL) + 1);
   readonly firewoodCount = this.store.selectSignal(selectFirewoodCount);
   readonly forageCount = this.store.selectSignal(selectForageCount);
 
@@ -105,6 +116,8 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
           QuestsActions.setCharacterContext({
             characterId: character.id,
             constructionStage: character.campConstructionStage,
+            xp: character.xp,
+            coins: character.coins,
           }),
         );
         this.store.dispatch(QuestsActions.loadQuests({ characterId: character.id }));
@@ -141,6 +154,10 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
 
   completeQuest(questId: string): void {
     this.store.dispatch(QuestsActions.completeQuest({ questId }));
+  }
+
+  retreatQuest(questId: string): void {
+    this.store.dispatch(QuestsActions.retreatQuest({ questId }));
   }
 
   private mountRendererIfReady(): void {

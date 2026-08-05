@@ -1,6 +1,6 @@
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CharacterService, WORKBENCH_MAX_LEVEL, WORKBENCH_UPGRADE_COSTS } from './character.service';
+import { CharacterService, WORKBENCH_MAX_LEVEL, WORKBENCH_UPGRADE_COSTS, gatheringYield } from './character.service';
 
 function buildPrismaMock() {
   return {
@@ -119,6 +119,18 @@ describe('CharacterService', () => {
       expect(result).toEqual(updated);
     });
 
+    it('grants more firewood per chop as the workbench levels up', async () => {
+      prisma.character.findFirst.mockResolvedValue(buildCharacter({ workbenchLevel: 2 }));
+      prisma.character.update.mockResolvedValue(buildCharacter({ workbenchLevel: 2, firewoodCount: 3 }));
+
+      await service.chopTree('user-1', 'char-1');
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: 'char-1' },
+        data: { firewoodCount: { increment: 3 } },
+      });
+    });
+
     it('throws NotFoundException when the character is not owned by the user', async () => {
       prisma.character.findFirst.mockResolvedValue(null);
 
@@ -143,11 +155,32 @@ describe('CharacterService', () => {
       expect(result).toEqual(updated);
     });
 
+    it('grants more forage per harvest as the workbench levels up', async () => {
+      prisma.character.findFirst.mockResolvedValue(buildCharacter({ workbenchLevel: WORKBENCH_MAX_LEVEL }));
+      prisma.character.update.mockResolvedValue(buildCharacter({ workbenchLevel: WORKBENCH_MAX_LEVEL, forageCount: 4 }));
+
+      await service.forage('user-1', 'char-1');
+
+      expect(prisma.character.update).toHaveBeenCalledWith({
+        where: { id: 'char-1' },
+        data: { forageCount: { increment: 4 } },
+      });
+    });
+
     it('throws NotFoundException when the character is not owned by the user', async () => {
       prisma.character.findFirst.mockResolvedValue(null);
 
       await expect(service.forage('user-1', 'char-1')).rejects.toThrow(NotFoundException);
       expect(prisma.character.update).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('gatheringYield', () => {
+    it('is one more unit per workbench level', () => {
+      expect(gatheringYield(0)).toBe(1);
+      expect(gatheringYield(1)).toBe(2);
+      expect(gatheringYield(2)).toBe(3);
+      expect(gatheringYield(WORKBENCH_MAX_LEVEL)).toBe(4);
     });
   });
 

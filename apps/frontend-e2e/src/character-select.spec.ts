@@ -103,7 +103,7 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // does, it reflects the character's real backend counts, not placeholders.
   const canvasMounted = await page.locator('canvas.stage__canvas').isVisible().catch(() => false);
   if (canvasMounted) {
-    await expect(page.getByText('Firewood: 0 — click a tree to chop one.')).toBeVisible();
+    await expect(page.getByText('Firewood: 0 — click a tree to chop wood.')).toBeVisible();
     await expect(page.getByText('Forage: 0 — click the bush to harvest.')).toBeVisible();
   }
 

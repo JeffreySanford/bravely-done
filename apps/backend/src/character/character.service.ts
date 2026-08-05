@@ -6,9 +6,20 @@ import { CreateCharacterDto } from './dto/create-character.dto';
 /** Workbench is fully upgraded once this many upgrades have been bought. */
 export const WORKBENCH_MAX_LEVEL = 3;
 /** Coin cost to go from level i to i+1 — index 0 is the cost of the first
- * upgrade. Deterministic and increasing, no randomness. No actual
- * capability unlocks are wired to workbenchLevel yet — see planning/02. */
+ * upgrade. Deterministic and increasing, no randomness. */
 export const WORKBENCH_UPGRADE_COSTS = [10, 20, 30];
+
+/** Firewood/forage yielded per chop/forage click scales with workbenchLevel
+ * — the workbench's one real capability unlock (see planning/02-base-camp-
+ * animations.md): a better-equipped workbench means a better axe/basket,
+ * not just a bigger number. Level 0 (no upgrades bought) yields the base 1
+ * unit; each level adds 1 more, so a fully upgraded workbench
+ * (WORKBENCH_MAX_LEVEL) yields 4 per click. This only speeds up explicit,
+ * real one-click-per-grant actions — not a passive/timer-based reward — so
+ * it doesn't touch rewards-retention.md's "resist idle timers" rule. */
+export function gatheringYield(workbenchLevel: number): number {
+  return workbenchLevel + 1;
+}
 
 @Injectable()
 export class CharacterService {
@@ -44,24 +55,26 @@ export class CharacterService {
   }
 
   /** Chopping is an infinite ambient action (no per-tree depletion tracked
-   * yet) — each call adds one unit of firewood. Uses an atomic increment
-   * rather than read-then-write so rapid clicks can't race and drop a
-   * chop. */
+   * yet) — each call adds firewood scaled by the workbench's gathering
+   * yield (see gatheringYield). Uses an atomic increment rather than
+   * read-then-write so rapid clicks can't race and drop a chop; the
+   * character is still fetched first since the increment amount depends on
+   * its current workbenchLevel. */
   async chopTree(userId: string, characterId: string): Promise<Character> {
-    await this.findOwned(userId, characterId);
+    const character = await this.findOwned(userId, characterId);
     return this.prisma.character.update({
       where: { id: characterId },
-      data: { firewoodCount: { increment: 1 } },
+      data: { firewoodCount: { increment: gatheringYield(character.workbenchLevel) } },
     });
   }
 
   /** Harvesting is an infinite ambient action (mirrors chopTree) — each
-   * call adds one unit of forage. Atomic increment for the same reason. */
+   * call adds forage scaled by the same workbench gathering yield. */
   async forage(userId: string, characterId: string): Promise<Character> {
-    await this.findOwned(userId, characterId);
+    const character = await this.findOwned(userId, characterId);
     return this.prisma.character.update({
       where: { id: characterId },
-      data: { forageCount: { increment: 1 } },
+      data: { forageCount: { increment: gatheringYield(character.workbenchLevel) } },
     });
   }
 

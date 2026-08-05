@@ -32,10 +32,12 @@
 - [x] Quest Board, chest, treasury, bridge, and workbench landmarks. The workbench is clickable (real
       raycasting) and spends real coins on a capped upgrade (`POST /characters/:id/upgrade-workbench`,
       `WORKBENCH_MAX_LEVEL`/`WORKBENCH_UPGRADE_COSTS` in `apps/backend/src/character/character.
-      service.ts`) — its glow rings light up one at a time as `workbenchLevel` rises. Deliberately just a
-      level number for now: no actual capability unlock (faster chopping, bigger inventory, etc.) is
-      wired to it yet, same honest gap as construction stage advancing the bridge without unlocking new
-      mechanics.
+      service.ts`) — its glow rings light up one at a time as `workbenchLevel` rises. The workbench now
+      has a real capability unlock too: `gatheringYield(workbenchLevel)` (same file) scales how much
+      firewood/forage one chop/forage click grants — 1 unit at level 0 up to 4 at
+      `WORKBENCH_MAX_LEVEL`, a better tool crafted at the workbench rather than just a bigger displayed
+      number. Verified live via direct API calls at levels 0/1/3 confirming the exact yield at each
+      level.
 - [x] Per-character tent gated to true first-ever arrival: `Character.hasArrivedAtCamp` (backend,
       `POST /characters/:id/arrive`) is checked before the scene is built, and the erect animation only
       plays when this is the character's first arrival. Returning visits render the tent already

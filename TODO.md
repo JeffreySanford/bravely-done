@@ -129,8 +129,14 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       `WORKBENCH_MAX_LEVEL`, costs in `WORKBENCH_UPGRADE_COSTS`) — see [Plan 02](planning/
       02-base-camp-animations.md) for the scene wiring. Verified live: affordable/unaffordable/
       already-maxed all behave correctly via direct API calls, and a Playwright e2e run earns coins from
-      quests, upgrades once, and confirms the level and remaining coins survive a reload. Still just a
-      level number — no actual capability unlock is wired to it yet.
+      quests, upgrades once, and confirms the level and remaining coins survive a reload.
+- [x] Give the workbench a real capability unlock: `gatheringYield(workbenchLevel)`
+      (`apps/backend/src/character/character.service.ts`) scales chop/forage yield from 1 unit at level
+      0 up to 4 at `WORKBENCH_MAX_LEVEL`, closing the coins → workbench → resources loop instead of
+      leaving `workbenchLevel` as a displayed number with no gameplay effect. Doesn't touch the
+      idle-timer-resistance rule (rewards-retention.md) since it only speeds up explicit, real
+      one-click-per-grant actions, not a passive/timer-based reward. Verified live at levels 0/1/3
+      confirming the exact yield at each.
 - [x] Let players track their own quests as a real in-game Kanban board (Backlog/In Progress/Done/
       Retreated), not just a flat list — a first honest step toward "typing this project's own Agile
       process back into the game" for the player, not just the dev team. Added a real

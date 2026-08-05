@@ -101,8 +101,10 @@ character select (return visits):
   reloads. Retreating is a real, penalty-free resolution available from Backlog or In Progress — no
   reward, no construction-stage change. Coins have a first real sink too: clicking the workbench (real
   raycasting) spends coins on a capped level upgrade (`POST /characters/:id/upgrade-workbench`),
-  rejected if unaffordable and a no-op past the cap — deliberately just a level number for now, with no
-  capability unlock wired to it yet. An in-progress quest can also hold a real Adventure Sprint
+  rejected if unaffordable and a no-op past the cap — and it now has a real capability unlock: each
+  level increases how much firewood/forage one chop/forage click grants (1 unit at level 0 up to 4 at
+  max), a better tool crafted at the workbench rather than just a number that goes up. An in-progress
+  quest can also hold a real Adventure Sprint
   (`apps/backend/src/sprint/`) — start it for a chosen duration (15/25/45/60 min presets), pause and
   resume it, and finish it for Focus XP once real elapsed time (recomputed server-side from stored
   timestamps, never the client's word) actually reaches the target; sprint completion is separate from
@@ -114,7 +116,7 @@ character select (return visits):
   live in this project's NgRx store (`apps/frontend/src/app/state/quests/`,
   `apps/frontend/src/app/state/camp/`, `apps/frontend/src/app/state/sprints/`), not local component
   state.
-- **Not yet built**: wandering-animal interaction, workbench capability unlocks, encounters and the
+- **Not yet built**: wandering-animal interaction, encounters and the
   "continue"/"split"/"call party" resolutions on top of quests (see
   [Plan 03](../../planning/03-first-brave-step.md)), and the animation director's fuller event set
   (quest accepted, loot reveal, etc. — arrival, quest-completion, tree-chopping, foraging, companion

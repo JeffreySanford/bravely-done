@@ -81,6 +81,38 @@ describe('questsFeature reducer', () => {
     expect(state.loading).toBe(false);
   });
 
+  it('startQuest tracks which quest is resolving and clears any prior error', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, error: 'boom' },
+      QuestsActions.startQuest({ questId: 'q1' }),
+    );
+
+    expect(state.resolvingQuestId).toBe('q1');
+    expect(state.error).toBeNull();
+  });
+
+  it('startQuestSuccess replaces only the matching quest and clears resolvingQuestId', () => {
+    const otherQuest = { ...quest, id: 'q2', title: 'Forage plants' };
+    const started = { ...quest, status: 'IN_PROGRESS' as const };
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, quests: [quest, otherQuest], resolvingQuestId: 'q1' },
+      QuestsActions.startQuestSuccess({ quest: started }),
+    );
+
+    expect(state.quests).toEqual([started, otherQuest]);
+    expect(state.resolvingQuestId).toBeNull();
+  });
+
+  it('startQuestFailure stores the error and clears resolvingQuestId', () => {
+    const state = questsFeature.reducer(
+      { ...initialQuestsState, resolvingQuestId: 'q1' },
+      QuestsActions.startQuestFailure({ error: 'boom' }),
+    );
+
+    expect(state.error).toBe('boom');
+    expect(state.resolvingQuestId).toBeNull();
+  });
+
   it('completeQuest tracks which quest is resolving and clears any prior error', () => {
     const state = questsFeature.reducer(
       { ...initialQuestsState, error: 'boom' },

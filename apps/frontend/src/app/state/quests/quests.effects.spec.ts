@@ -10,7 +10,7 @@ const quest = { id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'OPEN' 
 describe('QuestsEffects', () => {
   let actions$: Observable<unknown>;
   let effects: QuestsEffects;
-  let questApi: jest.Mocked<Pick<QuestApiService, 'list' | 'create' | 'complete' | 'retreat'>>;
+  let questApi: jest.Mocked<Pick<QuestApiService, 'list' | 'create' | 'start' | 'complete' | 'retreat'>>;
 
   function setup() {
     TestBed.configureTestingModule({
@@ -27,6 +27,7 @@ describe('QuestsEffects', () => {
     questApi = {
       list: jest.fn(),
       create: jest.fn(),
+      start: jest.fn(),
       complete: jest.fn(),
       retreat: jest.fn(),
     };
@@ -77,6 +78,31 @@ describe('QuestsEffects', () => {
 
       effects.createQuest$.subscribe((action) => {
         expect(action.type).toBe(QuestsActions.createQuestFailure.type);
+        done();
+      });
+    });
+  });
+
+  describe('startQuest$', () => {
+    it('emits startQuestSuccess on success', (done) => {
+      questApi.start.mockReturnValue(of({ ...quest, status: 'IN_PROGRESS' as const }));
+      actions$ = of(QuestsActions.startQuest({ questId: 'q1' }));
+      setup();
+
+      effects.startQuest$.subscribe((action) => {
+        expect(questApi.start).toHaveBeenCalledWith('q1');
+        expect(action).toEqual(QuestsActions.startQuestSuccess({ quest: { ...quest, status: 'IN_PROGRESS' } }));
+        done();
+      });
+    });
+
+    it('emits startQuestFailure on error', (done) => {
+      questApi.start.mockReturnValue(throwError(() => new Error('boom')));
+      actions$ = of(QuestsActions.startQuest({ questId: 'q1' }));
+      setup();
+
+      effects.startQuest$.subscribe((action) => {
+        expect(action.type).toBe(QuestsActions.startQuestFailure.type);
         done();
       });
     });

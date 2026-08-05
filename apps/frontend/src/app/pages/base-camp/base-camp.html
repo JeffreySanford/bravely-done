@@ -23,10 +23,10 @@
   </header>
 
   <div class="stage__footer">
-    <div class="quest-board">
-      <p class="quest-board__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
+    <div class="kanban-board">
+      <p class="kanban-board__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
 
-      <form class="quest-board__form" [formGroup]="newQuestForm" (ngSubmit)="createQuest()">
+      <form class="kanban-board__form" [formGroup]="newQuestForm" (ngSubmit)="createQuest()">
         <input
           type="text"
           class="bd-field"
@@ -38,43 +38,91 @@
       </form>
 
       @if (quests().length > 0) {
-        <ul class="quest-board__list">
-          @for (quest of quests(); track quest.id) {
-            <li class="quest-board__item" [class.quest-board__item--resolved]="quest.status !== 'OPEN'">
-              <span>{{ quest.title }}</span>
-              @switch (quest.status) {
-                @case ('COMPLETED') {
-                  <span class="quest-board__done">Done</span>
-                }
-                @case ('RETREATED') {
-                  <span class="quest-board__retreated">Retreated</span>
-                }
-                @default {
-                  <span class="quest-board__actions">
-                    <button
-                      type="button"
-                      class="bd-button bd-button--ghost"
-                      [disabled]="resolvingQuestId() === quest.id"
-                      (click)="retreatQuest(quest.id)"
-                    >
-                      Retreat
-                    </button>
-                    <button
-                      type="button"
-                      class="bd-button"
-                      [disabled]="resolvingQuestId() === quest.id"
-                      (click)="completeQuest(quest.id)"
-                    >
-                      Complete
-                    </button>
-                  </span>
-                }
-              }
-            </li>
-          }
-        </ul>
+        <div class="kanban-board__columns">
+          <div class="kanban-column">
+            <p class="kanban-column__title">Backlog<span class="kanban-column__sub">Story</span></p>
+            @for (quest of backlogQuests(); track quest.id) {
+              <div class="kanban-card">
+                <span class="kanban-card__title">{{ quest.title }}</span>
+                <span class="kanban-card__actions">
+                  <button
+                    type="button"
+                    class="bd-button bd-button--ghost"
+                    [disabled]="resolvingQuestId() === quest.id"
+                    (click)="retreatQuest(quest.id)"
+                  >
+                    Retreat
+                  </button>
+                  <button
+                    type="button"
+                    class="bd-button"
+                    [disabled]="resolvingQuestId() === quest.id"
+                    (click)="startQuest(quest.id)"
+                  >
+                    Start
+                  </button>
+                </span>
+              </div>
+            } @empty {
+              <p class="kanban-column__empty">Nothing queued.</p>
+            }
+          </div>
+
+          <div class="kanban-column">
+            <p class="kanban-column__title">In Progress<span class="kanban-column__sub">Sprint</span></p>
+            @for (quest of inProgressQuests(); track quest.id) {
+              <div class="kanban-card">
+                <span class="kanban-card__title">{{ quest.title }}</span>
+                <span class="kanban-card__actions">
+                  <button
+                    type="button"
+                    class="bd-button bd-button--ghost"
+                    [disabled]="resolvingQuestId() === quest.id"
+                    (click)="retreatQuest(quest.id)"
+                  >
+                    Retreat
+                  </button>
+                  <button
+                    type="button"
+                    class="bd-button"
+                    [disabled]="resolvingQuestId() === quest.id"
+                    (click)="completeQuest(quest.id)"
+                  >
+                    Complete
+                  </button>
+                </span>
+              </div>
+            } @empty {
+              <p class="kanban-column__empty">Nothing in flight.</p>
+            }
+          </div>
+
+          <div class="kanban-column">
+            <p class="kanban-column__title">Done<span class="kanban-column__sub">Delivered</span></p>
+            @for (quest of doneQuests(); track quest.id) {
+              <div class="kanban-card kanban-card--resolved">
+                <span class="kanban-card__title">{{ quest.title }}</span>
+                <span class="kanban-card__done">Done</span>
+              </div>
+            } @empty {
+              <p class="kanban-column__empty">Nothing delivered yet.</p>
+            }
+          </div>
+
+          <div class="kanban-column">
+            <p class="kanban-column__title">Retreated<span class="kanban-column__sub">Rest day</span></p>
+            @for (quest of retreatedQuests(); track quest.id) {
+              <div class="kanban-card kanban-card--resolved">
+                <span class="kanban-card__title">{{ quest.title }}</span>
+                <span class="kanban-card__retreated">Retreated</span>
+              </div>
+            } @empty {
+              <p class="kanban-column__empty">None — that's okay too.</p>
+            }
+          </div>
+        </div>
       } @else if (!questsLoading()) {
-        <p class="quest-board__empty">No quests yet — add one above.</p>
+        <p class="kanban-board__empty">No quests yet — add one above.</p>
       }
     </div>
 

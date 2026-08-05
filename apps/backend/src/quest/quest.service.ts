@@ -34,16 +34,33 @@ export class QuestService {
     });
   }
 
-  /** Completes an open quest: advances the owning character's bridge
-   * construction stage by one (capped at MAX_CONSTRUCTION_STAGE) and grants
-   * a deterministic XP/coin reward, applied together in one transaction so
-   * a quest can never end up "completed" without its reward or vice versa.
-   * Already-resolved quests (completed or retreated) are returned as-is
-   * without granting a reward again. */
-  async complete(userId: string, questId: string): Promise<{ quest: Quest; character: Character }> {
+  /** Moves a quest from the backlog into the board's "In Progress" column —
+   * a real, player-driven signal of intent, not just a display grouping.
+   * Already-started quests (in progress or resolved) are returned as-is,
+   * same idempotent pattern as complete/retreat. */
+  async start(userId: string, questId: string): Promise<Quest> {
     const quest = await this.findOwnedQuest(userId, questId);
 
     if (quest.status !== QuestStatus.OPEN) {
+      return quest;
+    }
+
+    return this.prisma.quest.update({
+      where: { id: questId },
+      data: { status: QuestStatus.IN_PROGRESS },
+    });
+  }
+
+  /** Completes an open or in-progress quest: advances the owning character's
+   * bridge construction stage by one (capped at MAX_CONSTRUCTION_STAGE) and
+   * grants a deterministic XP/coin reward, applied together in one
+   * transaction so a quest can never end up "completed" without its reward
+   * or vice versa. Already-resolved quests (completed or retreated) are
+   * returned as-is without granting a reward again. */
+  async complete(userId: string, questId: string): Promise<{ quest: Quest; character: Character }> {
+    const quest = await this.findOwnedQuest(userId, questId);
+
+    if (quest.status === QuestStatus.COMPLETED || quest.status === QuestStatus.RETREATED) {
       const { character, ...rest } = quest;
       return { quest: rest, character };
     }
@@ -67,15 +84,15 @@ export class QuestService {
     return { quest: completedQuest, character };
   }
 
-  /** Retreats from an open quest: a deliberate, penalty-free resolution
-   * (see documentation/product/rewards-retention.md's ethical rules —
-   * "rest days and comeback quests are legitimate play"). Grants no
+  /** Retreats from an open or in-progress quest: a deliberate, penalty-free
+   * resolution (see documentation/product/rewards-retention.md's ethical
+   * rules — "rest days and comeback quests are legitimate play"). Grants no
    * reward and does not touch camp construction. Already-resolved quests
    * are returned as-is, same idempotent pattern as complete(). */
   async retreat(userId: string, questId: string): Promise<Quest> {
     const quest = await this.findOwnedQuest(userId, questId);
 
-    if (quest.status !== QuestStatus.OPEN) {
+    if (quest.status === QuestStatus.COMPLETED || quest.status === QuestStatus.RETREATED) {
       return quest;
     }
 

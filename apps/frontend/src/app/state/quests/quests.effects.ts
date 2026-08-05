@@ -35,6 +35,18 @@ export class QuestsEffects {
     ),
   );
 
+  startQuest$ = createEffect(() =>
+    this.actions$.pipe(
+      ofType(QuestsActions.startQuest),
+      exhaustMap(({ questId }) =>
+        this.questApi.start(questId).pipe(
+          map((quest) => QuestsActions.startQuestSuccess({ quest })),
+          catchError(() => of(QuestsActions.startQuestFailure({ error: GENERIC_ERROR }))),
+        ),
+      ),
+    ),
+  );
+
   completeQuest$ = createEffect(() =>
     this.actions$.pipe(
       ofType(QuestsActions.completeQuest),

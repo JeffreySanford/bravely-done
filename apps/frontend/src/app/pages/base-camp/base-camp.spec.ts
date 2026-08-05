@@ -246,6 +246,21 @@ describe('BaseCamp', () => {
     });
   });
 
+  describe('startQuest', () => {
+    it('dispatches startQuest', () => {
+      const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));
+      const start = jest.fn().mockReturnValue(
+        of({ id: 'q1', characterId: 'c1', title: 'Chop wood', status: 'IN_PROGRESS', createdAt: '2026-01-01', completedAt: null }),
+      );
+      const { component } = setup({ arrive }, { start });
+      component.ngOnInit();
+
+      component.startQuest('q1');
+
+      expect(start).toHaveBeenCalledWith('q1');
+    });
+  });
+
   describe('completeQuest', () => {
     it('dispatches completeQuest and updates construction stage, xp, and coins', () => {
       const arrive = jest.fn().mockReturnValue(of({ firstArrival: false, character: buildCharacter() }));

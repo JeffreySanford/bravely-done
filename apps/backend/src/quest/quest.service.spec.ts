@@ -100,6 +100,51 @@ describe('QuestService', () => {
     });
   });
 
+  describe('start', () => {
+    it('moves an open quest to in progress', async () => {
+      const quest = buildQuest({ character: buildCharacter() });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+      const started = buildQuest({ status: QuestStatus.IN_PROGRESS });
+      prisma.quest.update.mockResolvedValue(started);
+
+      const result = await service.start('user-1', 'quest-1');
+
+      expect(prisma.quest.update).toHaveBeenCalledWith({
+        where: { id: 'quest-1' },
+        data: { status: QuestStatus.IN_PROGRESS },
+      });
+      expect(result).toEqual(started);
+    });
+
+    it('is a no-op for an already-in-progress quest', async () => {
+      const character = buildCharacter();
+      const quest = buildQuest({ status: QuestStatus.IN_PROGRESS, character });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+
+      const result = await service.start('user-1', 'quest-1');
+
+      expect(prisma.quest.update).not.toHaveBeenCalled();
+      expect(result.status).toBe(QuestStatus.IN_PROGRESS);
+    });
+
+    it('is a no-op for a resolved quest', async () => {
+      const character = buildCharacter();
+      const quest = buildQuest({ status: QuestStatus.COMPLETED, character });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+
+      const result = await service.start('user-1', 'quest-1');
+
+      expect(prisma.quest.update).not.toHaveBeenCalled();
+      expect(result.status).toBe(QuestStatus.COMPLETED);
+    });
+
+    it('throws NotFoundException when the quest is not owned by the user', async () => {
+      prisma.quest.findFirst.mockResolvedValue(null);
+
+      await expect(service.start('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+    });
+  });
+
   describe('complete', () => {
     it('completes an open quest, advances the construction stage, and grants xp/coins atomically', async () => {
       const character = buildCharacter({ campConstructionStage: 1 });
@@ -128,6 +173,20 @@ describe('QuestService', () => {
           coins: { increment: QUEST_COIN_REWARD },
         },
       });
+      expect(result).toEqual({ quest: completedQuest, character: updatedCharacter });
+    });
+
+    it('completes an in-progress quest the same as an open one', async () => {
+      const character = buildCharacter({ campConstructionStage: 1 });
+      const quest = buildQuest({ status: QuestStatus.IN_PROGRESS, character });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+      const completedQuest = buildQuest({ status: QuestStatus.COMPLETED, completedAt: new Date() });
+      const updatedCharacter = buildCharacter({ campConstructionStage: 2, xp: QUEST_XP_REWARD, coins: QUEST_COIN_REWARD });
+      prisma.$transaction.mockResolvedValue([completedQuest, updatedCharacter]);
+
+      const result = await service.complete('user-1', 'quest-1');
+
+      expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ quest: completedQuest, character: updatedCharacter });
     });
 
@@ -193,6 +252,22 @@ describe('QuestService', () => {
         data: { status: QuestStatus.RETREATED },
       });
       expect(prisma.character.update).not.toHaveBeenCalled();
+      expect(result).toEqual(retreatedQuest);
+    });
+
+    it('retreats an in-progress quest the same as an open one', async () => {
+      const character = buildCharacter();
+      const quest = buildQuest({ status: QuestStatus.IN_PROGRESS, character });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+      const retreatedQuest = buildQuest({ status: QuestStatus.RETREATED });
+      prisma.quest.update.mockResolvedValue(retreatedQuest);
+
+      const result = await service.retreat('user-1', 'quest-1');
+
+      expect(prisma.quest.update).toHaveBeenCalledWith({
+        where: { id: 'quest-1' },
+        data: { status: QuestStatus.RETREATED },
+      });
       expect(result).toEqual(retreatedQuest);
     });
 

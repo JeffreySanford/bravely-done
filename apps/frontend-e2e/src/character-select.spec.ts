@@ -97,13 +97,15 @@ test('signup through to a rendered Base Camp, and back again via character selec
     await expect(page.getByText('Forage: 0 — click the bush to harvest.')).toBeVisible();
   }
 
-  // Creating and completing real quests advances and persists the bridge
-  // construction stage — the vertical slice from planning/02-base-camp-
-  // animations.md's acceptance criterion, now driven by the real quest
-  // system (create -> list -> complete), not a mock stub. Completing also
-  // grants deterministic XP/coins (Plan 03's reward slice), and retreating
-  // is a real second resolution alongside completing — no reward, no
-  // construction-stage change.
+  // Creating, starting, and completing real quests advances and persists
+  // the bridge construction stage — the vertical slice from planning/02-
+  // base-camp-animations.md's acceptance criterion, now driven by the real
+  // quest system (create -> list -> start -> complete), not a mock stub,
+  // and rendered as a Kanban board (Backlog/In Progress/Done/Retreated)
+  // rather than a flat list. Completing also grants deterministic XP/coins
+  // (Plan 03's reward slice), and retreating is a real resolution available
+  // from either Backlog or In Progress — no reward, no construction-stage
+  // change.
   const questTitleInput = page.getByLabel('Quest title');
   const addQuestButton = page.getByRole('button', { name: 'Add quest' });
 
@@ -113,16 +115,19 @@ test('signup through to a rendered Base Camp, and back again via character selec
     await expect(page.getByText(title)).toBeVisible();
   }
 
-  const restDayItem = page.locator('.quest-board__item', { hasText: 'Take a rest day' });
-  await restDayItem.getByRole('button', { name: 'Retreat' }).click();
-  await expect(restDayItem.getByText('Retreated')).toBeVisible();
+  // Retreating straight from the Backlog column — no Start required first.
+  const restDayCard = page.locator('.kanban-card', { hasText: 'Take a rest day' });
+  await restDayCard.getByRole('button', { name: 'Retreat' }).click();
+  await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
   await expect(page.getByText('Level 1 — 0 XP — 0 coins')).toBeVisible();
 
   for (const [index, title] of ['Chop firewood', 'Answer three emails', 'Forage berries'].entries()) {
-    const questItem = page.locator('.quest-board__item', { hasText: title });
-    await questItem.getByRole('button', { name: 'Complete' }).click();
+    await page.locator('.kanban-card', { hasText: title }).getByRole('button', { name: 'Start' }).click();
+    const inProgressCard = page.locator('.kanban-card', { hasText: title });
+    await expect(inProgressCard.getByRole('button', { name: 'Complete' })).toBeVisible();
+    await inProgressCard.getByRole('button', { name: 'Complete' }).click();
     await expect(page.getByText(`Bridge repair: ${index + 1} / 3`)).toBeVisible();
-    await expect(questItem.getByText('Done')).toBeVisible();
+    await expect(page.locator('.kanban-card', { hasText: title }).getByText('Done')).toBeVisible();
   }
 
   // 3 completed quests x 20 XP / 10 coins each (see QUEST_XP_REWARD /
@@ -134,8 +139,8 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
   await expect(page.getByText('Level 1 — 60 XP — 30 coins')).toBeVisible();
   await expect(page.getByText('Chop firewood')).toBeVisible();
-  await expect(page.locator('.quest-board__item', { hasText: 'Chop firewood' }).getByText('Done')).toBeVisible();
-  await expect(restDayItem.getByText('Retreated')).toBeVisible();
+  await expect(page.locator('.kanban-card', { hasText: 'Chop firewood' }).getByText('Done')).toBeVisible();
+  await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
 
   // A returning character does not replay the tent-erect animation — the
   // subtitle still reads "has arrived", but this is a repeat, not the

@@ -71,6 +71,13 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   readonly renderScene = isWebglAvailable();
 
   readonly quests = this.store.selectSignal(selectQuests);
+  /** The Kanban board's four columns — Backlog/In Progress/Done/Retreated —
+   * derived from the same quest list the old flat panel used, just grouped
+   * by status instead of rendered as one list. */
+  readonly backlogQuests = computed(() => this.quests().filter((q) => q.status === 'OPEN'));
+  readonly inProgressQuests = computed(() => this.quests().filter((q) => q.status === 'IN_PROGRESS'));
+  readonly doneQuests = computed(() => this.quests().filter((q) => q.status === 'COMPLETED'));
+  readonly retreatedQuests = computed(() => this.quests().filter((q) => q.status === 'RETREATED'));
   readonly constructionStage = this.store.selectSignal(selectConstructionStage);
   readonly questsLoading = this.store.selectSignal(selectLoading);
   readonly resolvingQuestId = this.store.selectSignal(selectResolvingQuestId);
@@ -173,6 +180,10 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     const { title } = this.newQuestForm.getRawValue();
     this.store.dispatch(QuestsActions.createQuest({ characterId: this.characterId, title }));
     this.newQuestForm.reset();
+  }
+
+  startQuest(questId: string): void {
+    this.store.dispatch(QuestsActions.startQuest({ questId }));
   }
 
   completeQuest(questId: string): void {

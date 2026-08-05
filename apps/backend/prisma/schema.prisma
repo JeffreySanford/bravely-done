@@ -72,7 +72,11 @@ model Character {
 }
 
 enum QuestStatus {
+  /// The backlog column — created but not yet started.
   OPEN
+  /// The player has explicitly started work on this quest (see
+  /// QuestService.start) — the board's "In Progress" column.
+  IN_PROGRESS
   COMPLETED
   /// Abandoned without penalty — "rest days and comeback quests are
   /// legitimate play" (documentation/product/rewards-retention.md's

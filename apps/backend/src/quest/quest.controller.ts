@@ -37,6 +37,14 @@ export class QuestController {
     return quests.map(toQuestDto);
   }
 
+  @Post('quests/:id/start')
+  @ApiOperation({ summary: "Move a quest into the board's In Progress column" })
+  @ApiOkResponse({ type: QuestDto })
+  async start(@CurrentUser() user: JwtPayload, @Param('id') id: string): Promise<QuestDto> {
+    const quest = await this.quests.start(user.sub, id);
+    return toQuestDto(quest);
+  }
+
   @Post('quests/:id/complete')
   @ApiOperation({ summary: 'Complete a quest and advance the camp construction stage' })
   @ApiOkResponse({ type: CompleteQuestResponseDto })

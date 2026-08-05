@@ -122,6 +122,14 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       already-maxed all behave correctly via direct API calls, and a Playwright e2e run earns coins from
       quests, upgrades once, and confirms the level and remaining coins survive a reload. Still just a
       level number — no actual capability unlock is wired to it yet.
+- [x] Let players track their own quests as a real in-game Kanban board (Backlog/In Progress/Done/
+      Retreated), not just a flat list — a first honest step toward "typing this project's own Agile
+      process back into the game" for the player, not just the dev team. Added a real
+      `QuestStatus.IN_PROGRESS` and `POST /quests/:id/start` (idempotent, same pattern as complete/
+      retreat) so "in progress" is a real backend state, not a display grouping. Verified live via
+      direct API calls (start, re-start is a no-op, complete from in-progress, start-a-completed-quest
+      is a no-op) and a 3-engine Playwright e2e run covering the full board flow. No drag-and-drop,
+      WIP limits, or sprint/story-point association yet — that's future scope, not this slice.
 
 ## Later milestones
 

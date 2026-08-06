@@ -17,6 +17,7 @@ function buildPrismaMock() {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    rewardEntry: { create: jest.fn(), createMany: jest.fn() },
     $transaction: jest.fn(),
   };
 }
@@ -71,11 +72,16 @@ describe('EncounterService', () => {
 
   describe('create', () => {
     it('creates an encounter for an owned quest', async () => {
-      prisma.quest.findFirst.mockResolvedValue({ ...buildQuest(), character: buildCharacter() });
+      prisma.quest.findFirst.mockResolvedValue({
+        ...buildQuest(),
+        character: buildCharacter(),
+      });
       const created = buildEncounter();
       prisma.encounter.create.mockResolvedValue(created);
 
-      const result = await service.create('user-1', 'quest-1', { title: 'Draft the reply' });
+      const result = await service.create('user-1', 'quest-1', {
+        title: 'Draft the reply',
+      });
 
       expect(prisma.encounter.create).toHaveBeenCalledWith({
         data: { questId: 'quest-1', title: 'Draft the reply' },
@@ -86,14 +92,19 @@ describe('EncounterService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.create('user-1', 'quest-1', { title: 'x' })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create('user-1', 'quest-1', { title: 'x' }),
+      ).rejects.toThrow(NotFoundException);
       expect(prisma.encounter.create).not.toHaveBeenCalled();
     });
   });
 
   describe('listForQuest', () => {
     it('returns encounters for an owned quest, oldest first', async () => {
-      prisma.quest.findFirst.mockResolvedValue({ ...buildQuest(), character: buildCharacter() });
+      prisma.quest.findFirst.mockResolvedValue({
+        ...buildQuest(),
+        character: buildCharacter(),
+      });
       const encounters = [buildEncounter()];
       prisma.encounter.findMany.mockResolvedValue(encounters);
 
@@ -109,34 +120,53 @@ describe('EncounterService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.listForQuest('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(service.listForQuest('user-1', 'quest-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('complete', () => {
     it('completes an open encounter and grants Courage XP atomically', async () => {
-      const encounter = { ...buildEncounter(), quest: { ...buildQuest(), character: buildCharacter() } };
+      const encounter = {
+        ...buildEncounter(),
+        quest: { ...buildQuest(), character: buildCharacter() },
+      };
       prisma.encounter.findFirst.mockResolvedValue(encounter);
-      const completedEncounter = buildEncounter({ status: EncounterStatus.COMPLETED, completedAt: new Date() });
+      const completedEncounter = buildEncounter({
+        status: EncounterStatus.COMPLETED,
+        completedAt: new Date(),
+      });
       const updatedCharacter = buildCharacter({ xp: COURAGE_XP_REWARD });
-      prisma.$transaction.mockResolvedValue([completedEncounter, updatedCharacter]);
+      prisma.$transaction.mockResolvedValue([
+        completedEncounter,
+        updatedCharacter,
+      ]);
 
       const result = await service.complete('user-1', 'enc-1');
 
       expect(prisma.encounter.update).toHaveBeenCalledWith({
         where: { id: 'enc-1' },
-        data: { status: EncounterStatus.COMPLETED, completedAt: expect.any(Date) },
+        data: {
+          status: EncounterStatus.COMPLETED,
+          completedAt: expect.any(Date),
+        },
       });
       expect(prisma.character.update).toHaveBeenCalledWith({
         where: { id: 'char-1' },
         data: { xp: { increment: COURAGE_XP_REWARD } },
       });
-      expect(result).toEqual({ encounter: completedEncounter, character: updatedCharacter });
+      expect(result).toEqual({
+        encounter: completedEncounter,
+        character: updatedCharacter,
+      });
     });
 
     it('does not grant a reward again for an already-completed encounter', async () => {
       const character = buildCharacter({ xp: COURAGE_XP_REWARD });
-      const expectedEncounter = buildEncounter({ status: EncounterStatus.COMPLETED });
+      const expectedEncounter = buildEncounter({
+        status: EncounterStatus.COMPLETED,
+      });
       prisma.encounter.findFirst.mockResolvedValue({
         ...expectedEncounter,
         quest: { ...buildQuest(), character },
@@ -151,7 +181,9 @@ describe('EncounterService', () => {
     it('throws NotFoundException when the encounter is not owned by the user', async () => {
       prisma.encounter.findFirst.mockResolvedValue(null);
 
-      await expect(service.complete('user-1', 'enc-1')).rejects.toThrow(NotFoundException);
+      await expect(service.complete('user-1', 'enc-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

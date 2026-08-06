@@ -76,8 +76,64 @@ model Character {
   /// component, so it can't be farmed by idle timers.
   firstBraveStepDay DateTime?
   quests    Quest[]
+  rewardEntries RewardEntry[]
 
   @@map("characters")
+}
+
+/// Which mechanic produced a ledger entry. Mirrors the reward categories in
+/// documentation/product/rewards-retention.md, plus the one *spend* the game
+/// has — including spends is what makes the ledger reconcilable against
+/// Character.xp/coins rather than merely additive.
+enum RewardCategory {
+  /// Full credit for completing a quest (QuestService.QUEST_XP_REWARD).
+  QUEST
+  /// Half credit for the Split resolution.
+  SPLIT
+  /// Focus XP for an honest completed sprint.
+  FOCUS
+  /// Courage XP for completing an encounter.
+  COURAGE
+  /// Daily loop: first completion of a UTC day.
+  FIRST_BRAVE_STEP
+  /// Daily loop: completing a quest designated as one of Today's Three.
+  TODAYS_THREE
+  /// Coins spent on a workbench upgrade — recorded with negative `coins`.
+  WORKBENCH_UPGRADE
+}
+
+/// Append-only record of every XP/coin movement. Written inside the same
+/// transaction as the balance change it describes, so a grant can never
+/// exist without its entry (or vice versa).
+///
+/// Character.xp/coins remain the authoritative *current balance* — this
+/// table is history, not a replacement. That's a deliberate choice: making
+/// the ledger the source of truth would mean recomputing a SUM on every
+/// read and backfilling opening balances, which is a much larger change
+/// than the reporting problem it would solve. The two are kept consistent
+/// by always writing them together; `reconcile` coverage in
+/// reward-ledger.service.spec.ts and the integration suite asserts it.
+///
+/// Rows are never updated or deleted — a correction is a new compensating
+/// entry, so history stays truthful about what was granted at the time.
+model RewardEntry {
+  id          String         @id @default(uuid())
+  characterId String
+  character   Character      @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  category    RewardCategory
+  /// Signed. Positive for grants, negative for spends.
+  xp          Int            @default(0)
+  coins       Int            @default(0)
+  /// The quest/sprint/encounter/character this entry came from, for tracing
+  /// an entry back to what caused it. Deliberately not a foreign key: the
+  /// ledger must survive its source being deleted, or history would quietly
+  /// rewrite itself.
+  sourceId    String?
+  createdAt   DateTime       @default(now())
+
+  /// Period queries always filter by character and time window.
+  @@index([characterId, createdAt])
+  @@map("reward_entries")
 }
 
 enum QuestStatus {

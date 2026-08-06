@@ -102,6 +102,47 @@
   text-align: center;
 }
 
+/* The earned totals sit between the activity counts and the entry list —
+   "what did this add up to" belongs after "what happened", not before it. */
+.chronicle__earned {
+  position: relative;
+  width: min(720px, 100%);
+  margin-bottom: 28px;
+  padding: 14px 18px;
+  border-radius: var(--bd-radius);
+  background: var(--bd-surface);
+  border: 1px solid var(--bd-surface-border);
+}
+
+.chronicle__earned-headline {
+  margin: 0;
+  font-family: var(--bd-font-mono);
+  font-size: 15px;
+  color: var(--bd-cyan);
+}
+
+.chronicle__breakdown {
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.chronicle__breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--bd-text-muted);
+}
+
+.chronicle__breakdown-value {
+  font-family: var(--bd-font-mono);
+  white-space: nowrap;
+}
+
 .chronicle__quiet {
   position: relative;
   max-width: 420px;

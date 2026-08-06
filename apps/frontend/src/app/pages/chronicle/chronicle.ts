@@ -3,6 +3,7 @@ import { DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Store } from '@ngrx/store';
 import { ChronicleEntryDto } from '../../api/models/chronicle-entry-dto';
+import { ChronicleRewardBreakdownDto } from '../../api/models/chronicle-reward-breakdown-dto';
 import { ChronicleActions } from '../../state/chronicle/chronicle.actions';
 import {
   selectChronicle,
@@ -21,6 +22,18 @@ const ENTRY_LABELS: Record<ChronicleEntryDto['kind'], string> = {
   QUEST_CONTINUED: 'Continued',
   SPRINT_COMPLETED: 'Finished a sprint on',
   ENCOUNTER_COMPLETED: 'Took a step on',
+};
+
+/** Player-facing names for the ledger's reward categories — the enum values
+ * are internal vocabulary, not something to show someone. */
+const REWARD_LABELS: Record<ChronicleRewardBreakdownDto['category'], string> = {
+  QUEST: 'Quests completed',
+  SPLIT: 'Quests split',
+  FOCUS: 'Focused sprints',
+  COURAGE: 'Small steps taken',
+  FIRST_BRAVE_STEP: 'First Brave Step',
+  TODAYS_THREE: "Today's Three",
+  WORKBENCH_UPGRADE: 'Spent at the workbench',
 };
 
 @Component({
@@ -56,5 +69,9 @@ export class Chronicle implements OnInit {
 
   labelFor(kind: ChronicleEntryDto['kind']): string {
     return ENTRY_LABELS[kind] ?? 'Worked on';
+  }
+
+  rewardLabelFor(category: ChronicleRewardBreakdownDto['category']): string {
+    return REWARD_LABELS[category] ?? category;
   }
 }

@@ -17,6 +17,7 @@ function buildPrismaMock() {
       findMany: jest.fn(),
       update: jest.fn(),
     },
+    rewardEntry: { create: jest.fn(), createMany: jest.fn() },
     $transaction: jest.fn(),
   };
 }
@@ -74,12 +75,17 @@ describe('SprintService', () => {
 
   describe('start', () => {
     it('creates a sprint for an in-progress quest', async () => {
-      prisma.quest.findFirst.mockResolvedValue({ ...buildQuest(), character: buildCharacter() });
+      prisma.quest.findFirst.mockResolvedValue({
+        ...buildQuest(),
+        character: buildCharacter(),
+      });
       prisma.sprint.findFirst.mockResolvedValue(null);
       const created = buildSprint();
       prisma.sprint.create.mockResolvedValue(created);
 
-      const result = await service.start('user-1', 'quest-1', { targetSeconds: 900 });
+      const result = await service.start('user-1', 'quest-1', {
+        targetSeconds: 900,
+      });
 
       expect(prisma.sprint.create).toHaveBeenCalledWith({
         data: { questId: 'quest-1', targetSeconds: 900 },
@@ -93,18 +99,23 @@ describe('SprintService', () => {
         character: buildCharacter(),
       });
 
-      await expect(service.start('user-1', 'quest-1', { targetSeconds: 900 })).rejects.toThrow(
-        BadRequestException,
-      );
+      await expect(
+        service.start('user-1', 'quest-1', { targetSeconds: 900 }),
+      ).rejects.toThrow(BadRequestException);
       expect(prisma.sprint.create).not.toHaveBeenCalled();
     });
 
     it('returns the existing active sprint instead of creating a second one', async () => {
-      prisma.quest.findFirst.mockResolvedValue({ ...buildQuest(), character: buildCharacter() });
+      prisma.quest.findFirst.mockResolvedValue({
+        ...buildQuest(),
+        character: buildCharacter(),
+      });
       const existing = buildSprint();
       prisma.sprint.findFirst.mockResolvedValue(existing);
 
-      const result = await service.start('user-1', 'quest-1', { targetSeconds: 900 });
+      const result = await service.start('user-1', 'quest-1', {
+        targetSeconds: 900,
+      });
 
       expect(prisma.sprint.create).not.toHaveBeenCalled();
       expect(result).toEqual(existing);
@@ -113,15 +124,18 @@ describe('SprintService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.start('user-1', 'quest-1', { targetSeconds: 900 })).rejects.toThrow(
-        NotFoundException,
-      );
+      await expect(
+        service.start('user-1', 'quest-1', { targetSeconds: 900 }),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('listForQuest', () => {
     it('returns sprints for an owned quest, oldest first', async () => {
-      prisma.quest.findFirst.mockResolvedValue({ ...buildQuest(), character: buildCharacter() });
+      prisma.quest.findFirst.mockResolvedValue({
+        ...buildQuest(),
+        character: buildCharacter(),
+      });
       const sprints = [buildSprint()];
       prisma.sprint.findMany.mockResolvedValue(sprints);
 
@@ -137,15 +151,23 @@ describe('SprintService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.listForQuest('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(service.listForQuest('user-1', 'quest-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('pause', () => {
     it('pauses an active sprint', async () => {
-      const sprint = { ...buildSprint(), quest: { ...buildQuest(), character: buildCharacter() } };
+      const sprint = {
+        ...buildSprint(),
+        quest: { ...buildQuest(), character: buildCharacter() },
+      };
       prisma.sprint.findFirst.mockResolvedValue(sprint);
-      const paused = buildSprint({ status: SprintStatus.PAUSED, pausedAt: new Date() });
+      const paused = buildSprint({
+        status: SprintStatus.PAUSED,
+        pausedAt: new Date(),
+      });
       prisma.sprint.update.mockResolvedValue(paused);
 
       const result = await service.pause('user-1', 'sprint-1');
@@ -173,7 +195,9 @@ describe('SprintService', () => {
     it('throws NotFoundException when the sprint is not owned by the user', async () => {
       prisma.sprint.findFirst.mockResolvedValue(null);
 
-      await expect(service.pause('user-1', 'sprint-1')).rejects.toThrow(NotFoundException);
+      await expect(service.pause('user-1', 'sprint-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -181,7 +205,11 @@ describe('SprintService', () => {
     it('folds the paused interval into pausedSeconds and clears pausedAt', async () => {
       const pausedAt = new Date(Date.now() - 30_000);
       const sprint = {
-        ...buildSprint({ status: SprintStatus.PAUSED, pausedAt, pausedSeconds: 10 }),
+        ...buildSprint({
+          status: SprintStatus.PAUSED,
+          pausedAt,
+          pausedSeconds: 10,
+        }),
         quest: { ...buildQuest(), character: buildCharacter() },
       };
       prisma.sprint.findFirst.mockResolvedValue(sprint);
@@ -204,7 +232,10 @@ describe('SprintService', () => {
     });
 
     it('is a no-op for an already-active sprint', async () => {
-      const sprint = { ...buildSprint(), quest: { ...buildQuest(), character: buildCharacter() } };
+      const sprint = {
+        ...buildSprint(),
+        quest: { ...buildQuest(), character: buildCharacter() },
+      };
       prisma.sprint.findFirst.mockResolvedValue(sprint);
 
       const result = await service.resume('user-1', 'sprint-1');
@@ -216,31 +247,47 @@ describe('SprintService', () => {
     it('throws NotFoundException when the sprint is not owned by the user', async () => {
       prisma.sprint.findFirst.mockResolvedValue(null);
 
-      await expect(service.resume('user-1', 'sprint-1')).rejects.toThrow(NotFoundException);
+      await expect(service.resume('user-1', 'sprint-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
   describe('complete', () => {
     it('rejects completion before the target duration has elapsed', async () => {
       const sprint = {
-        ...buildSprint({ startedAt: new Date(Date.now() - 5_000), targetSeconds: 900 }),
+        ...buildSprint({
+          startedAt: new Date(Date.now() - 5_000),
+          targetSeconds: 900,
+        }),
         quest: { ...buildQuest(), character: buildCharacter() },
       };
       prisma.sprint.findFirst.mockResolvedValue(sprint);
 
-      await expect(service.complete('user-1', 'sprint-1')).rejects.toThrow(BadRequestException);
+      await expect(service.complete('user-1', 'sprint-1')).rejects.toThrow(
+        BadRequestException,
+      );
       expect(prisma.$transaction).not.toHaveBeenCalled();
     });
 
     it('completes and grants Focus XP once the target duration has elapsed', async () => {
       const sprint = {
-        ...buildSprint({ startedAt: new Date(Date.now() - 900_000), targetSeconds: 900 }),
+        ...buildSprint({
+          startedAt: new Date(Date.now() - 900_000),
+          targetSeconds: 900,
+        }),
         quest: { ...buildQuest(), character: buildCharacter() },
       };
       prisma.sprint.findFirst.mockResolvedValue(sprint);
-      const completedSprint = buildSprint({ status: SprintStatus.COMPLETED, completedAt: new Date() });
+      const completedSprint = buildSprint({
+        status: SprintStatus.COMPLETED,
+        completedAt: new Date(),
+      });
       const updatedCharacter = buildCharacter({ xp: FOCUS_XP_REWARD });
-      prisma.$transaction.mockResolvedValue([completedSprint, updatedCharacter]);
+      prisma.$transaction.mockResolvedValue([
+        completedSprint,
+        updatedCharacter,
+      ]);
 
       const result = await service.complete('user-1', 'sprint-1');
 
@@ -252,7 +299,10 @@ describe('SprintService', () => {
         where: { id: 'char-1' },
         data: { xp: { increment: FOCUS_XP_REWARD } },
       });
-      expect(result).toEqual({ sprint: completedSprint, character: updatedCharacter });
+      expect(result).toEqual({
+        sprint: completedSprint,
+        character: updatedCharacter,
+      });
     });
 
     it('accounts for paused time when computing elapsed active seconds', async () => {
@@ -269,7 +319,9 @@ describe('SprintService', () => {
       };
       prisma.sprint.findFirst.mockResolvedValue(sprint);
 
-      await expect(service.complete('user-1', 'sprint-1')).rejects.toThrow(BadRequestException);
+      await expect(service.complete('user-1', 'sprint-1')).rejects.toThrow(
+        BadRequestException,
+      );
     });
 
     it('does not grant a reward again for an already-completed sprint', async () => {
@@ -289,7 +341,9 @@ describe('SprintService', () => {
     it('throws NotFoundException when the sprint is not owned by the user', async () => {
       prisma.sprint.findFirst.mockResolvedValue(null);
 
-      await expect(service.complete('user-1', 'sprint-1')).rejects.toThrow(NotFoundException);
+      await expect(service.complete('user-1', 'sprint-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 });

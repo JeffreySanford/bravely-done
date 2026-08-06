@@ -37,9 +37,9 @@
 - **Chronicle** summarizing progress _(built — `GET /characters/:id/chronicle`, and the
   `/basecamp/:characterId/chronicle` route)_. Reports what actually happened over the window — quests
   by resolution, sprints and their committed focus minutes, encounters — assembled from timestamps
-  the domain already records. Deliberately reports **no XP or coin totals**: those are running
-  aggregates with no per-grant ledger, so "XP earned this week" can't be derived, only guessed at.
-  A reward ledger is its own future work.
+  the domain already records, plus real XP/coin totals and a per-category breakdown summed from the
+  transaction ledger below. Those totals are measured, not estimated — before the ledger existed the
+  Chronicle deliberately omitted them rather than infer them from event counts.
 - Chest based on consistency and recovery, not raw hours _(not built)_
 
 ### Monthly
@@ -57,3 +57,21 @@
 - Rest days and comeback quests are legitimate play.
 - Reward formulas must resist idle timers and repetitive low-value farming.
 - Notifications are useful, rate-limited, and controllable.
+
+## Transaction ledger
+
+Every XP/coin movement is recorded as an append-only `RewardEntry`
+(`apps/backend/src/reward-ledger/`), written inside the same database transaction as the balance
+change it describes. A grant can therefore never exist without its entry, or an entry without its
+grant.
+
+- `Character.xp`/`coins` stay authoritative for the **current balance**; the ledger is **history**
+  alongside them, not a replacement. Deriving balances from the ledger would mean recomputing a sum
+  on every read and backfilling opening balances — a much larger change than the reporting problem it
+  would solve.
+- **Spends are recorded too**, as negative amounts (the workbench upgrade). A rewards-only ledger
+  would stop reconciling the first time anyone spent anything; including spends means summing the
+  ledger equals the character's balance, which is asserted in the integration suite.
+- Rows are never updated or deleted. A correction is a new compensating entry, so the ledger stays
+  truthful about what was actually granted at the time — reward constants can change later without
+  silently rewriting history.

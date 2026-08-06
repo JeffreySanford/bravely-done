@@ -24,6 +24,12 @@ const chronicle = {
   sprintsCompleted: 1,
   focusMinutes: 15,
   encountersCompleted: 1,
+  xpEarned: 45,
+  coinsEarned: 20,
+  rewardBreakdown: [
+    { category: 'QUEST' as const, xp: 20, coins: 10 },
+    { category: 'FIRST_BRAVE_STEP' as const, xp: 10, coins: 5 },
+  ],
   entries: [
     {
       kind: 'QUEST_COMPLETED' as const,
@@ -108,6 +114,36 @@ describe('Chronicle', () => {
 
     expect(fixture.componentInstance.chronicle()).toBeNull();
     expect(fixture.componentInstance.isQuiet()).toBe(false);
+  });
+
+  it('reports the real XP earned, with a per-category breakdown', () => {
+    const fixture = setup(jest.fn().mockReturnValue(of(chronicle)));
+
+    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
+    expect(text).toContain('45');
+    expect(text).toContain('XP earned');
+    // Category enum values are internal vocabulary — the page shows names.
+    expect(text).toContain('Quests completed');
+    expect(text).toContain('First Brave Step');
+    expect(text).not.toContain('FIRST_BRAVE_STEP');
+  });
+
+  it('names a coin spend as a spend rather than an earning', () => {
+    const fixture = setup(
+      jest.fn().mockReturnValue(
+        of({
+          ...chronicle,
+          coinsEarned: -10,
+          rewardBreakdown: [
+            { category: 'WORKBENCH_UPGRADE' as const, xp: 0, coins: -10 },
+          ],
+        }),
+      ),
+    );
+
+    expect(fixture.componentInstance.rewardLabelFor('WORKBENCH_UPGRADE')).toBe(
+      'Spent at the workbench',
+    );
   });
 
   it('surfaces an error without blanking the page', () => {

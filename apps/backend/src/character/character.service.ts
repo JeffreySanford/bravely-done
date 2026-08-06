@@ -1,6 +1,11 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Character } from '../generated/prisma/client';
+import { Character, RewardCategory } from '../generated/prisma/client';
+import { rewardEntryData } from '../reward-ledger/reward-entry';
 import { CreateCharacterDto } from './dto/create-character.dto';
 
 /** Workbench is fully upgraded once this many upgrades have been bought. */
@@ -40,7 +45,10 @@ export class CharacterService {
 
   /** Marks the character as having reached Base Camp. Idempotent — only the
    * first call for a given character reports `firstArrival: true`. */
-  async arrive(userId: string, characterId: string): Promise<{ firstArrival: boolean; character: Character }> {
+  async arrive(
+    userId: string,
+    characterId: string,
+  ): Promise<{ firstArrival: boolean; character: Character }> {
     const character = await this.findOwned(userId, characterId);
 
     if (character.hasArrivedAtCamp) {
@@ -64,7 +72,9 @@ export class CharacterService {
     const character = await this.findOwned(userId, characterId);
     return this.prisma.character.update({
       where: { id: characterId },
-      data: { firewoodCount: { increment: gatheringYield(character.workbenchLevel) } },
+      data: {
+        firewoodCount: { increment: gatheringYield(character.workbenchLevel) },
+      },
     });
   }
 
@@ -74,7 +84,9 @@ export class CharacterService {
     const character = await this.findOwned(userId, characterId);
     return this.prisma.character.update({
       where: { id: characterId },
-      data: { forageCount: { increment: gatheringYield(character.workbenchLevel) } },
+      data: {
+        forageCount: { increment: gatheringYield(character.workbenchLevel) },
+      },
     });
   }
 
@@ -83,7 +95,10 @@ export class CharacterService {
    * Throws BadRequestException — not silently ignored — when the character
    * can't afford the next level, so the frontend gets a real error to
    * surface rather than a false success. */
-  async upgradeWorkbench(userId: string, characterId: string): Promise<Character> {
+  async upgradeWorkbench(
+    userId: string,
+    characterId: string,
+  ): Promise<Character> {
     const character = await this.findOwned(userId, characterId);
 
     if (character.workbenchLevel >= WORKBENCH_MAX_LEVEL) {
@@ -92,16 +107,35 @@ export class CharacterService {
 
     const cost = WORKBENCH_UPGRADE_COSTS[character.workbenchLevel];
     if (character.coins < cost) {
-      throw new BadRequestException('Not enough coins for the next workbench upgrade');
+      throw new BadRequestException(
+        'Not enough coins for the next workbench upgrade',
+      );
     }
 
-    return this.prisma.character.update({
-      where: { id: characterId },
-      data: { coins: { decrement: cost }, workbenchLevel: { increment: 1 } },
-    });
+    // A spend, not a grant — recorded with negative coins so summing the
+    // ledger reconciles against Character.coins. A rewards-only ledger
+    // would drift the moment anyone spent anything.
+    const [upgraded] = await this.prisma.$transaction([
+      this.prisma.character.update({
+        where: { id: characterId },
+        data: { coins: { decrement: cost }, workbenchLevel: { increment: 1 } },
+      }),
+      this.prisma.rewardEntry.create({
+        data: rewardEntryData({
+          characterId,
+          category: RewardCategory.WORKBENCH_UPGRADE,
+          coins: -cost,
+          sourceId: characterId,
+        }),
+      }),
+    ]);
+    return upgraded;
   }
 
-  private async findOwned(userId: string, characterId: string): Promise<Character> {
+  private async findOwned(
+    userId: string,
+    characterId: string,
+  ): Promise<Character> {
     const character = await this.prisma.character.findFirst({
       where: { id: characterId, userId },
     });

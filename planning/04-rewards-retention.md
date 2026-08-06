@@ -11,17 +11,23 @@
       rejects until the target is genuinely reached), and the Daily loop follows the same rule: the
       First Brave Step bonus fires on the day's first _completion_, not on opening the app, and the
       Today's Three bonus requires actually finishing a designated quest.
-- [ ] Add transaction ledger and idempotency. **Idempotency is done**: `complete`/`continue`/
-      `retreat`/`split` all accept a client-generated `idempotencyKey`, and `Quest.lastIdempotencyKey`
-      makes a duplicate network retry a safe no-op (see planning/03-first-brave-step.md). The
-      append-only **ledger is not**, and building the Chronicle proved it's a real gap rather than a
-      theoretical one: `Character.xp`/`coins` are running aggregates and `firstBraveStepDay` keeps
-      only the most recent day, so "XP earned this week" cannot be derived — only estimated by
-      multiplying event counts by _today's_ reward constants, which would silently misreport history
-      the moment any constant changes. The Chronicle therefore reports events and omits reward totals
-      rather than showing a number it can't stand behind. A ledger (one append-only row per grant:
-      character, category, amount, source, timestamp) would close this and unlock per-period reward
-      reporting.
+- [x] Add transaction ledger and idempotency. **Idempotency**: `complete`/`continue`/`retreat`/
+      `split` all accept a client-generated `idempotencyKey`, and `Quest.lastIdempotencyKey` makes a
+      duplicate network retry a safe no-op (see planning/03-first-brave-step.md). **Ledger**:
+      `RewardEntry` (`apps/backend/src/reward-ledger/`) is an append-only row per XP/coin movement —
+      character, category, signed xp/coins, source id, timestamp — written inside the _same_
+      `$transaction` as the balance change it describes, so a grant can never exist without its entry
+      or vice versa. Rows are never updated or deleted; a correction would be a new compensating
+      entry, so history stays truthful about what was granted at the time. Two decisions worth
+      recording: (1) `Character.xp`/`coins` remain the authoritative _current balance_ and the ledger
+      is history alongside them, rather than the ledger becoming the source of truth — making it
+      authoritative would mean recomputing a SUM on every read and backfilling opening balances, a
+      much larger change than the reporting problem it solves; (2) the workbench _spend_ is recorded
+      too (negative coins, `WORKBENCH_UPGRADE`), because a rewards-only ledger would have been
+      unreconcilable the moment anyone spent anything. Summing the ledger therefore equals the
+      character's balance, asserted in `apps/backend-e2e/src/quest/reward-ledger.spec.ts` and
+      verified live: 75 XP / 35 coins on both sides before a 10-coin upgrade, 75 / 25 after.
+
 - [x] Daily Campfire and First Brave Step bonus. The First Brave Step bonus
       (`FIRST_BRAVE_STEP_XP_REWARD` = 10, `FIRST_BRAVE_STEP_COIN_REWARD` = 5 —
       `apps/backend/src/quest/quest.service.ts`) is granted on the first quest a character _completes_

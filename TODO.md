@@ -239,6 +239,14 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       worse than omitting it (see [Plan 04](planning/04-rewards-retention.md)). Non-punitive by
       design: a retreat reads "Stepped back from", and a quiet week reads as a quiet week with
       nothing lost.
+- [x] Add a transaction ledger — `RewardEntry` (`apps/backend/src/reward-ledger/`), one append-only
+      row per XP/coin movement, written inside the same `$transaction` as the balance change so a
+      grant can't exist without its entry. Two decisions worth knowing: `Character.xp`/`coins` stay
+      authoritative for the current balance (the ledger is history alongside them, not a replacement),
+      and the workbench **spend** is recorded as a negative entry — a rewards-only ledger would stop
+      reconciling the first time anyone spent anything. Verified live: 75 XP / 35 coins on both sides
+      before a 10-coin upgrade, 75 / 25 on both sides after. The Chronicle now reports real earned
+      totals with a per-category breakdown instead of omitting them.
 
 ## Later milestones
 
@@ -247,8 +255,8 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       are done; these two are each substantially larger and need their own scoping pass. The Summit in
       particular is still undesigned — "tied to the most important goal" needs a notion of goal
       importance the project doesn't have.
-- [ ] A reward ledger: one append-only row per grant (character, category, amount, source, timestamp).
-      Would let the Chronicle report real per-period XP/coins instead of omitting them.
+- [ ] Whole-economy simulation (long-run currency inflation). Per-endpoint abuse cases are already
+      covered; what's missing is modeling the economy as a whole over time.
 - [ ] Remote Ember LLM service (NestJS-connected), confidence-based autonomy, editable Hero Profile.
 - [ ] Capacitor Android and iOS packaging.
 - [ ] Parties (real-invited or matchmade), guilds, cooperative quests, and moderation.

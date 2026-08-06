@@ -28,6 +28,7 @@ function buildPrismaMock() {
       update: jest.fn(),
       count: jest.fn(),
     },
+    rewardEntry: { create: jest.fn(), createMany: jest.fn() },
     $transaction: jest.fn(),
   };
 }
@@ -474,6 +475,79 @@ describe('QuestService', () => {
       });
       expect(result.firstBraveStepBonusGranted).toBe(true);
       expect(result.todaysThreeBonusGranted).toBe(false);
+      // One row per category, not one merged row — the Chronicle reports
+      // where a period's XP came from, which a merged row couldn't answer.
+      expect(prisma.rewardEntry.createMany).toHaveBeenCalledWith({
+        data: [
+          expect.objectContaining({
+            category: 'QUEST',
+            xp: QUEST_XP_REWARD,
+            coins: QUEST_COIN_REWARD,
+          }),
+          expect.objectContaining({
+            category: 'FIRST_BRAVE_STEP',
+            xp: FIRST_BRAVE_STEP_XP_REWARD,
+            coins: FIRST_BRAVE_STEP_COIN_REWARD,
+          }),
+        ],
+      });
+    });
+
+    it('writes only a QUEST ledger entry when no daily bonus applies', async () => {
+      const character = buildCharacter({ firstBraveStepDay: new Date() });
+      const quest = buildQuest({ character });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.COMPLETED }),
+        character,
+        {},
+      ]);
+
+      await service.complete('user-1', 'quest-1');
+
+      const entries = prisma.rewardEntry.createMany.mock.calls[0][0].data;
+      expect(entries).toHaveLength(1);
+      expect(entries[0].category).toBe('QUEST');
+    });
+
+    it('writes three ledger entries when both daily bonuses stack', async () => {
+      const character = buildCharacter({ firstBraveStepDay: null });
+      const quest = buildQuest({ character, todaysThreeDay: new Date() });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.COMPLETED }),
+        character,
+        {},
+      ]);
+
+      await service.complete('user-1', 'quest-1');
+
+      const entries = prisma.rewardEntry.createMany.mock.calls[0][0].data;
+      expect(entries.map((e: { category: string }) => e.category)).toEqual([
+        'QUEST',
+        'FIRST_BRAVE_STEP',
+        'TODAYS_THREE',
+      ]);
+      // The ledger must sum to exactly what the balance changed by.
+      const totalXp = entries.reduce(
+        (sum: number, e: { xp: number }) => sum + e.xp,
+        0,
+      );
+      expect(totalXp).toBe(
+        QUEST_XP_REWARD +
+          FIRST_BRAVE_STEP_XP_REWARD +
+          TODAYS_THREE_BONUS_XP_REWARD,
+      );
+    });
+
+    it('writes no ledger entry when the completion is a duplicate no-op', async () => {
+      const character = buildCharacter();
+      const quest = buildQuest({ status: QuestStatus.COMPLETED, character });
+      prisma.quest.findFirst.mockResolvedValue(quest);
+
+      await service.complete('user-1', 'quest-1');
+
+      expect(prisma.rewardEntry.createMany).not.toHaveBeenCalled();
     });
 
     it('does not grant the First Brave Step bonus twice on the same UTC day', async () => {

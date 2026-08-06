@@ -52,6 +52,28 @@
     </div>
   </section>
 
+  <section class="chronicle__earned" aria-label="Rewards earned">
+    <p class="chronicle__earned-headline">
+      <strong>{{ summary.xpEarned }}</strong> XP earned @if (summary.coinsEarned
+      !== 0) { · <strong>{{ summary.coinsEarned }}</strong> coins }
+    </p>
+    @if (summary.rewardBreakdown.length > 0) {
+    <ul class="chronicle__breakdown">
+      @for (row of summary.rewardBreakdown; track row.category) {
+      <li class="chronicle__breakdown-row">
+        <span class="chronicle__breakdown-label"
+          >{{ rewardLabelFor(row.category) }}</span
+        >
+        <span class="chronicle__breakdown-value">
+          @if (row.xp !== 0) { {{ row.xp }} XP } @if (row.xp !== 0 && row.coins
+          !== 0) { · } @if (row.coins !== 0) { {{ row.coins }} coins }
+        </span>
+      </li>
+      }
+    </ul>
+    }
+  </section>
+
   @if (isQuiet()) {
   <!-- A quiet week is reported as a quiet week. No streak broken, no
            nudge to do better — "rest days and comeback quests are legitimate

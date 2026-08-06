@@ -33,13 +33,14 @@ export class ChronicleService {
   /** An honest account of what actually happened in the window, assembled
    * from timestamps the domain already records — no separate event log.
    *
-   * Deliberately reports *no XP or coin totals*. `Character.xp`/`coins` are
-   * running aggregates with no per-grant ledger, and `firstBraveStepDay`
-   * keeps only the most recent day, so "XP earned this week" cannot be
-   * derived — only guessed at by multiplying counts by current constants,
-   * which would silently drift from history whenever a reward value changes.
-   * A real reward ledger is its own piece of work; until then the Chronicle
-   * reports events, which it can state truthfully. */
+   * XP and coin totals come from the reward ledger
+   * (`apps/backend/src/reward-ledger/`), which writes one row per grant
+   * inside the same transaction as the balance change. This endpoint
+   * originally reported no totals at all: with only running aggregates on
+   * `Character`, "XP earned this week" could have been *estimated* by
+   * multiplying event counts by current constants, but that would have
+   * silently misreported history the moment a reward value changed. The
+   * ledger makes the number real, so it's now reported. */
   async forCharacter(
     userId: string,
     characterId: string,
@@ -50,7 +51,7 @@ export class ChronicleService {
     const to = new Date();
     const from = this.windowStart(to, days);
 
-    const [resolvedQuests, continuedQuests, sprints, encounters] =
+    const [resolvedQuests, continuedQuests, sprints, encounters, rewards] =
       await Promise.all([
         this.prisma.quest.findMany({
           where: { characterId, resolvedAt: { gte: from, lte: to } },
@@ -79,6 +80,14 @@ export class ChronicleService {
             completedAt: { gte: from, lte: to },
           },
           select: { title: true, completedAt: true },
+        }),
+        // Grouped in the database rather than summed in memory — a long
+        // window on an active character could otherwise pull thousands of
+        // rows across the wire just to add them up.
+        this.prisma.rewardEntry.groupBy({
+          by: ['category'],
+          where: { characterId, createdAt: { gte: from, lte: to } },
+          _sum: { xp: true, coins: true },
         }),
       ]);
 
@@ -129,6 +138,24 @@ export class ChronicleService {
       sprints.reduce((total, sprint) => total + sprint.targetSeconds, 0) / 60,
     );
     dto.encountersCompleted = encounters.length;
+    dto.xpEarned = rewards.reduce(
+      (total, row) => total + (row._sum.xp ?? 0),
+      0,
+    );
+    dto.coinsEarned = rewards.reduce(
+      (total, row) => total + (row._sum.coins ?? 0),
+      0,
+    );
+    // Only categories that actually moved something — an empty row would
+    // just be noise in the UI.
+    dto.rewardBreakdown = rewards
+      .map((row) => ({
+        category: row.category,
+        xp: row._sum.xp ?? 0,
+        coins: row._sum.coins ?? 0,
+      }))
+      .filter((row) => row.xp !== 0 || row.coins !== 0)
+      .sort((a, b) => b.xp - a.xp || b.coins - a.coins);
     dto.entries = entries.slice(0, CHRONICLE_MAX_ENTRIES);
     return dto;
   }

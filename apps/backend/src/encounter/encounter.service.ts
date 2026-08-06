@@ -1,6 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Character, Encounter, EncounterStatus, Quest } from '../generated/prisma/client';
+import {
+  Character,
+  Encounter,
+  EncounterStatus,
+  Quest,
+  RewardCategory,
+} from '../generated/prisma/client';
+import { rewardEntryData } from '../reward-ledger/reward-entry';
 import { CreateEncounterDto } from './dto/create-encounter.dto';
 
 /** Deterministic, flat reward for completing a small actionable step within
@@ -18,7 +25,11 @@ type OwnedEncounter = Encounter & { quest: Quest & { character: Character } };
 export class EncounterService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, questId: string, dto: CreateEncounterDto): Promise<Encounter> {
+  async create(
+    userId: string,
+    questId: string,
+    dto: CreateEncounterDto,
+  ): Promise<Encounter> {
     await this.findOwnedQuest(userId, questId);
     return this.prisma.encounter.create({
       data: { questId, title: dto.title },
@@ -39,7 +50,10 @@ export class EncounterService {
    * relationship Sprints already have to their quest). Already-completed
    * encounters are returned as-is without granting the reward again, same
    * idempotent pattern as quest/sprint completion. */
-  async complete(userId: string, encounterId: string): Promise<{ encounter: Encounter; character: Character }> {
+  async complete(
+    userId: string,
+    encounterId: string,
+  ): Promise<{ encounter: Encounter; character: Character }> {
     const encounter = await this.findOwnedEncounter(userId, encounterId);
 
     if (encounter.status === EncounterStatus.COMPLETED) {
@@ -56,12 +70,23 @@ export class EncounterService {
         where: { id: encounter.quest.characterId },
         data: { xp: { increment: COURAGE_XP_REWARD } },
       }),
+      this.prisma.rewardEntry.create({
+        data: rewardEntryData({
+          characterId: encounter.quest.characterId,
+          category: RewardCategory.COURAGE,
+          xp: COURAGE_XP_REWARD,
+          sourceId: encounterId,
+        }),
+      }),
     ]);
 
     return { encounter: completedEncounter, character };
   }
 
-  private async findOwnedEncounter(userId: string, encounterId: string): Promise<OwnedEncounter> {
+  private async findOwnedEncounter(
+    userId: string,
+    encounterId: string,
+  ): Promise<OwnedEncounter> {
     const encounter = await this.prisma.encounter.findFirst({
       where: { id: encounterId, quest: { character: { userId } } },
       include: { quest: { include: { character: true } } },
@@ -72,7 +97,10 @@ export class EncounterService {
     return encounter;
   }
 
-  private async findOwnedQuest(userId: string, questId: string): Promise<Quest & { character: Character }> {
+  private async findOwnedQuest(
+    userId: string,
+    questId: string,
+  ): Promise<Quest & { character: Character }> {
     const quest = await this.prisma.quest.findFirst({
       where: { id: questId, character: { userId } },
       include: { character: true },

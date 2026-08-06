@@ -4,8 +4,14 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Character, Quest, QuestStatus } from '../generated/prisma/client';
+import {
+  Character,
+  Quest,
+  QuestStatus,
+  RewardCategory,
+} from '../generated/prisma/client';
 import { isSameUtcDay, utcDayStart } from '../common/date.util';
+import { rewardEntryData } from '../reward-ledger/reward-entry';
 import { CreateQuestDto } from './dto/create-quest.dto';
 
 /** Bridge is fully repaired once this many quests have been completed. */
@@ -180,6 +186,41 @@ export class QuestService {
       quest.character.campConstructionStage + 1,
       MAX_CONSTRUCTION_STAGE,
     );
+    // One ledger entry per *category*, not one per call: the Chronicle
+    // reports "where did this week's XP come from", which a single merged
+    // row couldn't answer.
+    const ledgerEntries = [
+      rewardEntryData({
+        characterId: quest.characterId,
+        category: RewardCategory.QUEST,
+        xp: QUEST_XP_REWARD,
+        coins: QUEST_COIN_REWARD,
+        sourceId: questId,
+      }),
+    ];
+    if (firstBraveStepBonusGranted) {
+      ledgerEntries.push(
+        rewardEntryData({
+          characterId: quest.characterId,
+          category: RewardCategory.FIRST_BRAVE_STEP,
+          xp: FIRST_BRAVE_STEP_XP_REWARD,
+          coins: FIRST_BRAVE_STEP_COIN_REWARD,
+          sourceId: questId,
+        }),
+      );
+    }
+    if (todaysThreeBonusGranted) {
+      ledgerEntries.push(
+        rewardEntryData({
+          characterId: quest.characterId,
+          category: RewardCategory.TODAYS_THREE,
+          xp: TODAYS_THREE_BONUS_XP_REWARD,
+          coins: TODAYS_THREE_BONUS_COIN_REWARD,
+          sourceId: questId,
+        }),
+      );
+    }
+
     const [completedQuest, character] = await this.prisma.$transaction([
       this.prisma.quest.update({
         where: { id: questId },
@@ -201,6 +242,9 @@ export class QuestService {
             : undefined,
         },
       }),
+      // Same transaction as the balance change above — a reward can never
+      // exist without its ledger row, or the row without the reward.
+      this.prisma.rewardEntry.createMany({ data: ledgerEntries }),
     ]);
 
     return {
@@ -277,6 +321,15 @@ export class QuestService {
           xp: { increment: SPLIT_XP_REWARD },
           coins: { increment: SPLIT_COIN_REWARD },
         },
+      }),
+      this.prisma.rewardEntry.create({
+        data: rewardEntryData({
+          characterId: quest.characterId,
+          category: RewardCategory.SPLIT,
+          xp: SPLIT_XP_REWARD,
+          coins: SPLIT_COIN_REWARD,
+          sourceId: questId,
+        }),
       }),
     ]);
 

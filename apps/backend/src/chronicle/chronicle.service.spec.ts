@@ -14,6 +14,7 @@ function buildPrismaMock() {
     quest: { findMany: jest.fn().mockResolvedValue([]) },
     sprint: { findMany: jest.fn().mockResolvedValue([]) },
     encounter: { findMany: jest.fn().mockResolvedValue([]) },
+    rewardEntry: { groupBy: jest.fn().mockResolvedValue([]) },
   };
 }
 
@@ -210,6 +211,75 @@ describe('ChronicleService', () => {
     expect(prisma.encounter.findMany).toHaveBeenCalledWith(
       expect.objectContaining({
         where: expect.objectContaining({ status: EncounterStatus.COMPLETED }),
+      }),
+    );
+  });
+
+  it('reports real XP and coins earned, summed from the ledger', async () => {
+    prisma.rewardEntry.groupBy.mockResolvedValue([
+      { category: 'QUEST', _sum: { xp: 60, coins: 30 } },
+      { category: 'FOCUS', _sum: { xp: 15, coins: 0 } },
+      { category: 'FIRST_BRAVE_STEP', _sum: { xp: 10, coins: 5 } },
+    ]);
+
+    const result = await service.forCharacter('user-1', 'char-1');
+
+    expect(result.xpEarned).toBe(85);
+    expect(result.coinsEarned).toBe(35);
+  });
+
+  it('nets spends against grants, so a heavy-spending week can go negative on coins', async () => {
+    prisma.rewardEntry.groupBy.mockResolvedValue([
+      { category: 'QUEST', _sum: { xp: 20, coins: 10 } },
+      { category: 'WORKBENCH_UPGRADE', _sum: { xp: 0, coins: -25 } },
+    ]);
+
+    const result = await service.forCharacter('user-1', 'char-1');
+
+    expect(result.coinsEarned).toBe(-15);
+  });
+
+  it('breaks the rewards down by category, largest first', async () => {
+    prisma.rewardEntry.groupBy.mockResolvedValue([
+      { category: 'FOCUS', _sum: { xp: 15, coins: 0 } },
+      { category: 'QUEST', _sum: { xp: 60, coins: 30 } },
+    ]);
+
+    const result = await service.forCharacter('user-1', 'char-1');
+
+    expect(result.rewardBreakdown).toEqual([
+      { category: 'QUEST', xp: 60, coins: 30 },
+      { category: 'FOCUS', xp: 15, coins: 0 },
+    ]);
+  });
+
+  it('omits categories that moved nothing', async () => {
+    prisma.rewardEntry.groupBy.mockResolvedValue([
+      { category: 'QUEST', _sum: { xp: 20, coins: 10 } },
+      { category: 'COURAGE', _sum: { xp: 0, coins: 0 } },
+    ]);
+
+    const result = await service.forCharacter('user-1', 'char-1');
+
+    expect(result.rewardBreakdown).toHaveLength(1);
+    expect(result.rewardBreakdown[0].category).toBe('QUEST');
+  });
+
+  it('reports zero rather than null for a week with no reward rows', async () => {
+    const result = await service.forCharacter('user-1', 'char-1');
+
+    expect(result.xpEarned).toBe(0);
+    expect(result.coinsEarned).toBe(0);
+    expect(result.rewardBreakdown).toEqual([]);
+  });
+
+  it('sums the ledger in the database rather than pulling every row', async () => {
+    await service.forCharacter('user-1', 'char-1');
+
+    expect(prisma.rewardEntry.groupBy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        by: ['category'],
+        _sum: { xp: true, coins: true },
       }),
     );
   });

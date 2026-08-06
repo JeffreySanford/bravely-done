@@ -1,6 +1,18 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { Character, Quest, QuestStatus, Sprint, SprintStatus } from '../generated/prisma/client';
+import {
+  Character,
+  Quest,
+  QuestStatus,
+  RewardCategory,
+  Sprint,
+  SprintStatus,
+} from '../generated/prisma/client';
+import { rewardEntryData } from '../reward-ledger/reward-entry';
 import { CreateSprintDto } from './dto/create-sprint.dto';
 
 /** A sprint's target duration must be one of these — a bounded set of
@@ -27,14 +39,23 @@ export class SprintService {
    * already active or paused for this quest, that sprint is returned as-is
    * instead of creating a second one — idempotent, and prevents two
    * concurrent timers racing on the same quest. */
-  async start(userId: string, questId: string, dto: CreateSprintDto): Promise<Sprint> {
+  async start(
+    userId: string,
+    questId: string,
+    dto: CreateSprintDto,
+  ): Promise<Sprint> {
     const quest = await this.findOwnedQuest(userId, questId);
     if (quest.status !== QuestStatus.IN_PROGRESS) {
-      throw new BadRequestException('Quest must be in progress to start a sprint');
+      throw new BadRequestException(
+        'Quest must be in progress to start a sprint',
+      );
     }
 
     const existing = await this.prisma.sprint.findFirst({
-      where: { questId, status: { in: [SprintStatus.ACTIVE, SprintStatus.PAUSED] } },
+      where: {
+        questId,
+        status: { in: [SprintStatus.ACTIVE, SprintStatus.PAUSED] },
+      },
     });
     if (existing) {
       return existing;
@@ -76,7 +97,9 @@ export class SprintService {
       return sprint;
     }
     const pausedAt = sprint.pausedAt ?? new Date();
-    const additionalPausedSeconds = Math.floor((Date.now() - pausedAt.getTime()) / 1000);
+    const additionalPausedSeconds = Math.floor(
+      (Date.now() - pausedAt.getTime()) / 1000,
+    );
     return this.prisma.sprint.update({
       where: { id: sprintId },
       data: {
@@ -95,7 +118,10 @@ export class SprintService {
    * passes, and leaving it running longer earns nothing extra. Already-
    * completed sprints are returned as-is without granting the reward
    * again. */
-  async complete(userId: string, sprintId: string): Promise<{ sprint: Sprint; character: Character }> {
+  async complete(
+    userId: string,
+    sprintId: string,
+  ): Promise<{ sprint: Sprint; character: Character }> {
     const sprint = await this.findOwnedSprint(userId, sprintId);
 
     if (sprint.status === SprintStatus.COMPLETED) {
@@ -104,7 +130,9 @@ export class SprintService {
     }
 
     if (this.elapsedActiveSeconds(sprint) < sprint.targetSeconds) {
-      throw new BadRequestException('Sprint target duration has not been reached yet');
+      throw new BadRequestException(
+        'Sprint target duration has not been reached yet',
+      );
     }
 
     const [completedSprint, character] = await this.prisma.$transaction([
@@ -116,6 +144,14 @@ export class SprintService {
         where: { id: sprint.quest.characterId },
         data: { xp: { increment: FOCUS_XP_REWARD } },
       }),
+      this.prisma.rewardEntry.create({
+        data: rewardEntryData({
+          characterId: sprint.quest.characterId,
+          category: RewardCategory.FOCUS,
+          xp: FOCUS_XP_REWARD,
+          sourceId: sprintId,
+        }),
+      }),
     ]);
 
     return { sprint: completedSprint, character };
@@ -124,12 +160,19 @@ export class SprintService {
   private elapsedActiveSeconds(sprint: Sprint): number {
     const now = Date.now();
     const livePauseMs =
-      sprint.status === SprintStatus.PAUSED && sprint.pausedAt ? now - sprint.pausedAt.getTime() : 0;
+      sprint.status === SprintStatus.PAUSED && sprint.pausedAt
+        ? now - sprint.pausedAt.getTime()
+        : 0;
     const totalPausedMs = sprint.pausedSeconds * 1000 + livePauseMs;
-    return Math.floor((now - sprint.startedAt.getTime() - totalPausedMs) / 1000);
+    return Math.floor(
+      (now - sprint.startedAt.getTime() - totalPausedMs) / 1000,
+    );
   }
 
-  private async findOwnedSprint(userId: string, sprintId: string): Promise<OwnedSprint> {
+  private async findOwnedSprint(
+    userId: string,
+    sprintId: string,
+  ): Promise<OwnedSprint> {
     const sprint = await this.prisma.sprint.findFirst({
       where: { id: sprintId, quest: { character: { userId } } },
       include: { quest: { include: { character: true } } },
@@ -140,7 +183,10 @@ export class SprintService {
     return sprint;
   }
 
-  private async findOwnedQuest(userId: string, questId: string): Promise<Quest & { character: Character }> {
+  private async findOwnedQuest(
+    userId: string,
+    questId: string,
+  ): Promise<Quest & { character: Character }> {
     const quest = await this.prisma.quest.findFirst({
       where: { id: questId, character: { userId } },
       include: { character: true },

@@ -1,347 +1,374 @@
 <div class="stage">
   @if (renderScene) {
-    <canvas #sceneCanvas class="stage__canvas" aria-hidden="true"></canvas>
+  <canvas #sceneCanvas class="stage__canvas" aria-hidden="true"></canvas>
   } @else {
-    <div class="grid-veil" aria-hidden="true"></div>
+  <div class="grid-veil" aria-hidden="true"></div>
   }
 
   <header class="stage__header">
     <span class="stage__mark">BRAVELY DONE</span>
     <h1>Base Camp</h1>
     @if (characterName(); as name) {
-      <p class="stage__subtitle">{{ name }} has arrived.</p>
+    <p class="stage__subtitle">{{ name }} has arrived.</p>
     } @else {
-      <p class="stage__subtitle">Welcome back.</p>
+    <p class="stage__subtitle">Welcome back.</p>
     }
-    <p class="stage__stats">Level {{ level() }} — {{ xp() }} XP — {{ coins() }} coins</p>
+    <p class="stage__stats">
+      Level {{ level() }} — {{ xp() }} XP — {{ coins() }} coins
+    </p>
     @if (renderScene) {
-      <p class="stage__hint">
-        Firewood: {{ firewoodCount() }} — click a tree to chop wood. Forage: {{ forageCount() }} —
-        click the bush to harvest.
-      </p>
+    <p class="stage__hint">
+      Firewood: {{ firewoodCount() }} — click a tree to chop wood. Forage: {{
+      forageCount() }} — click the bush to harvest.
+    </p>
     }
   </header>
 
   @for (reward of celebrationList(); track reward.at) {
-    <div class="celebration-toast" role="status" aria-live="polite">
-      +{{ reward.xpGained }} XP
-      @if (reward.coinsGained > 0) {
-        · +{{ reward.coinsGained }} coins
-      }
-      @if (reward.label; as label) {
-        <span class="celebration-toast__label">{{ label }}</span>
-      }
+  <div class="celebration-toast" role="status" aria-live="polite">
+    +{{ reward.xpGained }} XP @if (reward.coinsGained > 0) { · +{{
+    reward.coinsGained }} coins } @if (reward.label; as label) {
+    <span class="celebration-toast__label">{{ label }}</span>
+    }
+  </div>
+  } @if (boardOpen()) {
+  <button
+    type="button"
+    class="board-backdrop"
+    aria-label="Dismiss quest board"
+    (click)="closeBoard()"
+  ></button>
+  <div class="kanban-board">
+    <div class="kanban-board__header">
+      <p class="kanban-board__label">
+        Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}
+      </p>
+      <button
+        type="button"
+        class="bd-button bd-button--ghost kanban-board__close"
+        (click)="closeBoard()"
+      >
+        Close
+      </button>
     </div>
-  }
 
-  @if (boardOpen()) {
-    <button type="button" class="board-backdrop" aria-label="Dismiss quest board" (click)="closeBoard()"></button>
-    <div class="kanban-board">
-      <div class="kanban-board__header">
-        <p class="kanban-board__label">Bridge repair: {{ constructionStage() }} / {{ maxConstructionStage }}</p>
-        <button type="button" class="bd-button bd-button--ghost kanban-board__close" (click)="closeBoard()">
-          Close
-        </button>
+    <form
+      class="kanban-board__form"
+      [formGroup]="newQuestForm"
+      (ngSubmit)="createQuest()"
+    >
+      <input
+        type="text"
+        class="kanban-board__form-input"
+        formControlName="title"
+        placeholder="Quest title, e.g. Answer three emails"
+        aria-label="Quest title"
+      />
+      <button type="submit" class="bd-button" [disabled]="questsLoading()">
+        Add quest
+      </button>
+    </form>
+
+    @if (quests().length > 0) {
+    <div class="kanban-board__columns">
+      <div class="kanban-column">
+        <p class="kanban-column__title">
+          Backlog<span class="kanban-column__sub">Story</span>
+        </p>
+        @for (quest of backlogQuests(); track quest.id) {
+        <div class="kanban-card">
+          <span class="kanban-card__title-row">
+            <span class="kanban-card__title">{{ quest.title }}</span>
+            <button
+              type="button"
+              class="todays-three-toggle"
+              [class.todays-three-toggle--active]="quest.isTodaysThree"
+              [attr.aria-pressed]="quest.isTodaysThree"
+              [attr.aria-label]="(quest.isTodaysThree ? 'Remove from' : 'Add to') + ' Today\'s Three'"
+              [disabled]="togglingTodaysThreeQuestId() === quest.id"
+              (click)="toggleTodaysThree(quest.id, quest.isTodaysThree)"
+            >
+              ★
+            </button>
+          </span>
+
+          <div class="encounter-list">
+            @for (encounter of encountersFor(quest.id); track encounter.id) {
+            <div
+              class="encounter-item"
+              [class.encounter-item--done]="encounter.status === 'COMPLETED'"
+            >
+              <button
+                type="button"
+                class="encounter-item__check"
+                [attr.aria-pressed]="encounter.status === 'COMPLETED'"
+                [disabled]="encounter.status === 'COMPLETED' || transitioningEncounterId() === encounter.id"
+                (click)="completeEncounter(encounter.id)"
+              >
+                @if (encounter.status === 'COMPLETED') { ✓ } @else { ○ }
+              </button>
+              <span class="encounter-item__title">{{ encounter.title }}</span>
+            </div>
+            }
+            <form
+              class="encounter-form"
+              (ngSubmit)="addEncounter(quest.id, draftInput.value); draftInput.value = ''"
+            >
+              <input
+                #draftInput
+                type="text"
+                class="encounter-form__input"
+                placeholder="Add a step…"
+                [attr.aria-label]="'Add a step to ' + quest.title"
+              />
+              <button
+                type="submit"
+                class="bd-button bd-button--ghost encounter-form__submit"
+                [disabled]="creatingEncounterQuestId() === quest.id"
+              >
+                +
+              </button>
+            </form>
+          </div>
+
+          <span class="kanban-card__actions">
+            <button
+              type="button"
+              class="bd-button bd-button--ghost"
+              [disabled]="resolvingQuestId() === quest.id"
+              (click)="retreatQuest(quest.id)"
+            >
+              Retreat
+            </button>
+            <button
+              type="button"
+              class="bd-button"
+              [disabled]="resolvingQuestId() === quest.id"
+              (click)="startQuest(quest.id)"
+            >
+              Start
+            </button>
+          </span>
+        </div>
+        } @empty {
+        <p class="kanban-column__empty">Nothing queued.</p>
+        }
       </div>
 
-      <form class="kanban-board__form" [formGroup]="newQuestForm" (ngSubmit)="createQuest()">
-        <input
-          type="text"
-          class="kanban-board__form-input"
-          formControlName="title"
-          placeholder="Quest title, e.g. Answer three emails"
-          aria-label="Quest title"
-        />
-        <button type="submit" class="bd-button" [disabled]="questsLoading()">Add quest</button>
-      </form>
+      <div class="kanban-column">
+        <p class="kanban-column__title">
+          In Progress<span class="kanban-column__sub">Sprint</span>
+        </p>
+        @for (quest of inProgressQuests(); track quest.id) { @let sprint =
+        sprintFor(quest.id);
+        <div class="kanban-card">
+          <span class="kanban-card__title-row">
+            <span class="kanban-card__title">{{ quest.title }}</span>
+            <button
+              type="button"
+              class="todays-three-toggle"
+              [class.todays-three-toggle--active]="quest.isTodaysThree"
+              [attr.aria-pressed]="quest.isTodaysThree"
+              [attr.aria-label]="(quest.isTodaysThree ? 'Remove from' : 'Add to') + ' Today\'s Three'"
+              [disabled]="togglingTodaysThreeQuestId() === quest.id"
+              (click)="toggleTodaysThree(quest.id, quest.isTodaysThree)"
+            >
+              ★
+            </button>
+          </span>
 
-      @if (quests().length > 0) {
-        <div class="kanban-board__columns">
-          <div class="kanban-column">
-            <p class="kanban-column__title">Backlog<span class="kanban-column__sub">Story</span></p>
-            @for (quest of backlogQuests(); track quest.id) {
-              <div class="kanban-card">
-                <span class="kanban-card__title-row">
-                  <span class="kanban-card__title">{{ quest.title }}</span>
-                  <button
-                    type="button"
-                    class="todays-three-toggle"
-                    [class.todays-three-toggle--active]="quest.isTodaysThree"
-                    [attr.aria-pressed]="quest.isTodaysThree"
-                    [attr.aria-label]="(quest.isTodaysThree ? 'Remove from' : 'Add to') + ' Today\'s Three'"
-                    [disabled]="togglingTodaysThreeQuestId() === quest.id"
-                    (click)="toggleTodaysThree(quest.id, quest.isTodaysThree)"
-                  >
-                    ★
-                  </button>
-                </span>
-
-                <div class="encounter-list">
-                  @for (encounter of encountersFor(quest.id); track encounter.id) {
-                    <div class="encounter-item" [class.encounter-item--done]="encounter.status === 'COMPLETED'">
-                      <button
-                        type="button"
-                        class="encounter-item__check"
-                        [attr.aria-pressed]="encounter.status === 'COMPLETED'"
-                        [disabled]="encounter.status === 'COMPLETED' || transitioningEncounterId() === encounter.id"
-                        (click)="completeEncounter(encounter.id)"
-                      >
-                        @if (encounter.status === 'COMPLETED') { ✓ } @else { ○ }
-                      </button>
-                      <span class="encounter-item__title">{{ encounter.title }}</span>
-                    </div>
-                  }
-                  <form
-                    class="encounter-form"
-                    (ngSubmit)="addEncounter(quest.id, draftInput.value); draftInput.value = ''"
-                  >
-                    <input
-                      #draftInput
-                      type="text"
-                      class="encounter-form__input"
-                      placeholder="Add a step…"
-                      [attr.aria-label]="'Add a step to ' + quest.title"
-                    />
-                    <button
-                      type="submit"
-                      class="bd-button bd-button--ghost encounter-form__submit"
-                      [disabled]="creatingEncounterQuestId() === quest.id"
-                    >
-                      +
-                    </button>
-                  </form>
-                </div>
-
-                <span class="kanban-card__actions">
-                  <button
-                    type="button"
-                    class="bd-button bd-button--ghost"
-                    [disabled]="resolvingQuestId() === quest.id"
-                    (click)="retreatQuest(quest.id)"
-                  >
-                    Retreat
-                  </button>
-                  <button
-                    type="button"
-                    class="bd-button"
-                    [disabled]="resolvingQuestId() === quest.id"
-                    (click)="startQuest(quest.id)"
-                  >
-                    Start
-                  </button>
-                </span>
-              </div>
-            } @empty {
-              <p class="kanban-column__empty">Nothing queued.</p>
+          <div class="encounter-list">
+            @for (encounter of encountersFor(quest.id); track encounter.id) {
+            <div
+              class="encounter-item"
+              [class.encounter-item--done]="encounter.status === 'COMPLETED'"
+            >
+              <button
+                type="button"
+                class="encounter-item__check"
+                [attr.aria-pressed]="encounter.status === 'COMPLETED'"
+                [disabled]="encounter.status === 'COMPLETED' || transitioningEncounterId() === encounter.id"
+                (click)="completeEncounter(encounter.id)"
+              >
+                @if (encounter.status === 'COMPLETED') { ✓ } @else { ○ }
+              </button>
+              <span class="encounter-item__title">{{ encounter.title }}</span>
+            </div>
             }
+            <form
+              class="encounter-form"
+              (ngSubmit)="addEncounter(quest.id, draftInput.value); draftInput.value = ''"
+            >
+              <input
+                #draftInput
+                type="text"
+                class="encounter-form__input"
+                placeholder="Add a step…"
+                [attr.aria-label]="'Add a step to ' + quest.title"
+              />
+              <button
+                type="submit"
+                class="bd-button bd-button--ghost encounter-form__submit"
+                [disabled]="creatingEncounterQuestId() === quest.id"
+              >
+                +
+              </button>
+            </form>
           </div>
 
-          <div class="kanban-column">
-            <p class="kanban-column__title">In Progress<span class="kanban-column__sub">Sprint</span></p>
-            @for (quest of inProgressQuests(); track quest.id) {
-              @let sprint = sprintFor(quest.id);
-              <div class="kanban-card">
-                <span class="kanban-card__title-row">
-                  <span class="kanban-card__title">{{ quest.title }}</span>
-                  <button
-                    type="button"
-                    class="todays-three-toggle"
-                    [class.todays-three-toggle--active]="quest.isTodaysThree"
-                    [attr.aria-pressed]="quest.isTodaysThree"
-                    [attr.aria-label]="(quest.isTodaysThree ? 'Remove from' : 'Add to') + ' Today\'s Three'"
-                    [disabled]="togglingTodaysThreeQuestId() === quest.id"
-                    (click)="toggleTodaysThree(quest.id, quest.isTodaysThree)"
-                  >
-                    ★
-                  </button>
-                </span>
-
-                <div class="encounter-list">
-                  @for (encounter of encountersFor(quest.id); track encounter.id) {
-                    <div class="encounter-item" [class.encounter-item--done]="encounter.status === 'COMPLETED'">
-                      <button
-                        type="button"
-                        class="encounter-item__check"
-                        [attr.aria-pressed]="encounter.status === 'COMPLETED'"
-                        [disabled]="encounter.status === 'COMPLETED' || transitioningEncounterId() === encounter.id"
-                        (click)="completeEncounter(encounter.id)"
-                      >
-                        @if (encounter.status === 'COMPLETED') { ✓ } @else { ○ }
-                      </button>
-                      <span class="encounter-item__title">{{ encounter.title }}</span>
-                    </div>
-                  }
-                  <form
-                    class="encounter-form"
-                    (ngSubmit)="addEncounter(quest.id, draftInput.value); draftInput.value = ''"
-                  >
-                    <input
-                      #draftInput
-                      type="text"
-                      class="encounter-form__input"
-                      placeholder="Add a step…"
-                      [attr.aria-label]="'Add a step to ' + quest.title"
-                    />
-                    <button
-                      type="submit"
-                      class="bd-button bd-button--ghost encounter-form__submit"
-                      [disabled]="creatingEncounterQuestId() === quest.id"
-                    >
-                      +
-                    </button>
-                  </form>
-                </div>
-
-                @if (!sprint || sprint.status === 'COMPLETED') {
-                  <div class="sprint-picker">
-                    <span class="kanban-column__sub">Start a sprint:</span>
-                    <span class="sprint-picker__options">
-                      @for (preset of sprintDurationPresets; track preset) {
-                        <button
-                          type="button"
-                          class="bd-button bd-button--ghost"
-                          [disabled]="startingSprintQuestId() === quest.id"
-                          (click)="startSprint(quest.id, preset)"
-                        >
-                          {{ formatSprintDuration(preset) }}
-                        </button>
-                      }
-                    </span>
-                  </div>
-                } @else {
-                  <div class="sprint-timer">
-                    <span class="sprint-timer__time">
-                      @if (sprint.status === 'PAUSED') {
-                        Paused —
-                      }
-                      {{ remainingSecondsFor(sprint) }}s left
-                    </span>
-                    <span class="kanban-card__actions">
-                      @if (sprint.status === 'ACTIVE') {
-                        <button
-                          type="button"
-                          class="bd-button bd-button--ghost"
-                          [disabled]="transitioningSprintId() === sprint.id"
-                          (click)="pauseSprint(sprint.id)"
-                        >
-                          Pause
-                        </button>
-                      } @else {
-                        <button
-                          type="button"
-                          class="bd-button bd-button--ghost"
-                          [disabled]="transitioningSprintId() === sprint.id"
-                          (click)="resumeSprint(sprint.id)"
-                        >
-                          Resume
-                        </button>
-                      }
-                      <button
-                        type="button"
-                        class="bd-button"
-                        [disabled]="transitioningSprintId() === sprint.id || !canCompleteSprint(sprint)"
-                        (click)="completeSprint(sprint.id)"
-                      >
-                        Finish sprint
-                      </button>
-                    </span>
-                  </div>
-                }
-
-                <span class="kanban-card__actions">
-                  <button
-                    type="button"
-                    class="bd-button bd-button--ghost"
-                    [disabled]="resolvingQuestId() === quest.id"
-                    (click)="retreatQuest(quest.id)"
-                  >
-                    Retreat
-                  </button>
-                  <button
-                    type="button"
-                    class="bd-button bd-button--ghost"
-                    [disabled]="resolvingQuestId() === quest.id"
-                    (click)="continueQuest(quest.id)"
-                  >
-                    Continue
-                  </button>
-                  <button
-                    type="button"
-                    class="bd-button bd-button--ghost"
-                    [disabled]="resolvingQuestId() === quest.id"
-                    (click)="splitQuest(quest.id)"
-                  >
-                    Split
-                  </button>
-                  <button
-                    type="button"
-                    class="bd-button"
-                    [disabled]="resolvingQuestId() === quest.id"
-                    (click)="completeQuest(quest.id)"
-                  >
-                    Complete
-                  </button>
-                </span>
-              </div>
-            } @empty {
-              <p class="kanban-column__empty">Nothing in flight.</p>
-            }
-            @if (sprintsError(); as error) {
-              <p class="kanban-column__empty">{{ error }}</p>
-            }
+          @if (!sprint || sprint.status === 'COMPLETED') {
+          <div class="sprint-picker">
+            <span class="kanban-column__sub">Start a sprint:</span>
+            <span class="sprint-picker__options">
+              @for (preset of sprintDurationPresets; track preset) {
+              <button
+                type="button"
+                class="bd-button bd-button--ghost"
+                [disabled]="startingSprintQuestId() === quest.id"
+                (click)="startSprint(quest.id, preset)"
+              >
+                {{ formatSprintDuration(preset) }}
+              </button>
+              }
+            </span>
           </div>
-
-          <div class="kanban-column">
-            <p class="kanban-column__title">Done<span class="kanban-column__sub">Delivered</span></p>
-            @for (quest of doneQuests(); track quest.id) {
-              <div class="kanban-card kanban-card--resolved">
-                <span class="kanban-card__title">{{ quest.title }}</span>
-                <span class="kanban-card__done">Done</span>
-              </div>
-            } @empty {
-              <p class="kanban-column__empty">Nothing delivered yet.</p>
-            }
+          } @else {
+          <div class="sprint-timer">
+            <span class="sprint-timer__time">
+              @if (sprint.status === 'PAUSED') { Paused — } {{
+              remainingSecondsFor(sprint) }}s left
+            </span>
+            <span class="kanban-card__actions">
+              @if (sprint.status === 'ACTIVE') {
+              <button
+                type="button"
+                class="bd-button bd-button--ghost"
+                [disabled]="transitioningSprintId() === sprint.id"
+                (click)="pauseSprint(sprint.id)"
+              >
+                Pause
+              </button>
+              } @else {
+              <button
+                type="button"
+                class="bd-button bd-button--ghost"
+                [disabled]="transitioningSprintId() === sprint.id"
+                (click)="resumeSprint(sprint.id)"
+              >
+                Resume
+              </button>
+              }
+              <button
+                type="button"
+                class="bd-button"
+                [disabled]="transitioningSprintId() === sprint.id || !canCompleteSprint(sprint)"
+                (click)="completeSprint(sprint.id)"
+              >
+                Finish sprint
+              </button>
+            </span>
           </div>
+          }
 
-          <div class="kanban-column">
-            <p class="kanban-column__title">Split<span class="kanban-column__sub">Partial credit</span></p>
-            @for (quest of splitQuests(); track quest.id) {
-              <div class="kanban-card kanban-card--resolved">
-                <span class="kanban-card__title">{{ quest.title }}</span>
-                <span class="kanban-card__split">Split</span>
-              </div>
-            } @empty {
-              <p class="kanban-column__empty">Nothing split yet.</p>
-            }
-          </div>
-
-          <div class="kanban-column">
-            <p class="kanban-column__title">Retreated<span class="kanban-column__sub">Rest day</span></p>
-            @for (quest of retreatedQuests(); track quest.id) {
-              <div class="kanban-card kanban-card--resolved">
-                <span class="kanban-card__title">{{ quest.title }}</span>
-                <span class="kanban-card__retreated">Retreated</span>
-              </div>
-            } @empty {
-              <p class="kanban-column__empty">None — that's okay too.</p>
-            }
-          </div>
+          <span class="kanban-card__actions">
+            <button
+              type="button"
+              class="bd-button bd-button--ghost"
+              [disabled]="resolvingQuestId() === quest.id"
+              (click)="retreatQuest(quest.id)"
+            >
+              Retreat
+            </button>
+            <button
+              type="button"
+              class="bd-button bd-button--ghost"
+              [disabled]="resolvingQuestId() === quest.id"
+              (click)="continueQuest(quest.id)"
+            >
+              Continue
+            </button>
+            <button
+              type="button"
+              class="bd-button bd-button--ghost"
+              [disabled]="resolvingQuestId() === quest.id"
+              (click)="splitQuest(quest.id)"
+            >
+              Split
+            </button>
+            <button
+              type="button"
+              class="bd-button"
+              [disabled]="resolvingQuestId() === quest.id"
+              (click)="completeQuest(quest.id)"
+            >
+              Complete
+            </button>
+          </span>
         </div>
-      } @else if (!questsLoading()) {
-        <p class="kanban-board__empty">No quests yet — add one above.</p>
-      }
-      @if (encountersError(); as error) {
-        <p class="kanban-board__empty">{{ error }}</p>
-      }
+        } @empty {
+        <p class="kanban-column__empty">Nothing in flight.</p>
+        } @if (sprintsError(); as error) {
+        <p class="kanban-column__empty">{{ error }}</p>
+        }
+      </div>
+
+      <div class="kanban-column">
+        <p class="kanban-column__title">
+          Done<span class="kanban-column__sub">Delivered</span>
+        </p>
+        @for (quest of doneQuests(); track quest.id) {
+        <div class="kanban-card kanban-card--resolved">
+          <span class="kanban-card__title">{{ quest.title }}</span>
+          <span class="kanban-card__done">Done</span>
+        </div>
+        } @empty {
+        <p class="kanban-column__empty">Nothing delivered yet.</p>
+        }
+      </div>
+
+      <div class="kanban-column">
+        <p class="kanban-column__title">
+          Split<span class="kanban-column__sub">Partial credit</span>
+        </p>
+        @for (quest of splitQuests(); track quest.id) {
+        <div class="kanban-card kanban-card--resolved">
+          <span class="kanban-card__title">{{ quest.title }}</span>
+          <span class="kanban-card__split">Split</span>
+        </div>
+        } @empty {
+        <p class="kanban-column__empty">Nothing split yet.</p>
+        }
+      </div>
+
+      <div class="kanban-column">
+        <p class="kanban-column__title">
+          Retreated<span class="kanban-column__sub">Rest day</span>
+        </p>
+        @for (quest of retreatedQuests(); track quest.id) {
+        <div class="kanban-card kanban-card--resolved">
+          <span class="kanban-card__title">{{ quest.title }}</span>
+          <span class="kanban-card__retreated">Retreated</span>
+        </div>
+        } @empty {
+        <p class="kanban-column__empty">None — that's okay too.</p>
+        }
+      </div>
     </div>
+    } @else if (!questsLoading()) {
+    <p class="kanban-board__empty">No quests yet — add one above.</p>
+    } @if (encountersError(); as error) {
+    <p class="kanban-board__empty">{{ error }}</p>
+    }
+  </div>
   }
 
   <div class="stage__footer">
-    <button type="button" class="bd-button board-toggle" (click)="toggleBoard()">
-      Quests
-      @if (quests().length > 0) {
-        ({{ quests().length }})
-      }
+    <button
+      type="button"
+      class="bd-button board-toggle"
+      (click)="toggleBoard()"
+    >
+      Quests @if (quests().length > 0) { ({{ quests().length }}) }
     </button>
 
     <div class="workbench-panel">
@@ -349,22 +376,23 @@
         Workbench: level {{ workbenchLevel() }} / {{ workbenchMaxLevel }}
       </p>
       @if (nextWorkbenchCost(); as cost) {
-        <button
-          type="button"
-          class="bd-button"
-          [disabled]="upgradingWorkbench() || !canAffordWorkbenchUpgrade()"
-          (click)="upgradeWorkbench()"
-        >
-          Upgrade for {{ cost }} coins
-        </button>
+      <button
+        type="button"
+        class="bd-button"
+        [disabled]="upgradingWorkbench() || !canAffordWorkbenchUpgrade()"
+        (click)="upgradeWorkbench()"
+      >
+        Upgrade for {{ cost }} coins
+      </button>
       } @else {
-        <span class="workbench-panel__maxed">Fully upgraded</span>
-      }
-      @if (campError(); as error) {
-        <p class="workbench-panel__error">{{ error }}</p>
+      <span class="workbench-panel__maxed">Fully upgraded</span>
+      } @if (campError(); as error) {
+      <p class="workbench-panel__error">{{ error }}</p>
       }
     </div>
 
-    <a routerLink="/characters" class="bd-button bd-button--ghost stage__back">Back to characters</a>
+    <a routerLink="/characters" class="bd-button bd-button--ghost stage__back"
+      >Back to characters</a
+    >
   </div>
 </div>

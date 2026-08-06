@@ -57,7 +57,9 @@ See [Plan 03](03-first-brave-step.md).
 - [x] Daily Campfire and Today's Three. Today's Three and the First Brave Step bonus are real;
       the once-per-day _Campfire welcome beat_ is not — the campfire exists as a landmark with real
       fuel state, but nothing marks a daily return.
-- [ ] Weekly Expedition and Chronicle.
+- [ ] Weekly Summit and Chronicle. The **Chronicle is built** — an honest weekly account on its own
+      `/basecamp/:characterId/chronicle` route. The **Weekly Summit** (the weekly boss, renamed from
+      "Expedition" to stop colliding with the Agile/SAFe label for a Sprint) is not.
 - [ ] Monthly Campaign chapter.
 - [ ] Rest, shield, and Comeback mechanics. (Retreat is already a penalty-free resolution; streak
       shields and a Comeback Quest are not built, and no streak counter exists yet — deliberately, since

@@ -12,7 +12,13 @@ import {
   signal,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  FormControl,
+  FormGroup,
+  FormsModule,
+  ReactiveFormsModule,
+  Validators,
+} from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { Actions, ofType } from '@ngrx/effects';
 import { Store } from '@ngrx/store';
@@ -37,7 +43,10 @@ import {
   selectWorkbenchLevel,
 } from '../../state/camp/camp.reducer';
 import { QuestsActions } from '../../state/quests/quests.actions';
-import { WORKBENCH_MAX_LEVEL, WORKBENCH_UPGRADE_COSTS } from './workbench-level';
+import {
+  WORKBENCH_MAX_LEVEL,
+  WORKBENCH_UPGRADE_COSTS,
+} from './workbench-level';
 import {
   selectCoins,
   selectConstructionStage,
@@ -56,7 +65,10 @@ import {
   selectStartingQuestId,
   selectTransitioningSprintId,
 } from '../../state/sprints/sprints.reducer';
-import { SPRINT_DURATION_PRESETS_SECONDS, formatSprintDuration } from './sprint-duration';
+import {
+  SPRINT_DURATION_PRESETS_SECONDS,
+  formatSprintDuration,
+} from './sprint-duration';
 import { EncounterDto } from '../../api/models/encounter-dto';
 import { EncountersActions } from '../../state/encounters/encounters.actions';
 import {
@@ -79,9 +91,11 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   private readonly actions$ = inject(Actions);
   private readonly destroyRef = inject(DestroyRef);
 
-  @ViewChild('sceneCanvas') private readonly canvasRef?: ElementRef<HTMLCanvasElement>;
+  @ViewChild('sceneCanvas')
+  private readonly canvasRef?: ElementRef<HTMLCanvasElement>;
 
-  private characterId: string | null = null;
+  /** Public because the template builds the Chronicle route link from it. */
+  characterId: string | null = null;
   private firstArrival = false;
   private director: AnimationDirector | null = null;
 
@@ -100,15 +114,27 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   /** The Kanban board's five columns — Backlog/In Progress/Done/Split/
    * Retreated — derived from the same quest list the old flat panel used,
    * just grouped by status instead of rendered as one list. */
-  readonly backlogQuests = computed(() => this.quests().filter((q) => q.status === 'OPEN'));
-  readonly inProgressQuests = computed(() => this.quests().filter((q) => q.status === 'IN_PROGRESS'));
-  readonly doneQuests = computed(() => this.quests().filter((q) => q.status === 'COMPLETED'));
-  readonly splitQuests = computed(() => this.quests().filter((q) => q.status === 'SPLIT'));
-  readonly retreatedQuests = computed(() => this.quests().filter((q) => q.status === 'RETREATED'));
+  readonly backlogQuests = computed(() =>
+    this.quests().filter((q) => q.status === 'OPEN'),
+  );
+  readonly inProgressQuests = computed(() =>
+    this.quests().filter((q) => q.status === 'IN_PROGRESS'),
+  );
+  readonly doneQuests = computed(() =>
+    this.quests().filter((q) => q.status === 'COMPLETED'),
+  );
+  readonly splitQuests = computed(() =>
+    this.quests().filter((q) => q.status === 'SPLIT'),
+  );
+  readonly retreatedQuests = computed(() =>
+    this.quests().filter((q) => q.status === 'RETREATED'),
+  );
   readonly constructionStage = this.store.selectSignal(selectConstructionStage);
   readonly questsLoading = this.store.selectSignal(selectLoading);
   readonly resolvingQuestId = this.store.selectSignal(selectResolvingQuestId);
-  readonly togglingTodaysThreeQuestId = this.store.selectSignal(selectTogglingTodaysThreeQuestId);
+  readonly togglingTodaysThreeQuestId = this.store.selectSignal(
+    selectTogglingTodaysThreeQuestId,
+  );
   readonly xp = this.store.selectSignal(selectXp);
   readonly coins = this.store.selectSignal(selectCoins);
   readonly level = computed(() => Math.floor(this.xp() / XP_PER_LEVEL) + 1);
@@ -121,15 +147,21 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
    * out (see base-camp.scss). */
   readonly celebrationList = computed(() => {
     const reward = this.lastReward();
-    return reward && (reward.xpGained > 0 || reward.coinsGained > 0) ? [reward] : [];
+    return reward && (reward.xpGained > 0 || reward.coinsGained > 0)
+      ? [reward]
+      : [];
   });
   readonly firewoodCount = this.store.selectSignal(selectFirewoodCount);
   readonly forageCount = this.store.selectSignal(selectForageCount);
   readonly workbenchLevel = this.store.selectSignal(selectWorkbenchLevel);
-  readonly upgradingWorkbench = this.store.selectSignal(selectUpgradingWorkbench);
+  readonly upgradingWorkbench = this.store.selectSignal(
+    selectUpgradingWorkbench,
+  );
   readonly campError = this.store.selectSignal(selectCampError);
   readonly workbenchMaxLevel = WORKBENCH_MAX_LEVEL;
-  readonly nextWorkbenchCost = computed(() => WORKBENCH_UPGRADE_COSTS[this.workbenchLevel()] ?? null);
+  readonly nextWorkbenchCost = computed(
+    () => WORKBENCH_UPGRADE_COSTS[this.workbenchLevel()] ?? null,
+  );
   readonly canAffordWorkbenchUpgrade = computed(() => {
     const cost = this.nextWorkbenchCost();
     return cost !== null && this.coins() >= cost;
@@ -141,10 +173,16 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
    * of which one, since the halo is a single ambient companion effect, not
    * per-quest. */
   readonly anySprintActive = computed(() =>
-    Object.values(this.sprintsByQuestId()).some((sprint) => sprint?.status === 'ACTIVE'),
+    Object.values(this.sprintsByQuestId()).some(
+      (sprint) => sprint?.status === 'ACTIVE',
+    ),
   );
-  readonly startingSprintQuestId = this.store.selectSignal(selectStartingQuestId);
-  readonly transitioningSprintId = this.store.selectSignal(selectTransitioningSprintId);
+  readonly startingSprintQuestId = this.store.selectSignal(
+    selectStartingQuestId,
+  );
+  readonly transitioningSprintId = this.store.selectSignal(
+    selectTransitioningSprintId,
+  );
   readonly sprintsError = this.store.selectSignal(selectSprintsError);
   readonly sprintDurationPresets = SPRINT_DURATION_PRESETS_SECONDS;
   readonly formatSprintDuration = formatSprintDuration;
@@ -155,15 +193,25 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   private readonly now = signal(Date.now());
   private nowIntervalId: ReturnType<typeof setInterval> | null = null;
 
-  readonly encountersByQuestId = this.store.selectSignal(selectEncountersByQuestId);
-  readonly creatingEncounterQuestId = this.store.selectSignal(selectCreatingEncounterQuestId);
-  readonly transitioningEncounterId = this.store.selectSignal(selectTransitioningEncounterId);
+  readonly encountersByQuestId = this.store.selectSignal(
+    selectEncountersByQuestId,
+  );
+  readonly creatingEncounterQuestId = this.store.selectSignal(
+    selectCreatingEncounterQuestId,
+  );
+  readonly transitioningEncounterId = this.store.selectSignal(
+    selectTransitioningEncounterId,
+  );
   readonly encountersError = this.store.selectSignal(selectEncountersError);
 
   readonly newQuestForm = new FormGroup({
     title: new FormControl('', {
       nonNullable: true,
-      validators: [Validators.required, Validators.minLength(2), Validators.maxLength(80)],
+      validators: [
+        Validators.required,
+        Validators.minLength(2),
+        Validators.maxLength(80),
+      ],
     }),
   });
 
@@ -171,26 +219,44 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
 
   constructor() {
     this.actions$
-      .pipe(ofType(QuestsActions.completeQuestSuccess), takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        ofType(QuestsActions.completeQuestSuccess),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(({ constructionStage }) => {
         this.director?.dispatch({ type: 'questCompleted', constructionStage });
       });
 
     this.actions$
-      .pipe(ofType(CampActions.chopTreeSuccess), takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        ofType(CampActions.chopTreeSuccess),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(({ firewoodCount }) => {
-        this.director?.dispatch({ type: 'firewoodGathered', totalFirewood: firewoodCount });
+        this.director?.dispatch({
+          type: 'firewoodGathered',
+          totalFirewood: firewoodCount,
+        });
       });
 
     this.actions$
-      .pipe(ofType(CampActions.forageSuccess), takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        ofType(CampActions.forageSuccess),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(({ forageCount }) => {
         this.director?.dispatch({ type: 'forage' });
-        this.director?.dispatch({ type: 'forageGathered', totalForage: forageCount });
+        this.director?.dispatch({
+          type: 'forageGathered',
+          totalForage: forageCount,
+        });
       });
 
     this.actions$
-      .pipe(ofType(CampActions.upgradeWorkbenchSuccess), takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        ofType(CampActions.upgradeWorkbenchSuccess),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(({ workbenchLevel }) => {
         this.director?.dispatch({ type: 'workbenchUpgraded', workbenchLevel });
       });
@@ -200,17 +266,31 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     // Progress so a card can reconstruct its timer from real timestamps
     // instead of starting blank.
     this.actions$
-      .pipe(ofType(QuestsActions.loadQuestsSuccess), takeUntilDestroyed(this.destroyRef))
+      .pipe(
+        ofType(QuestsActions.loadQuestsSuccess),
+        takeUntilDestroyed(this.destroyRef),
+      )
       .subscribe(({ quests }) => {
         quests
           .filter((quest) => quest.status === 'IN_PROGRESS')
-          .forEach((quest) => this.store.dispatch(SprintsActions.loadSprints({ questId: quest.id })));
+          .forEach((quest) =>
+            this.store.dispatch(
+              SprintsActions.loadSprints({ questId: quest.id }),
+            ),
+          );
 
         // Encounters show on Backlog and In Progress cards (not Done/
         // Retreated, which are already resolved), so load for both columns.
         quests
-          .filter((quest) => quest.status === 'OPEN' || quest.status === 'IN_PROGRESS')
-          .forEach((quest) => this.store.dispatch(EncountersActions.loadEncounters({ questId: quest.id })));
+          .filter(
+            (quest) =>
+              quest.status === 'OPEN' || quest.status === 'IN_PROGRESS',
+          )
+          .forEach((quest) =>
+            this.store.dispatch(
+              EncountersActions.loadEncounters({ questId: quest.id }),
+            ),
+          );
       });
 
     this.nowIntervalId = setInterval(() => this.now.set(Date.now()), 1000);
@@ -241,7 +321,9 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
             coins: character.coins,
           }),
         );
-        this.store.dispatch(QuestsActions.loadQuests({ characterId: character.id }));
+        this.store.dispatch(
+          QuestsActions.loadQuests({ characterId: character.id }),
+        );
         this.store.dispatch(
           CampActions.setCharacterContext({
             characterId: character.id,
@@ -281,7 +363,9 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
     const { title } = this.newQuestForm.getRawValue();
-    this.store.dispatch(QuestsActions.createQuest({ characterId: this.characterId, title }));
+    this.store.dispatch(
+      QuestsActions.createQuest({ characterId: this.characterId, title }),
+    );
     this.newQuestForm.reset();
   }
 
@@ -290,19 +374,39 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   }
 
   continueQuest(questId: string): void {
-    this.store.dispatch(QuestsActions.continueQuest({ questId, idempotencyKey: crypto.randomUUID() }));
+    this.store.dispatch(
+      QuestsActions.continueQuest({
+        questId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    );
   }
 
   completeQuest(questId: string): void {
-    this.store.dispatch(QuestsActions.completeQuest({ questId, idempotencyKey: crypto.randomUUID() }));
+    this.store.dispatch(
+      QuestsActions.completeQuest({
+        questId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    );
   }
 
   retreatQuest(questId: string): void {
-    this.store.dispatch(QuestsActions.retreatQuest({ questId, idempotencyKey: crypto.randomUUID() }));
+    this.store.dispatch(
+      QuestsActions.retreatQuest({
+        questId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    );
   }
 
   splitQuest(questId: string): void {
-    this.store.dispatch(QuestsActions.splitQuest({ questId, idempotencyKey: crypto.randomUUID() }));
+    this.store.dispatch(
+      QuestsActions.splitQuest({
+        questId,
+        idempotencyKey: crypto.randomUUID(),
+      }),
+    );
   }
 
   toggleTodaysThree(questId: string, isCurrentlyDesignated: boolean): void {
@@ -317,7 +421,9 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     if (!this.characterId) {
       return;
     }
-    this.store.dispatch(CampActions.upgradeWorkbench({ characterId: this.characterId }));
+    this.store.dispatch(
+      CampActions.upgradeWorkbench({ characterId: this.characterId }),
+    );
   }
 
   sprintFor(questId: string): SprintDto | undefined {
@@ -332,7 +438,10 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   elapsedSecondsFor(sprint: SprintDto): number {
     const now = this.now();
     const startedAtMs = Date.parse(sprint.startedAt);
-    const livePauseMs = sprint.status === 'PAUSED' && sprint.pausedAt ? now - Date.parse(sprint.pausedAt) : 0;
+    const livePauseMs =
+      sprint.status === 'PAUSED' && sprint.pausedAt
+        ? now - Date.parse(sprint.pausedAt)
+        : 0;
     const totalPausedMs = sprint.pausedSeconds * 1000 + livePauseMs;
     return Math.max(Math.floor((now - startedAtMs - totalPausedMs) / 1000), 0);
   }
@@ -370,7 +479,9 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
     if (!trimmed) {
       return;
     }
-    this.store.dispatch(EncountersActions.createEncounter({ questId, title: trimmed }));
+    this.store.dispatch(
+      EncountersActions.createEncounter({ questId, title: trimmed }),
+    );
   }
 
   completeEncounter(encounterId: string): void {
@@ -378,7 +489,12 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
   }
 
   private mountRendererIfReady(): void {
-    if (!this.renderScene || !this.canvasRef || this.renderer || this.characterName() === null) {
+    if (
+      !this.renderScene ||
+      !this.canvasRef ||
+      this.renderer ||
+      this.characterName() === null
+    ) {
       return;
     }
     // Non-null: mountRendererIfReady only proceeds once characterName() is
@@ -392,12 +508,17 @@ export class BaseCamp implements OnInit, AfterViewInit, OnDestroy {
       initialFirewoodCount: this.firewoodCount(),
       initialForageCount: this.forageCount(),
       initialWorkbenchLevel: this.workbenchLevel(),
-      onChopTree: () => this.store.dispatch(CampActions.chopTree({ characterId })),
+      onChopTree: () =>
+        this.store.dispatch(CampActions.chopTree({ characterId })),
       onForage: () => this.store.dispatch(CampActions.forage({ characterId })),
       onUpgradeWorkbench: () => this.upgradeWorkbench(),
     });
     this.director = scene.director;
-    this.renderer = new RendererLifecycle(this.canvasRef.nativeElement, motionMode, scene.handlers);
+    this.renderer = new RendererLifecycle(
+      this.canvasRef.nativeElement,
+      motionMode,
+      scene.handlers,
+    );
     this.renderer.start();
   }
 }

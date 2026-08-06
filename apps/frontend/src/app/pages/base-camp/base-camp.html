@@ -371,6 +371,13 @@
       Quests @if (quests().length > 0) { ({{ quests().length }}) }
     </button>
 
+    <a
+      [routerLink]="['/basecamp', characterId, 'chronicle']"
+      class="bd-button bd-button--ghost board-toggle"
+    >
+      Chronicle
+    </a>
+
     <div class="workbench-panel">
       <p class="workbench-panel__label">
         Workbench: level {{ workbenchLevel() }} / {{ workbenchMaxLevel }}

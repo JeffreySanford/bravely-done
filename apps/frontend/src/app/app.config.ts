@@ -4,7 +4,11 @@ import {
   provideAppInitializer,
   provideBrowserGlobalErrorListeners,
 } from '@angular/core';
-import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
+import {
+  provideHttpClient,
+  withFetch,
+  withInterceptors,
+} from '@angular/common/http';
 import { provideRouter } from '@angular/router';
 import { provideEffects } from '@ngrx/effects';
 import { provideStore } from '@ngrx/store';
@@ -21,6 +25,8 @@ import { sprintsFeature } from './state/sprints/sprints.reducer';
 import { SprintsEffects } from './state/sprints/sprints.effects';
 import { encountersFeature } from './state/encounters/encounters.reducer';
 import { EncountersEffects } from './state/encounters/encounters.effects';
+import { chronicleFeature } from './state/chronicle/chronicle.reducer';
+import { ChronicleEffects } from './state/chronicle/chronicle.effects';
 
 export function restoreSessionInitializer(): Promise<void> {
   return inject(AuthStateService).restoreSession();
@@ -40,7 +46,14 @@ export const appConfig: ApplicationConfig = {
       [campFeature.name]: campFeature.reducer,
       [sprintsFeature.name]: sprintsFeature.reducer,
       [encountersFeature.name]: encountersFeature.reducer,
+      [chronicleFeature.name]: chronicleFeature.reducer,
     }),
-    provideEffects(QuestsEffects, CampEffects, SprintsEffects, EncountersEffects),
+    provideEffects(
+      QuestsEffects,
+      CampEffects,
+      SprintsEffects,
+      EncountersEffects,
+      ChronicleEffects,
+    ),
   ],
 };

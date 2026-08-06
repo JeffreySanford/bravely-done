@@ -78,9 +78,13 @@ describe('QuestService', () => {
       const created = buildQuest();
       prisma.quest.create.mockResolvedValue(created);
 
-      const result = await service.create('user-1', 'char-1', { title: 'Answer three emails' });
+      const result = await service.create('user-1', 'char-1', {
+        title: 'Answer three emails',
+      });
 
-      expect(prisma.character.findFirst).toHaveBeenCalledWith({ where: { id: 'char-1', userId: 'user-1' } });
+      expect(prisma.character.findFirst).toHaveBeenCalledWith({
+        where: { id: 'char-1', userId: 'user-1' },
+      });
       expect(prisma.quest.create).toHaveBeenCalledWith({
         data: { characterId: 'char-1', title: 'Answer three emails' },
       });
@@ -90,7 +94,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the character is not owned by the user', async () => {
       prisma.character.findFirst.mockResolvedValue(null);
 
-      await expect(service.create('user-1', 'char-1', { title: 'x' })).rejects.toThrow(NotFoundException);
+      await expect(
+        service.create('user-1', 'char-1', { title: 'x' }),
+      ).rejects.toThrow(NotFoundException);
       expect(prisma.quest.create).not.toHaveBeenCalled();
     });
   });
@@ -113,7 +119,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the character is not owned by the user', async () => {
       prisma.character.findFirst.mockResolvedValue(null);
 
-      await expect(service.listForCharacter('user-1', 'char-1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.listForCharacter('user-1', 'char-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
@@ -158,7 +166,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.start('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(service.start('user-1', 'quest-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -166,29 +176,44 @@ describe('QuestService', () => {
     it('moves an open quest to in progress and stamps lastContinuedAt', async () => {
       const quest = buildQuest({ character: buildCharacter() });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      const continued = buildQuest({ status: QuestStatus.IN_PROGRESS, lastContinuedAt: new Date() });
+      const continued = buildQuest({
+        status: QuestStatus.IN_PROGRESS,
+        lastContinuedAt: new Date(),
+      });
       prisma.quest.update.mockResolvedValue(continued);
 
       const result = await service.continue('user-1', 'quest-1');
 
       expect(prisma.quest.update).toHaveBeenCalledWith({
         where: { id: 'quest-1' },
-        data: { status: QuestStatus.IN_PROGRESS, lastContinuedAt: expect.any(Date) },
+        data: {
+          status: QuestStatus.IN_PROGRESS,
+          lastContinuedAt: expect.any(Date),
+        },
       });
       expect(result).toEqual(continued);
     });
 
     it('stamps lastContinuedAt again on an already-in-progress quest (repeated continues are meaningful)', async () => {
-      const quest = buildQuest({ status: QuestStatus.IN_PROGRESS, character: buildCharacter() });
+      const quest = buildQuest({
+        status: QuestStatus.IN_PROGRESS,
+        character: buildCharacter(),
+      });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      const continued = buildQuest({ status: QuestStatus.IN_PROGRESS, lastContinuedAt: new Date() });
+      const continued = buildQuest({
+        status: QuestStatus.IN_PROGRESS,
+        lastContinuedAt: new Date(),
+      });
       prisma.quest.update.mockResolvedValue(continued);
 
       await service.continue('user-1', 'quest-1');
 
       expect(prisma.quest.update).toHaveBeenCalledWith({
         where: { id: 'quest-1' },
-        data: { status: QuestStatus.IN_PROGRESS, lastContinuedAt: expect.any(Date) },
+        data: {
+          status: QuestStatus.IN_PROGRESS,
+          lastContinuedAt: expect.any(Date),
+        },
       });
     });
 
@@ -217,7 +242,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.continue('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(service.continue('user-1', 'quest-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('does not re-stamp when the idempotency key matches the last processed call (duplicate retry)', async () => {
@@ -241,14 +268,21 @@ describe('QuestService', () => {
         character: buildCharacter(),
       });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      const continued = buildQuest({ status: QuestStatus.IN_PROGRESS, lastContinuedAt: new Date() });
+      const continued = buildQuest({
+        status: QuestStatus.IN_PROGRESS,
+        lastContinuedAt: new Date(),
+      });
       prisma.quest.update.mockResolvedValue(continued);
 
       await service.continue('user-1', 'quest-1', 'key-2');
 
       expect(prisma.quest.update).toHaveBeenCalledWith({
         where: { id: 'quest-1' },
-        data: { status: QuestStatus.IN_PROGRESS, lastContinuedAt: expect.any(Date), lastIdempotencyKey: 'key-2' },
+        data: {
+          status: QuestStatus.IN_PROGRESS,
+          lastContinuedAt: expect.any(Date),
+          lastIdempotencyKey: 'key-2',
+        },
       });
     });
   });
@@ -258,8 +292,15 @@ describe('QuestService', () => {
       const character = buildCharacter({ campConstructionStage: 1 });
       const quest = buildQuest({ character });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      const completedQuest = buildQuest({ status: QuestStatus.COMPLETED, completedAt: new Date() });
-      const updatedCharacter = buildCharacter({ campConstructionStage: 2, xp: QUEST_XP_REWARD, coins: QUEST_COIN_REWARD });
+      const completedQuest = buildQuest({
+        status: QuestStatus.COMPLETED,
+        completedAt: new Date(),
+      });
+      const updatedCharacter = buildCharacter({
+        campConstructionStage: 2,
+        xp: QUEST_XP_REWARD,
+        coins: QUEST_COIN_REWARD,
+      });
       prisma.$transaction.mockResolvedValue([completedQuest, updatedCharacter]);
 
       const result = await service.complete('user-1', 'quest-1');
@@ -271,7 +312,12 @@ describe('QuestService', () => {
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.quest.update).toHaveBeenCalledWith({
         where: { id: 'quest-1' },
-        data: { status: QuestStatus.COMPLETED, completedAt: expect.any(Date) },
+        data: {
+          status: QuestStatus.COMPLETED,
+          completedAt: expect.any(Date),
+          resolvedAt: expect.any(Date),
+          lastIdempotencyKey: undefined,
+        },
       });
       expect(prisma.character.update).toHaveBeenCalledWith({
         where: { id: 'char-1' },
@@ -293,8 +339,15 @@ describe('QuestService', () => {
       const character = buildCharacter({ campConstructionStage: 1 });
       const quest = buildQuest({ status: QuestStatus.IN_PROGRESS, character });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      const completedQuest = buildQuest({ status: QuestStatus.COMPLETED, completedAt: new Date() });
-      const updatedCharacter = buildCharacter({ campConstructionStage: 2, xp: QUEST_XP_REWARD, coins: QUEST_COIN_REWARD });
+      const completedQuest = buildQuest({
+        status: QuestStatus.COMPLETED,
+        completedAt: new Date(),
+      });
+      const updatedCharacter = buildCharacter({
+        campConstructionStage: 2,
+        xp: QUEST_XP_REWARD,
+        coins: QUEST_COIN_REWARD,
+      });
       prisma.$transaction.mockResolvedValue([completedQuest, updatedCharacter]);
 
       const result = await service.complete('user-1', 'quest-1');
@@ -309,10 +362,15 @@ describe('QuestService', () => {
     });
 
     it('caps the construction stage at MAX_CONSTRUCTION_STAGE', async () => {
-      const character = buildCharacter({ campConstructionStage: MAX_CONSTRUCTION_STAGE });
+      const character = buildCharacter({
+        campConstructionStage: MAX_CONSTRUCTION_STAGE,
+      });
       const quest = buildQuest({ character });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      prisma.$transaction.mockResolvedValue([buildQuest({ status: QuestStatus.COMPLETED }), character]);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.COMPLETED }),
+        character,
+      ]);
 
       await service.complete('user-1', 'quest-1');
 
@@ -361,7 +419,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.complete('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(service.complete('user-1', 'quest-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('does not grant a reward again when the idempotency key matches the last processed call', async () => {
@@ -382,10 +442,16 @@ describe('QuestService', () => {
     });
 
     it('grants the First Brave Step bonus on the first completion of the day', async () => {
-      const character = buildCharacter({ campConstructionStage: 1, firstBraveStepDay: null });
+      const character = buildCharacter({
+        campConstructionStage: 1,
+        firstBraveStepDay: null,
+      });
       const quest = buildQuest({ character });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      const completedQuest = buildQuest({ status: QuestStatus.COMPLETED, completedAt: new Date() });
+      const completedQuest = buildQuest({
+        status: QuestStatus.COMPLETED,
+        completedAt: new Date(),
+      });
       const updatedCharacter = buildCharacter({
         campConstructionStage: 2,
         xp: QUEST_XP_REWARD + FIRST_BRAVE_STEP_XP_REWARD,
@@ -400,7 +466,9 @@ describe('QuestService', () => {
         data: {
           campConstructionStage: 2,
           xp: { increment: QUEST_XP_REWARD + FIRST_BRAVE_STEP_XP_REWARD },
-          coins: { increment: QUEST_COIN_REWARD + FIRST_BRAVE_STEP_COIN_REWARD },
+          coins: {
+            increment: QUEST_COIN_REWARD + FIRST_BRAVE_STEP_COIN_REWARD,
+          },
           firstBraveStepDay: expect.any(Date),
         },
       });
@@ -412,7 +480,10 @@ describe('QuestService', () => {
       const character = buildCharacter({ firstBraveStepDay: new Date() });
       const quest = buildQuest({ character });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      prisma.$transaction.mockResolvedValue([buildQuest({ status: QuestStatus.COMPLETED }), character]);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.COMPLETED }),
+        character,
+      ]);
 
       const result = await service.complete('user-1', 'quest-1');
 
@@ -428,11 +499,14 @@ describe('QuestService', () => {
       expect(result.firstBraveStepBonusGranted).toBe(false);
     });
 
-    it('grants the Today\'s Three bonus when the completed quest was designated for today', async () => {
+    it("grants the Today's Three bonus when the completed quest was designated for today", async () => {
       const character = buildCharacter();
       const quest = buildQuest({ character, todaysThreeDay: new Date() });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      prisma.$transaction.mockResolvedValue([buildQuest({ status: QuestStatus.COMPLETED }), character]);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.COMPLETED }),
+        character,
+      ]);
 
       const result = await service.complete('user-1', 'quest-1');
 
@@ -441,30 +515,38 @@ describe('QuestService', () => {
         data: {
           campConstructionStage: 1,
           xp: { increment: QUEST_XP_REWARD + TODAYS_THREE_BONUS_XP_REWARD },
-          coins: { increment: QUEST_COIN_REWARD + TODAYS_THREE_BONUS_COIN_REWARD },
+          coins: {
+            increment: QUEST_COIN_REWARD + TODAYS_THREE_BONUS_COIN_REWARD,
+          },
           firstBraveStepDay: undefined,
         },
       });
       expect(result.todaysThreeBonusGranted).toBe(true);
     });
 
-    it('does not grant the Today\'s Three bonus for a quest designated on a previous day', async () => {
+    it("does not grant the Today's Three bonus for a quest designated on a previous day", async () => {
       const character = buildCharacter();
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
       const quest = buildQuest({ character, todaysThreeDay: yesterday });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      prisma.$transaction.mockResolvedValue([buildQuest({ status: QuestStatus.COMPLETED }), character]);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.COMPLETED }),
+        character,
+      ]);
 
       const result = await service.complete('user-1', 'quest-1');
 
       expect(result.todaysThreeBonusGranted).toBe(false);
     });
 
-    it('stacks the First Brave Step and Today\'s Three bonuses together', async () => {
+    it("stacks the First Brave Step and Today's Three bonuses together", async () => {
       const character = buildCharacter({ firstBraveStepDay: null });
       const quest = buildQuest({ character, todaysThreeDay: new Date() });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      prisma.$transaction.mockResolvedValue([buildQuest({ status: QuestStatus.COMPLETED }), character]);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.COMPLETED }),
+        character,
+      ]);
 
       const result = await service.complete('user-1', 'quest-1');
 
@@ -472,8 +554,18 @@ describe('QuestService', () => {
         where: { id: 'char-1' },
         data: {
           campConstructionStage: 1,
-          xp: { increment: QUEST_XP_REWARD + FIRST_BRAVE_STEP_XP_REWARD + TODAYS_THREE_BONUS_XP_REWARD },
-          coins: { increment: QUEST_COIN_REWARD + FIRST_BRAVE_STEP_COIN_REWARD + TODAYS_THREE_BONUS_COIN_REWARD },
+          xp: {
+            increment:
+              QUEST_XP_REWARD +
+              FIRST_BRAVE_STEP_XP_REWARD +
+              TODAYS_THREE_BONUS_XP_REWARD,
+          },
+          coins: {
+            increment:
+              QUEST_COIN_REWARD +
+              FIRST_BRAVE_STEP_COIN_REWARD +
+              TODAYS_THREE_BONUS_COIN_REWARD,
+          },
           firstBraveStepDay: expect.any(Date),
         },
       });
@@ -494,7 +586,11 @@ describe('QuestService', () => {
 
       expect(prisma.quest.update).toHaveBeenCalledWith({
         where: { id: 'quest-1' },
-        data: { status: QuestStatus.RETREATED },
+        data: {
+          status: QuestStatus.RETREATED,
+          resolvedAt: expect.any(Date),
+          lastIdempotencyKey: undefined,
+        },
       });
       expect(prisma.character.update).not.toHaveBeenCalled();
       expect(result).toEqual(retreatedQuest);
@@ -511,7 +607,11 @@ describe('QuestService', () => {
 
       expect(prisma.quest.update).toHaveBeenCalledWith({
         where: { id: 'quest-1' },
-        data: { status: QuestStatus.RETREATED },
+        data: {
+          status: QuestStatus.RETREATED,
+          resolvedAt: expect.any(Date),
+          lastIdempotencyKey: undefined,
+        },
       });
       expect(result).toEqual(retreatedQuest);
     });
@@ -530,7 +630,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.retreat('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(service.retreat('user-1', 'quest-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
 
     it('does not re-retreat when the idempotency key matches the last processed call', async () => {
@@ -563,7 +665,11 @@ describe('QuestService', () => {
       expect(prisma.$transaction).toHaveBeenCalledTimes(1);
       expect(prisma.quest.update).toHaveBeenCalledWith({
         where: { id: 'quest-1' },
-        data: { status: QuestStatus.SPLIT, lastIdempotencyKey: undefined },
+        data: {
+          status: QuestStatus.SPLIT,
+          resolvedAt: expect.any(Date),
+          lastIdempotencyKey: undefined,
+        },
       });
       expect(prisma.character.update).toHaveBeenCalledWith({
         where: { id: 'char-1' },
@@ -572,14 +678,20 @@ describe('QuestService', () => {
           coins: { increment: SPLIT_COIN_REWARD },
         },
       });
-      expect(result).toEqual({ quest: splitQuest, character: updatedCharacter });
+      expect(result).toEqual({
+        quest: splitQuest,
+        character: updatedCharacter,
+      });
     });
 
     it('splits an in-progress quest the same as an open one', async () => {
       const character = buildCharacter();
       const quest = buildQuest({ status: QuestStatus.IN_PROGRESS, character });
       prisma.quest.findFirst.mockResolvedValue(quest);
-      prisma.$transaction.mockResolvedValue([buildQuest({ status: QuestStatus.SPLIT }), character]);
+      prisma.$transaction.mockResolvedValue([
+        buildQuest({ status: QuestStatus.SPLIT }),
+        character,
+      ]);
 
       await service.split('user-1', 'quest-1');
 
@@ -623,7 +735,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.split('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(service.split('user-1', 'quest-1')).rejects.toThrow(
+        NotFoundException,
+      );
     });
   });
 
@@ -648,7 +762,10 @@ describe('QuestService', () => {
     });
 
     it('is idempotent when the quest is already designated today', async () => {
-      const quest = buildQuest({ todaysThreeDay: new Date(), character: buildCharacter() });
+      const quest = buildQuest({
+        todaysThreeDay: new Date(),
+        character: buildCharacter(),
+      });
       prisma.quest.findFirst.mockResolvedValue(quest);
 
       const result = await service.designateTodaysThree('user-1', 'quest-1');
@@ -660,10 +777,15 @@ describe('QuestService', () => {
 
     it('re-designates a quest whose designation lapsed on a previous day', async () => {
       const yesterday = new Date(Date.now() - 24 * 60 * 60 * 1000);
-      const quest = buildQuest({ todaysThreeDay: yesterday, character: buildCharacter() });
+      const quest = buildQuest({
+        todaysThreeDay: yesterday,
+        character: buildCharacter(),
+      });
       prisma.quest.findFirst.mockResolvedValue(quest);
       prisma.quest.count.mockResolvedValue(0);
-      prisma.quest.update.mockResolvedValue(buildQuest({ todaysThreeDay: new Date() }));
+      prisma.quest.update.mockResolvedValue(
+        buildQuest({ todaysThreeDay: new Date() }),
+      );
 
       await service.designateTodaysThree('user-1', 'quest-1');
 
@@ -674,10 +796,15 @@ describe('QuestService', () => {
     });
 
     it('rejects designating a resolved quest', async () => {
-      const quest = buildQuest({ status: QuestStatus.COMPLETED, character: buildCharacter() });
+      const quest = buildQuest({
+        status: QuestStatus.COMPLETED,
+        character: buildCharacter(),
+      });
       prisma.quest.findFirst.mockResolvedValue(quest);
 
-      await expect(service.designateTodaysThree('user-1', 'quest-1')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.designateTodaysThree('user-1', 'quest-1'),
+      ).rejects.toThrow(BadRequestException);
       expect(prisma.quest.update).not.toHaveBeenCalled();
     });
 
@@ -686,20 +813,27 @@ describe('QuestService', () => {
       prisma.quest.findFirst.mockResolvedValue(quest);
       prisma.quest.count.mockResolvedValue(TODAYS_THREE_MAX);
 
-      await expect(service.designateTodaysThree('user-1', 'quest-1')).rejects.toThrow(BadRequestException);
+      await expect(
+        service.designateTodaysThree('user-1', 'quest-1'),
+      ).rejects.toThrow(BadRequestException);
       expect(prisma.quest.update).not.toHaveBeenCalled();
     });
 
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.designateTodaysThree('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.designateTodaysThree('user-1', 'quest-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 
   describe('undesignateTodaysThree', () => {
-    it('removes today\'s designation', async () => {
-      const quest = buildQuest({ todaysThreeDay: new Date(), character: buildCharacter() });
+    it("removes today's designation", async () => {
+      const quest = buildQuest({
+        todaysThreeDay: new Date(),
+        character: buildCharacter(),
+      });
       prisma.quest.findFirst.mockResolvedValue(quest);
       const undesignated = buildQuest({ todaysThreeDay: null });
       prisma.quest.update.mockResolvedValue(undesignated);
@@ -714,7 +848,10 @@ describe('QuestService', () => {
     });
 
     it('is an idempotent no-op when the quest was not designated today', async () => {
-      const quest = buildQuest({ todaysThreeDay: null, character: buildCharacter() });
+      const quest = buildQuest({
+        todaysThreeDay: null,
+        character: buildCharacter(),
+      });
       prisma.quest.findFirst.mockResolvedValue(quest);
 
       const result = await service.undesignateTodaysThree('user-1', 'quest-1');
@@ -726,7 +863,9 @@ describe('QuestService', () => {
     it('throws NotFoundException when the quest is not owned by the user', async () => {
       prisma.quest.findFirst.mockResolvedValue(null);
 
-      await expect(service.undesignateTodaysThree('user-1', 'quest-1')).rejects.toThrow(NotFoundException);
+      await expect(
+        service.undesignateTodaysThree('user-1', 'quest-1'),
+      ).rejects.toThrow(NotFoundException);
     });
   });
 });

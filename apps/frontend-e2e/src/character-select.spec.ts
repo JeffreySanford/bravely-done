@@ -33,7 +33,9 @@ async function expectSceneMounted(page: Page): Promise<void> {
   }
 }
 
-test('signup through to a rendered Base Camp, and back again via character select', async ({ page }) => {
+test('signup through to a rendered Base Camp, and back again via character select', async ({
+  page,
+}) => {
   // The app initializer always calls GET /auth/me on load to check for an
   // existing cookie session (see restoreSessionInitializer); a fresh visitor
   // with no session correctly gets a 401 there, which the app handles
@@ -44,11 +46,15 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // (only script console.error calls carry useful location info), so this
   // matches on the one specific, otherwise-unambiguous expected message
   // rather than trying to filter by URL.
-  const EXPECTED_UNAUTHENTICATED_SESSION_CHECK = 'Failed to load resource: the server responded with a status of 401 (Unauthorized)';
+  const EXPECTED_UNAUTHENTICATED_SESSION_CHECK =
+    'Failed to load resource: the server responded with a status of 401 (Unauthorized)';
 
   const consoleErrors: string[] = [];
   page.on('console', (msg) => {
-    if (msg.type() === 'error' && msg.text() !== EXPECTED_UNAUTHENTICATED_SESSION_CHECK) {
+    if (
+      msg.type() === 'error' &&
+      msg.text() !== EXPECTED_UNAUTHENTICATED_SESSION_CHECK
+    ) {
       consoleErrors.push(msg.text());
     }
   });
@@ -63,7 +69,9 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await page.getByLabel('Password').fill('correcthorsebattery');
   await page.getByRole('button', { name: 'Create account' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Name your character' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Name your character' }),
+  ).toBeVisible();
   await page.getByLabel('Character name').fill('Ember Scout');
   await page.getByRole('button', { name: 'Create character' }).click();
 
@@ -75,7 +83,9 @@ test('signup through to a rendered Base Camp, and back again via character selec
 
   await page.getByRole('link', { name: 'Back to characters' }).click();
 
-  await expect(page.getByRole('heading', { name: 'Choose your character' })).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'Choose your character' }),
+  ).toBeVisible();
   await expect(page.getByText('Ember Scout')).toBeVisible();
   await expectSceneMounted(page);
 
@@ -101,10 +111,17 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // The firewood/forage hint only renders when the WebGL scene actually
   // mounted (see expectSceneMounted's Firefox/CI note above) — where it
   // does, it reflects the character's real backend counts, not placeholders.
-  const canvasMounted = await page.locator('canvas.stage__canvas').isVisible().catch(() => false);
+  const canvasMounted = await page
+    .locator('canvas.stage__canvas')
+    .isVisible()
+    .catch(() => false);
   if (canvasMounted) {
-    await expect(page.getByText('Firewood: 0 — click a tree to chop wood.')).toBeVisible();
-    await expect(page.getByText('Forage: 0 — click the bush to harvest.')).toBeVisible();
+    await expect(
+      page.getByText('Firewood: 0 — click a tree to chop wood.'),
+    ).toBeVisible();
+    await expect(
+      page.getByText('Forage: 0 — click the bush to harvest.'),
+    ).toBeVisible();
   }
 
   // Creating, starting, and completing real quests advances and persists
@@ -119,7 +136,13 @@ test('signup through to a rendered Base Camp, and back again via character selec
   const questTitleInput = page.getByLabel('Quest title');
   const addQuestButton = page.getByRole('button', { name: 'Add quest' });
 
-  for (const title of ['Chop firewood', 'Answer three emails', 'Forage berries', 'Take a rest day', 'Split me later']) {
+  for (const title of [
+    'Chop firewood',
+    'Answer three emails',
+    'Forage berries',
+    'Take a rest day',
+    'Split me later',
+  ]) {
     await questTitleInput.fill(title);
     await addQuestButton.click();
     await expect(page.getByText(title)).toBeVisible();
@@ -130,15 +153,23 @@ test('signup through to a rendered Base Camp, and back again via character selec
   // on Backlog/In Progress cards. Completing a designated quest later grants
   // TODAYS_THREE_BONUS_XP_REWARD/COIN_REWARD on top of the normal reward —
   // asserted further down where "Chop firewood" is completed.
-  const firewoodCard = page.locator('.kanban-card', { hasText: 'Chop firewood' });
-  const firewoodStar = firewoodCard.getByRole('button', { name: "Add to Today's Three" });
+  const firewoodCard = page.locator('.kanban-card', {
+    hasText: 'Chop firewood',
+  });
+  const firewoodStar = firewoodCard.getByRole('button', {
+    name: "Add to Today's Three",
+  });
   await firewoodStar.click();
-  await expect(firewoodCard.getByRole('button', { name: "Remove from Today's Three" })).toBeVisible();
+  await expect(
+    firewoodCard.getByRole('button', { name: "Remove from Today's Three" }),
+  ).toBeVisible();
 
   // Encounters (small actionable steps within a quest) work straight from
   // the Backlog column, independent of the quest's own resolution — adding
   // and completing one grants Courage XP without touching quest status.
-  const emailsCard = page.locator('.kanban-card', { hasText: 'Answer three emails' });
+  const emailsCard = page.locator('.kanban-card', {
+    hasText: 'Answer three emails',
+  });
   const encounterInput = emailsCard.getByPlaceholder('Add a step…');
   await encounterInput.fill('Draft the reply');
   await encounterInput.press('Enter');
@@ -151,15 +182,24 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(emailsCard.getByRole('button', { name: 'Start' })).toBeVisible();
 
   // Retreating straight from the Backlog column — no Start required first.
-  const restDayCard = page.locator('.kanban-card', { hasText: 'Take a rest day' });
+  const restDayCard = page.locator('.kanban-card', {
+    hasText: 'Take a rest day',
+  });
   await restDayCard.getByRole('button', { name: 'Retreat' }).click();
-  await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
+  await expect(
+    page
+      .locator('.kanban-card', { hasText: 'Take a rest day' })
+      .getByText('Retreated'),
+  ).toBeVisible();
   await expect(page.getByText('Level 1 — 5 XP — 0 coins')).toBeVisible();
 
   // Split (partial credit — half QUEST_XP_REWARD/QUEST_COIN_REWARD, rounded
   // down) needs Start first, same as Complete/Continue — only shown on
   // In Progress cards, not Backlog.
-  await page.locator('.kanban-card', { hasText: 'Split me later' }).getByRole('button', { name: 'Start' }).click();
+  await page
+    .locator('.kanban-card', { hasText: 'Split me later' })
+    .getByRole('button', { name: 'Start' })
+    .click();
   const splitCard = page.locator('.kanban-card', { hasText: 'Split me later' });
   await splitCard.getByRole('button', { name: 'Split' }).click();
   await expect(splitCard.getByText('Split', { exact: true })).toBeVisible();
@@ -168,12 +208,23 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.getByText('Level 1 — 15 XP — 5 coins')).toBeVisible();
   // The accessible celebration toast (role="status", aria-live="polite") —
   // a real reward-grant announcement, not just a visual flourish.
-  await expect(page.getByRole('status').filter({ hasText: '+10 XP' })).toBeVisible();
+  await expect(
+    page.getByRole('status').filter({ hasText: '+10 XP' }),
+  ).toBeVisible();
 
-  for (const [index, title] of ['Chop firewood', 'Answer three emails', 'Forage berries'].entries()) {
-    await page.locator('.kanban-card', { hasText: title }).getByRole('button', { name: 'Start' }).click();
+  for (const [index, title] of [
+    'Chop firewood',
+    'Answer three emails',
+    'Forage berries',
+  ].entries()) {
+    await page
+      .locator('.kanban-card', { hasText: title })
+      .getByRole('button', { name: 'Start' })
+      .click();
     const inProgressCard = page.locator('.kanban-card', { hasText: title });
-    await expect(inProgressCard.getByRole('button', { name: 'Complete' })).toBeVisible();
+    await expect(
+      inProgressCard.getByRole('button', { name: 'Complete' }),
+    ).toBeVisible();
 
     if (title === 'Chop firewood') {
       // Adventure Sprint slice: real start/pause/resume round trips against
@@ -187,16 +238,24 @@ test('signup through to a rendered Base Camp, and back again via character selec
       // stored timestamp, not a mocked clock) — see planning/03-first-
       // brave-step.md.
       await inProgressCard.getByRole('button', { name: '15 min' }).click();
-      await expect(inProgressCard.getByRole('button', { name: 'Pause' })).toBeVisible();
-      const finishSprintButton = inProgressCard.getByRole('button', { name: 'Finish sprint' });
+      await expect(
+        inProgressCard.getByRole('button', { name: 'Pause' }),
+      ).toBeVisible();
+      const finishSprintButton = inProgressCard.getByRole('button', {
+        name: 'Finish sprint',
+      });
       await expect(finishSprintButton).toBeDisabled();
 
       await inProgressCard.getByRole('button', { name: 'Pause' }).click();
-      await expect(inProgressCard.getByRole('button', { name: 'Resume' })).toBeVisible();
+      await expect(
+        inProgressCard.getByRole('button', { name: 'Resume' }),
+      ).toBeVisible();
       await expect(finishSprintButton).toBeDisabled();
 
       await inProgressCard.getByRole('button', { name: 'Resume' }).click();
-      await expect(inProgressCard.getByRole('button', { name: 'Pause' })).toBeVisible();
+      await expect(
+        inProgressCard.getByRole('button', { name: 'Pause' }),
+      ).toBeVisible();
     }
 
     if (title === 'Answer three emails') {
@@ -205,13 +264,21 @@ test('signup through to a rendered Base Camp, and back again via character selec
       // the quest off the board or grant any reward — it's a no-op on
       // status/column, distinct from Complete/Retreat.
       await inProgressCard.getByRole('button', { name: 'Continue' }).click();
-      await expect(inProgressCard.getByRole('button', { name: 'Complete' })).toBeVisible();
-      await expect(page.locator('.kanban-card', { hasText: title }).getByText('Done')).not.toBeVisible();
+      await expect(
+        inProgressCard.getByRole('button', { name: 'Complete' }),
+      ).toBeVisible();
+      await expect(
+        page.locator('.kanban-card', { hasText: title }).getByText('Done'),
+      ).not.toBeVisible();
     }
 
     await inProgressCard.getByRole('button', { name: 'Complete' }).click();
-    await expect(page.getByText(`Bridge repair: ${index + 1} / 3`)).toBeVisible();
-    await expect(page.locator('.kanban-card', { hasText: title }).getByText('Done')).toBeVisible();
+    await expect(
+      page.getByText(`Bridge repair: ${index + 1} / 3`),
+    ).toBeVisible();
+    await expect(
+      page.locator('.kanban-card', { hasText: title }).getByText('Done'),
+    ).toBeVisible();
 
     if (title === 'Chop firewood') {
       // The Daily reward loop's two completion-triggered bonuses, both
@@ -219,7 +286,11 @@ test('signup through to a rendered Base Camp, and back again via character selec
       // *completion* — the earlier Split deliberately doesn't count) and
       // Today's Three (this quest was starred above). The celebration toast
       // names which bonuses fired rather than just showing a bigger number.
-      await expect(page.getByRole('status').filter({ hasText: "First Brave Step + Today's Three bonus!" })).toBeVisible();
+      await expect(
+        page
+          .getByRole('status')
+          .filter({ hasText: "First Brave Step + Today's Three bonus!" }),
+      ).toBeVisible();
     }
   }
 
@@ -240,8 +311,16 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await page.getByRole('button', { name: 'Quests' }).click();
   await expect(page.getByText('Bridge repair: 3 / 3')).toBeVisible();
   await expect(page.getByText('Chop firewood')).toBeVisible();
-  await expect(page.locator('.kanban-card', { hasText: 'Chop firewood' }).getByText('Done')).toBeVisible();
-  await expect(page.locator('.kanban-card', { hasText: 'Take a rest day' }).getByText('Retreated')).toBeVisible();
+  await expect(
+    page
+      .locator('.kanban-card', { hasText: 'Chop firewood' })
+      .getByText('Done'),
+  ).toBeVisible();
+  await expect(
+    page
+      .locator('.kanban-card', { hasText: 'Take a rest day' })
+      .getByText('Retreated'),
+  ).toBeVisible();
   // Encounters only render on Backlog/In Progress cards (Done/Retreated are
   // already resolved), so the completed encounter's persistence is proven
   // by the surviving 95 XP total above rather than by re-finding the
@@ -267,6 +346,30 @@ test('signup through to a rendered Base Camp, and back again via character selec
   await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
   await expect(page.getByText('Workbench: level 1 / 3')).toBeVisible();
   await expect(page.getByText('Level 1 — 95 XP — 35 coins')).toBeVisible();
+
+  // Chronicle: a real route, not another Base Camp overlay. By this point
+  // the journey has produced genuine history of every kind the Chronicle
+  // reports — three completions, one split, one retreat, one continue, and
+  // one encounter — so this asserts against real accumulated activity
+  // rather than a fixture.
+  await page.getByRole('link', { name: 'Chronicle' }).click();
+  await expect(page).toHaveURL(/\/basecamp\/[^/]+\/chronicle$/);
+  await expect(page.getByRole('heading', { name: 'Chronicle' })).toBeVisible();
+
+  // Every resolution kind is represented, including the two that were
+  // invisible before Quest.resolvedAt existed.
+  await expect(page.getByText('Answer three emails').first()).toBeVisible();
+  await expect(page.getByText('Split me later').first()).toBeVisible();
+  await expect(page.getByText('Take a rest day').first()).toBeVisible();
+
+  // Retreating is legitimate play, so the Chronicle says "Stepped back
+  // from" and never frames a week as a failure.
+  await expect(page.getByText('Stepped back from').first()).toBeVisible();
+  await expect(page.getByText(/failed|abandoned|gave up/i)).toHaveCount(0);
+
+  // Back to Base Camp, confirming the route is a real round trip.
+  await page.getByRole('link', { name: 'Back to Base Camp' }).click();
+  await expect(page.getByRole('heading', { name: 'Base Camp' })).toBeVisible();
 
   expect(consoleErrors).toEqual([]);
 });

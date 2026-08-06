@@ -34,15 +34,15 @@ is not itself the app's first screen.
 ## Resource and survival loop
 
 Base Camp is not only a reflection of completed work (quests → construction) — it is also a place the
-character's camp visibly *sustains itself* moment to moment:
+character's camp visibly _sustains itself_ moment to moment:
 
 - Firewood (from chopped trees) fuels the campfire; an unfed fire visibly dims/goes to embers over
   time, and is relit by returning with more firewood — this is deliberately a light ambient-state
   loop, not a punishing survival-game timer.
 - Foraged plants and harvested animals represent food/supply resources tracked per-account. Companion
-  upkeep is built: the companion's visible glow and liveliness scale with forage gathered. Expedition
-  provisioning and other future systems are not — resource gathering is flavor and texture on top of
-  the quest system, never a gate in front of it.
+  upkeep is built: the companion's visible glow and liveliness scale with forage gathered. Weekly
+  Summit provisioning and other future systems are not — resource gathering is flavor and texture on
+  top of the quest system, never a gate in front of it.
 - The stream/lake is the resource loop's visual anchor and does not currently have a harvestable
   yield of its own (no fishing at this stage) — it establishes the camp's sense of place and is a
   natural home for future systems (fishing, camp expansion toward the water) without committing to

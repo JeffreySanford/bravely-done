@@ -1,0 +1,161 @@
+:host {
+  display: block;
+}
+
+.stage {
+  min-height: 100dvh;
+  padding: 56px 24px 96px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Same static backdrop the WebGL-less fallback uses elsewhere — the
+   Chronicle is a reading surface, so it deliberately doesn't mount a 3D
+   scene competing for attention with the text. */
+.grid-veil {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(rgba(0, 229, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 229, 255, 0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(circle at 50% 0%, black, transparent 75%);
+}
+
+.stage__header {
+  position: relative;
+  text-align: center;
+  max-width: 520px;
+  margin-bottom: 32px;
+}
+
+.stage__mark {
+  display: inline-block;
+  font-family: var(--bd-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.24em;
+  color: var(--bd-cyan);
+  opacity: 0.8;
+  margin-bottom: 10px;
+}
+
+.stage__header h1 {
+  margin: 0 0 10px;
+  font-size: 30px;
+}
+
+.stage__subtitle {
+  margin: 0;
+  color: var(--bd-text-muted);
+  font-size: 14px;
+  font-family: var(--bd-font-mono);
+}
+
+.chronicle__status {
+  position: relative;
+  margin: 0 0 20px;
+  color: var(--bd-text-muted);
+  font-size: 13px;
+  font-family: var(--bd-font-mono);
+}
+
+.chronicle__status--error {
+  color: var(--bd-danger);
+}
+
+.chronicle__totals {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  width: min(720px, 100%);
+  margin-bottom: 28px;
+}
+
+.chronicle__total {
+  flex: 1 1 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 10px;
+  border-radius: var(--bd-radius);
+  background: var(--bd-surface);
+  border: 1px solid var(--bd-surface-border);
+}
+
+.chronicle__total-value {
+  font-family: var(--bd-font-mono);
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--bd-cyan);
+}
+
+.chronicle__total-label {
+  font-size: 11px;
+  color: var(--bd-text-muted);
+  text-align: center;
+}
+
+.chronicle__quiet {
+  position: relative;
+  max-width: 420px;
+  margin: 0;
+  text-align: center;
+  color: var(--bd-text-muted);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.chronicle__entries {
+  position: relative;
+  width: min(720px, 100%);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.chronicle__entry {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid transparent;
+  font-size: 13px;
+}
+
+.chronicle__entry-when {
+  flex-shrink: 0;
+  min-width: 108px;
+  font-family: var(--bd-font-mono);
+  font-size: 11px;
+  color: var(--bd-text-muted);
+}
+
+.chronicle__entry-what {
+  color: var(--bd-text);
+  word-break: break-word;
+}
+
+.stage__footer {
+  position: absolute;
+  right: 24px;
+  bottom: 24px;
+  left: 24px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.stage__back {
+  width: auto;
+}

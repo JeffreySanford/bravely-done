@@ -229,10 +229,26 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       calls (3-per-day cap, idempotent re-designation, undesignate frees a slot, bonus stacking, split
       grants neither), a real-Postgres integration suite, and a 3-engine Playwright e2e run.
 
+- [x] Build the Chronicle — an honest account of a character's week
+      (`GET /characters/:id/chronicle`, plus a real `/basecamp/:characterId/chronicle` route rather
+      than a third Base Camp overlay). Reports quests by resolution, sprints with their committed
+      focus minutes, and encounters, assembled from timestamps the domain already records. Required
+      adding `Quest.resolvedAt`: `completedAt` only ever marked COMPLETED quests, so retreats and
+      splits were literally unplaceable in time. Deliberately reports no XP/coin totals — there's no
+      reward ledger, so those can only be estimated, and an estimate presented as history would be
+      worse than omitting it (see [Plan 04](planning/04-rewards-retention.md)). Non-punitive by
+      design: a retreat reads "Stepped back from", and a quiet week reads as a quiet week with
+      nothing lost.
+
 ## Later milestones
 
-- [ ] Weekly and monthly reward loops (Expedition/Chronicle, Campaign chapter) — the Daily cadence is
-      done; these two are each substantially larger and need their own scoping pass.
+- [ ] Weekly Summit (the weekly boss — renamed from "Expedition", which collided with the Agile/SAFe
+      dual-label for a Sprint) and the Monthly Campaign chapter. The Daily cadence and the Chronicle
+      are done; these two are each substantially larger and need their own scoping pass. The Summit in
+      particular is still undesigned — "tied to the most important goal" needs a notion of goal
+      importance the project doesn't have.
+- [ ] A reward ledger: one append-only row per grant (character, category, amount, source, timestamp).
+      Would let the Chronicle report real per-period XP/coins instead of omitting them.
 - [ ] Remote Ember LLM service (NestJS-connected), confidence-based autonomy, editable Hero Profile.
 - [ ] Capacitor Android and iOS packaging.
 - [ ] Parties (real-invited or matchmade), guilds, cooperative quests, and moderation.

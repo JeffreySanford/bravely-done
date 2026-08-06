@@ -1,0 +1,85 @@
+<div class="stage">
+  <div class="grid-veil" aria-hidden="true"></div>
+
+  <header class="stage__header">
+    <span class="stage__mark">BRAVELY DONE</span>
+    <h1>Chronicle</h1>
+    @if (chronicle(); as summary) {
+    <p class="stage__subtitle">
+      {{ summary.from | date: 'MMM d' }} – {{ summary.to | date: 'MMM d' }}
+    </p>
+    } @else {
+    <p class="stage__subtitle">Your last seven days.</p>
+    }
+  </header>
+
+  @if (loading()) {
+  <p class="chronicle__status" role="status">Gathering your week…</p>
+  } @if (error(); as message) {
+  <p class="chronicle__status chronicle__status--error" role="alert">
+    {{ message }}
+  </p>
+  } @if (chronicle(); as summary) {
+  <section
+    class="chronicle__totals"
+    aria-label="Summary of the last seven days"
+  >
+    <div class="chronicle__total">
+      <span class="chronicle__total-value">{{ summary.questsCompleted }}</span>
+      <span class="chronicle__total-label">completed</span>
+    </div>
+    <div class="chronicle__total">
+      <span class="chronicle__total-value">{{ summary.questsSplit }}</span>
+      <span class="chronicle__total-label">split</span>
+    </div>
+    <div class="chronicle__total">
+      <span class="chronicle__total-value">{{ summary.questsContinued }}</span>
+      <span class="chronicle__total-label">continued</span>
+    </div>
+    <div class="chronicle__total">
+      <span class="chronicle__total-value">{{ summary.questsRetreated }}</span>
+      <span class="chronicle__total-label">stepped back</span>
+    </div>
+    <div class="chronicle__total">
+      <span class="chronicle__total-value">{{ summary.focusMinutes }}</span>
+      <span class="chronicle__total-label">focus minutes</span>
+    </div>
+    <div class="chronicle__total">
+      <span class="chronicle__total-value"
+        >{{ summary.encountersCompleted }}</span
+      >
+      <span class="chronicle__total-label">small steps</span>
+    </div>
+  </section>
+
+  @if (isQuiet()) {
+  <!-- A quiet week is reported as a quiet week. No streak broken, no
+           nudge to do better — "rest days and comeback quests are legitimate
+           play" (rewards-retention.md). -->
+  <p class="chronicle__quiet">
+    A quiet week. Nothing recorded — that's allowed, and nothing was lost.
+  </p>
+  } @else {
+  <ol class="chronicle__entries">
+    @for (entry of summary.entries; track $index) {
+    <li class="chronicle__entry">
+      <span class="chronicle__entry-when"
+        >{{ entry.at | date: 'EEE d, HH:mm' }}</span
+      >
+      <span class="chronicle__entry-what">
+        {{ labelFor(entry.kind) }} <strong>{{ entry.title }}</strong>
+      </span>
+    </li>
+    }
+  </ol>
+  } }
+
+  <div class="stage__footer">
+    <a
+      [routerLink]="['/basecamp', characterId]"
+      class="bd-button bd-button--ghost stage__back"
+    >
+      Back to Base Camp
+    </a>
+  </div>
+</div>

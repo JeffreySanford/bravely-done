@@ -1,24 +1,25 @@
 # Product Glossary
 
-| Bravely Done      | Conventional meaning                                          |
-| ------------------ | -------------------------------------------------------------- |
-| Quest              | Task or desired outcome                                        |
-| Encounter          | Small actionable step                                          |
-| Questline          | Project or multi-step outcome                                  |
-| Adventure Sprint    | Focused work session                                            |
-| Threat Level        | Difficulty or urgency                                           |
-| Bounty              | Paid task or contract                                           |
-| Party               | Small team (real-invited or matchmade)                          |
-| Guild               | Persistent community or organization                            |
-| Campaign            | Large initiative                                                |
-| Chronicle           | Progress summary                                                |
-| Hero Profile        | Private personalization and work-pattern data                   |
-| Base Camp           | Primary game world and progress surface — **the player's own hub**, not a third-party tool |
-| First Brave Step    | Smallest useful starting action                                 |
-| Comeback Quest      | Supportive restart after absence                                |
-| Ember               | The player's AI companion — first of a selectable roster of styled avatars. See [AI companion](ai-companion.md). |
+| Bravely Done                        | Conventional meaning                                                                                                                                                                                 |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Quest                               | Task or desired outcome                                                                                                                                                                              |
+| Encounter                           | Small actionable step                                                                                                                                                                                |
+| Questline                           | Project or multi-step outcome                                                                                                                                                                        |
+| Adventure Sprint                    | Focused work session                                                                                                                                                                                 |
+| Threat Level                        | Difficulty or urgency                                                                                                                                                                                |
+| Bounty                              | Paid task or contract                                                                                                                                                                                |
+| Party                               | Small team (real-invited or matchmade)                                                                                                                                                               |
+| Guild                               | Persistent community or organization                                                                                                                                                                 |
+| Campaign                            | Large initiative                                                                                                                                                                                     |
+| Chronicle                           | Progress summary — an honest account of a window of real activity. See [rewards and retention](rewards-retention.md).                                                                                |
+| Weekly Summit                       | The weekly boss/challenge tied to the most important goal (not built). Named "Summit" rather than "Expedition" — see the disambiguation below.                                                       |
+| Hero Profile                        | Private personalization and work-pattern data                                                                                                                                                        |
+| Base Camp                           | Primary game world and progress surface — **the player's own hub**, not a third-party tool                                                                                                           |
+| First Brave Step                    | Smallest useful starting action                                                                                                                                                                      |
+| Comeback Quest                      | Supportive restart after absence                                                                                                                                                                     |
+| Ember                               | The player's AI companion — first of a selectable roster of styled avatars. See [AI companion](ai-companion.md).                                                                                     |
 | Facilitator, Adventurer, Scout, ... | Game-vocabulary names for PM/Agile roles (aka Scrum Master, Developer, Tester, etc.) — dual-labeled by default, not hidden behind a toggle. See [Agile/SAFe progression](agile-safe-progression.md). |
-| Basecamp Connector  | The optional **third-party** Basecamp (PM tool) integration, built in Three.js/UI. Not to be confused with **Base Camp**, the game's own hub. |
+| Basecamp Connector                  | The optional **third-party** Basecamp (PM tool) integration, built in Three.js/UI. Not to be confused with **Base Camp**, the game's own hub.                                                        |
 
 ## Disambiguation: Base Camp vs. Basecamp Connector
 
@@ -27,3 +28,15 @@ base. "Basecamp Connector" refers to syncing with the third-party project-manage
 one possible external integration alongside the player's native (Postgres-backed) task data. These are
 unrelated concepts that happen to sound alike; use the full disambiguated names in any doc that could
 be ambiguous.
+
+## Disambiguation: Expedition vs. Weekly Summit
+
+"Expedition" is the Agile/SAFe dual-label for a **Sprint** — see
+[Agile/SAFe progression](agile-safe-progression.md)'s vocabulary mapping, and the **Adventure Sprint**
+that implements it. It is a focused work session, not a weekly event.
+
+The weekly boss/challenge in [rewards and retention](rewards-retention.md)'s return cadence was
+originally also called "Expedition", which made the two indistinguishable. It is now the **Weekly
+Summit**. "Summit" keeps the mountaineering vocabulary the rest of the game already uses (Base Camp,
+Landmark, the bridge) while naming something a Sprint is not: a peak you work toward, rather than the
+work session itself.

@@ -136,6 +136,14 @@ model Quest {
   /// Completing a quest while its day matches today grants
   /// TODAYS_THREE_BONUS_XP_REWARD/COIN_REWARD on top of the normal reward.
   todaysThreeDay DateTime?
+  /// When this quest reached *any* terminal resolution — completed, retreated,
+  /// or split. `completedAt` only ever marks a COMPLETED quest, so before this
+  /// field existed a retreat or a split couldn't be placed in time at all,
+  /// which made them invisible to the Chronicle (see ChronicleService).
+  /// Rows resolved before this field was added keep it null and are simply
+  /// absent from Chronicle windows — no backfill, since inventing a
+  /// resolution time would be worse than admitting it isn't known.
+  resolvedAt DateTime?
   sprints     Sprint[]
   encounters  Encounter[]
 

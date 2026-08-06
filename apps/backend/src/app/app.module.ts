@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AuthModule } from '../auth/auth.module';
 import { CharacterModule } from '../character/character.module';
+import { ChronicleModule } from '../chronicle/chronicle.module';
 import { EncounterModule } from '../encounter/encounter.module';
 import { HealthModule } from '../health/health.module';
 import { PrismaModule } from '../prisma/prisma.module';
@@ -18,6 +19,7 @@ import { AppService } from './app.service';
     QuestModule,
     SprintModule,
     EncounterModule,
+    ChronicleModule,
   ],
   controllers: [AppController],
   providers: [AppService],

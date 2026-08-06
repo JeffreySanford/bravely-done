@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { Character, Quest, QuestStatus } from '../generated/prisma/client';
 import { isSameUtcDay, utcDayStart } from '../common/date.util';
@@ -41,14 +45,21 @@ export const TODAYS_THREE_BONUS_COIN_REWARD = 5;
 export class QuestService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(userId: string, characterId: string, dto: CreateQuestDto): Promise<Quest> {
+  async create(
+    userId: string,
+    characterId: string,
+    dto: CreateQuestDto,
+  ): Promise<Quest> {
     await this.findOwnedCharacter(userId, characterId);
     return this.prisma.quest.create({
       data: { characterId, title: dto.title },
     });
   }
 
-  async listForCharacter(userId: string, characterId: string): Promise<Quest[]> {
+  async listForCharacter(
+    userId: string,
+    characterId: string,
+  ): Promise<Quest[]> {
     await this.findOwnedCharacter(userId, characterId);
     return this.prisma.quest.findMany({
       where: { characterId },
@@ -85,7 +96,11 @@ export class QuestService {
    * continue from a duplicate network retry of the first. Grants no reward,
    * same precedent as retreat. Already-resolved quests (completed, retreated,
    * or split) are returned as-is. */
-  async continue(userId: string, questId: string, idempotencyKey?: string): Promise<Quest> {
+  async continue(
+    userId: string,
+    questId: string,
+    idempotencyKey?: string,
+  ): Promise<Quest> {
     const quest = await this.findOwnedQuest(userId, questId);
 
     if (this.isDuplicateCall(quest, idempotencyKey)) {
@@ -125,16 +140,32 @@ export class QuestService {
     userId: string,
     questId: string,
     idempotencyKey?: string,
-  ): Promise<{ quest: Quest; character: Character; firstBraveStepBonusGranted: boolean; todaysThreeBonusGranted: boolean }> {
+  ): Promise<{
+    quest: Quest;
+    character: Character;
+    firstBraveStepBonusGranted: boolean;
+    todaysThreeBonusGranted: boolean;
+  }> {
     const quest = await this.findOwnedQuest(userId, questId);
 
-    if (this.isDuplicateCall(quest, idempotencyKey) || this.isResolved(quest.status)) {
+    if (
+      this.isDuplicateCall(quest, idempotencyKey) ||
+      this.isResolved(quest.status)
+    ) {
       const { character, ...rest } = quest;
-      return { quest: rest, character, firstBraveStepBonusGranted: false, todaysThreeBonusGranted: false };
+      return {
+        quest: rest,
+        character,
+        firstBraveStepBonusGranted: false,
+        todaysThreeBonusGranted: false,
+      };
     }
 
     const now = new Date();
-    const firstBraveStepBonusGranted = !isSameUtcDay(quest.character.firstBraveStepDay, now);
+    const firstBraveStepBonusGranted = !isSameUtcDay(
+      quest.character.firstBraveStepDay,
+      now,
+    );
     const todaysThreeBonusGranted = isSameUtcDay(quest.todaysThreeDay, now);
     const xpReward =
       QUEST_XP_REWARD +
@@ -145,13 +176,17 @@ export class QuestService {
       (firstBraveStepBonusGranted ? FIRST_BRAVE_STEP_COIN_REWARD : 0) +
       (todaysThreeBonusGranted ? TODAYS_THREE_BONUS_COIN_REWARD : 0);
 
-    const nextStage = Math.min(quest.character.campConstructionStage + 1, MAX_CONSTRUCTION_STAGE);
+    const nextStage = Math.min(
+      quest.character.campConstructionStage + 1,
+      MAX_CONSTRUCTION_STAGE,
+    );
     const [completedQuest, character] = await this.prisma.$transaction([
       this.prisma.quest.update({
         where: { id: questId },
         data: {
           status: QuestStatus.COMPLETED,
           completedAt: now,
+          resolvedAt: now,
           lastIdempotencyKey: idempotencyKey ?? quest.lastIdempotencyKey,
         },
       }),
@@ -161,12 +196,19 @@ export class QuestService {
           campConstructionStage: nextStage,
           xp: { increment: xpReward },
           coins: { increment: coinReward },
-          firstBraveStepDay: firstBraveStepBonusGranted ? utcDayStart(now) : undefined,
+          firstBraveStepDay: firstBraveStepBonusGranted
+            ? utcDayStart(now)
+            : undefined,
         },
       }),
     ]);
 
-    return { quest: completedQuest, character, firstBraveStepBonusGranted, todaysThreeBonusGranted };
+    return {
+      quest: completedQuest,
+      character,
+      firstBraveStepBonusGranted,
+      todaysThreeBonusGranted,
+    };
   }
 
   /** Retreats from an open or in-progress quest: a deliberate, penalty-free
@@ -174,16 +216,27 @@ export class QuestService {
    * rules — "rest days and comeback quests are legitimate play"). Grants no
    * reward and does not touch camp construction. Already-resolved quests
    * are returned as-is, same idempotent pattern as complete(). */
-  async retreat(userId: string, questId: string, idempotencyKey?: string): Promise<Quest> {
+  async retreat(
+    userId: string,
+    questId: string,
+    idempotencyKey?: string,
+  ): Promise<Quest> {
     const quest = await this.findOwnedQuest(userId, questId);
 
-    if (this.isDuplicateCall(quest, idempotencyKey) || this.isResolved(quest.status)) {
+    if (
+      this.isDuplicateCall(quest, idempotencyKey) ||
+      this.isResolved(quest.status)
+    ) {
       return quest;
     }
 
     return this.prisma.quest.update({
       where: { id: questId },
-      data: { status: QuestStatus.RETREATED, lastIdempotencyKey: idempotencyKey ?? quest.lastIdempotencyKey },
+      data: {
+        status: QuestStatus.RETREATED,
+        resolvedAt: new Date(),
+        lastIdempotencyKey: idempotencyKey ?? quest.lastIdempotencyKey,
+      },
     });
   }
 
@@ -194,10 +247,17 @@ export class QuestService {
    * both Complete (full credit) and Retreat (no credit). Does not touch camp
    * construction — half credit for the quest's own reward, not the shared
    * bridge stage. Same transactional/idempotent shape as complete(). */
-  async split(userId: string, questId: string, idempotencyKey?: string): Promise<{ quest: Quest; character: Character }> {
+  async split(
+    userId: string,
+    questId: string,
+    idempotencyKey?: string,
+  ): Promise<{ quest: Quest; character: Character }> {
     const quest = await this.findOwnedQuest(userId, questId);
 
-    if (this.isDuplicateCall(quest, idempotencyKey) || this.isResolved(quest.status)) {
+    if (
+      this.isDuplicateCall(quest, idempotencyKey) ||
+      this.isResolved(quest.status)
+    ) {
       const { character, ...rest } = quest;
       return { quest: rest, character };
     }
@@ -207,6 +267,7 @@ export class QuestService {
         where: { id: questId },
         data: {
           status: QuestStatus.SPLIT,
+          resolvedAt: new Date(),
           lastIdempotencyKey: idempotencyKey ?? quest.lastIdempotencyKey,
         },
       }),
@@ -233,7 +294,9 @@ export class QuestService {
     const now = new Date();
 
     if (this.isResolved(quest.status)) {
-      throw new BadRequestException('Cannot designate a resolved quest for Today\'s Three');
+      throw new BadRequestException(
+        "Cannot designate a resolved quest for Today's Three",
+      );
     }
     if (isSameUtcDay(quest.todaysThreeDay, now)) {
       return quest;
@@ -244,7 +307,9 @@ export class QuestService {
       where: { characterId: quest.characterId, todaysThreeDay: today },
     });
     if (designatedToday >= TODAYS_THREE_MAX) {
-      throw new BadRequestException(`Only ${TODAYS_THREE_MAX} quests can be designated as Today's Three per day`);
+      throw new BadRequestException(
+        `Only ${TODAYS_THREE_MAX} quests can be designated as Today's Three per day`,
+      );
     }
 
     return this.prisma.quest.update({
@@ -256,7 +321,10 @@ export class QuestService {
   /** Removes today's Today's Three designation, if any — idempotent no-op
    * if the quest wasn't designated today (matches complete/continue/
    * retreat's forgiving-on-repeat style). */
-  async undesignateTodaysThree(userId: string, questId: string): Promise<Quest> {
+  async undesignateTodaysThree(
+    userId: string,
+    questId: string,
+  ): Promise<Quest> {
     const quest = await this.findOwnedQuest(userId, questId);
 
     if (!isSameUtcDay(quest.todaysThreeDay, new Date())) {
@@ -270,7 +338,11 @@ export class QuestService {
   }
 
   private isResolved(status: QuestStatus): boolean {
-    return status === QuestStatus.COMPLETED || status === QuestStatus.RETREATED || status === QuestStatus.SPLIT;
+    return (
+      status === QuestStatus.COMPLETED ||
+      status === QuestStatus.RETREATED ||
+      status === QuestStatus.SPLIT
+    );
   }
 
   /** A duplicate network retry of the same resolution call — same quest,
@@ -278,10 +350,15 @@ export class QuestService {
    * for continue() today (see its docblock), but checked uniformly across
    * all four resolution methods for a consistent idempotency contract. */
   private isDuplicateCall(quest: Quest, idempotencyKey?: string): boolean {
-    return idempotencyKey != null && quest.lastIdempotencyKey === idempotencyKey;
+    return (
+      idempotencyKey != null && quest.lastIdempotencyKey === idempotencyKey
+    );
   }
 
-  private async findOwnedQuest(userId: string, questId: string): Promise<Quest & { character: Character }> {
+  private async findOwnedQuest(
+    userId: string,
+    questId: string,
+  ): Promise<Quest & { character: Character }> {
     const quest = await this.prisma.quest.findFirst({
       where: { id: questId, character: { userId } },
       include: { character: true },
@@ -292,7 +369,10 @@ export class QuestService {
     return quest;
   }
 
-  private async findOwnedCharacter(userId: string, characterId: string): Promise<Character> {
+  private async findOwnedCharacter(
+    userId: string,
+    characterId: string,
+  ): Promise<Character> {
     const character = await this.prisma.character.findFirst({
       where: { id: characterId, userId },
     });

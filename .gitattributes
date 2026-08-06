@@ -1,0 +1,22 @@
+# Normalize line endings so the repo stores LF and every checkout gets LF,
+# regardless of platform or a contributor's core.autocrlf setting.
+#
+# Without this, a Windows checkout produces CRLF working files while Prettier
+# writes LF — so `nx format:check` reports every line of a touched file as
+# unformatted, even when nothing about its formatting actually changed. That
+# false failure cost real time before this file existed.
+* text=auto eol=lf
+
+# Binary assets must never be line-ending converted.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.pdf binary
+*.zip binary

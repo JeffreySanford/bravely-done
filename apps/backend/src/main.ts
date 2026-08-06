@@ -9,24 +9,38 @@ import 'dotenv/config';
 
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
+import {
+  FastifyAdapter,
+  NestFastifyApplication,
+} from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import fastifyCookie from '@fastify/cookie';
 import { AppModule } from './app/app.module';
+import { ApiExceptionFilter } from './common/api-exception.filter';
+import { RequestIdInterceptor } from './common/request-id.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
+  const app = await NestFactory.create<NestFastifyApplication>(
+    AppModule,
+    new FastifyAdapter(),
+  );
   // @fastify/cookie's plugin type expects the instance to already have
   // cookie methods (a self-referential typing quirk in Fastify's plugin
   // types), which trips a false-positive mismatch against
   // NestFastifyApplication's own bundled FastifyInstance type. Registration
   // works correctly at runtime — verified via a real signup/login/refresh/
   // logout smoke test against live Postgres.
-  await app.register(fastifyCookie as unknown as Parameters<typeof app.register>[0]);
+  await app.register(
+    fastifyCookie as unknown as Parameters<typeof app.register>[0],
+  );
 
   const globalPrefix = 'api';
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  // Together these two mean no response leaves without a correlation id:
+  // the interceptor covers success, the filter covers every error.
+  app.useGlobalInterceptors(new RequestIdInterceptor());
+  app.useGlobalFilters(new ApiExceptionFilter());
   app.enableCors({
     origin: process.env.FRONTEND_ORIGIN ?? 'http://localhost:4200',
     credentials: true,

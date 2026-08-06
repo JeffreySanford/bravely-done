@@ -11,7 +11,8 @@ decision this plan implements: character select, not Base Camp, is the app's lan
       [Plan 05](05-ai-companion.md) for that).
 - [x] Build Character data model (multiple characters per user account).
 - [x] Build character creation/list endpoints (`POST/GET /characters`, JWT-guarded). Mandatory-first-
-      step *enforcement* is a frontend routing concern — see the Frontend section below, still open.
+      step _enforcement_ is a frontend routing concern, handled by the guards in the Frontend section
+      below.
 
 ## Frontend
 

@@ -7,8 +7,13 @@
     "db:down": "docker compose -f docker/docker-compose.yml down",
     "db:generate": "pnpm --filter @org/backend exec prisma generate --config prisma.config.ts",
     "db:migrate": "pnpm --filter @org/backend exec prisma migrate deploy --config prisma.config.ts",
+    "serve:api": "nx serve @org/backend",
+    "serve:web": "nx serve frontend",
     "serve:apps": "nx run-many -t serve --projects=frontend,@org/backend --parallel=2",
-    "start:all": "pnpm run db:up && pnpm run db:generate && pnpm run db:migrate && pnpm run serve:apps"
+    "start:all": "pnpm run db:up && pnpm run db:generate && pnpm run db:migrate && pnpm run serve:apps",
+    "api:generate": "nx run frontend:generate-api",
+    "quality": "nx format:check --base=origin/master && nx run-many -t typecheck lint test build",
+    "e2e": "nx run-many -t e2e"
   },
   "private": true,
   "devDependencies": {

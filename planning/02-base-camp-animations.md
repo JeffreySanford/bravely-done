@@ -31,8 +31,9 @@
       liveliness now scale with forage gathered ("upkeep" — see "Resource loop" below).
 - [x] Quest Board, chest, treasury, bridge, and workbench landmarks. The workbench is clickable (real
       raycasting) and spends real coins on a capped upgrade (`POST /characters/:id/upgrade-workbench`,
-      `WORKBENCH_MAX_LEVEL`/`WORKBENCH_UPGRADE_COSTS` in `apps/backend/src/character/character.
-      service.ts`) — its glow rings light up one at a time as `workbenchLevel` rises. The workbench now
+      `WORKBENCH_MAX_LEVEL`/`WORKBENCH_UPGRADE_COSTS` in
+      `apps/backend/src/character/character.service.ts`) — its glow rings light up one at a time as
+      `workbenchLevel` rises. The workbench now
       has a real capability unlock too: `gatheringYield(workbenchLevel)` (same file) scales how much
       firewood/forage one chop/forage click grants — 1 unit at level 0 up to 4 at
       `WORKBENCH_MAX_LEVEL`, a better tool crafted at the workbench rather than just a bigger displayed
@@ -44,8 +45,9 @@
       erected. Verified live via a 3-engine Playwright e2e run (arrive once, reload, confirm no replay
       of the erect animation logic — the backend flag, not client state, is authoritative).
 - [x] Choppable trees: clicking a tree (real raycasting against the tree meshes, not a flat button)
-      plays an optimistic chop wobble and dispatches a real backend chop (`POST /characters/:id/
-      chop-tree`, atomic increment); the resulting firewood count feeds the campfire, see above.
+      plays an optimistic chop wobble and dispatches a real backend chop
+      (`POST /characters/:id/chop-tree`, atomic increment); the resulting firewood count feeds the
+      campfire, see above.
       Verified: backend increment + persistence confirmed live via direct API calls (signup → arrive →
       chop x3 → fresh fetch confirms firewoodCount survives). The in-browser click itself is now
       verified live too (see "Visual verification" below) — clicking a tree's real projected screen
@@ -93,8 +95,9 @@
 - [x] Player returned (tent sequence — resolved by firstArrival at construction time).
 - [x] Tent erection (first arrival for a given character only — gated by backend state, see above).
 - [ ] Quest accepted.
-- [x] Sprint started and calm focus: `FocusSequence` (`apps/frontend/src/app/pages/base-camp/
-      base-camp-scene.ts`) reacts to a `sprintFocusChanged` event with a calm, slow-tumbling halo around
+- [x] Sprint started and calm focus: `FocusSequence`
+      (`apps/frontend/src/app/pages/base-camp/base-camp-scene.ts`) reacts to a `sprintFocusChanged`
+      event with a calm, slow-tumbling halo around
       the companion — fading gently in while any Adventure Sprint is `ACTIVE` and fading back out
       otherwise (`FOCUS_FADE_SECONDS` = 0.6s), deliberately distinct from the celebratory pulses used
       for quest/workbench rewards elsewhere in this file, since a sprint is sustained focus, not a
@@ -109,7 +112,10 @@
 - [x] Quest completed: `BridgeSequence` reacts to a `questCompleted` event, reveals the next bridge
       plank, and pulses it — driven by the real Quest domain (`POST /quests/:id/complete`, see
       [Plan 03](03-first-brave-step.md)), not a mock stub.
-- [ ] XP, coins, loot reveal.
+- [ ] XP, coins, loot reveal. Every reward grant now raises an accessible HTML celebration toast
+      (`.celebration-toast`, `role="status"`/`aria-live="polite"`, naming any Daily bonus that fired —
+      see [Plan 03](03-first-brave-step.md)), but there is still no _scene-side_ reveal: nothing in the
+      3D camp reacts to XP or coins specifically, and loot doesn't exist as a concept yet.
 - [x] Resource gathering: `chopTree` (per-tree, reacted to by that tree's own sequence),
       `firewoodGathered` (campfire reacts by recomputing its fuel reserve), `forage` (the bush's own
       sequence plays a harvest pulse), and `forageGathered` (the companion reacts by updating its
@@ -167,7 +173,7 @@ elements are `inline-block` by default, so `width: 100%` genuinely applies and f
 `.kanban-board__form .bd-button`, `.board-toggle`).
 
 A second bug in the same pass: the quest-title input reused the global `.bd-field` class directly on
-itself, but `.bd-field` (`apps/frontend/src/styles.scss`) is a label+input+hint *wrapper* — every
+itself, but `.bd-field` (`apps/frontend/src/styles.scss`) is a label+input+hint _wrapper_ — every
 other form in the app (signup, login, character creation) wraps a `<label>`/`<input>`/hint `<span>`
 in a `.bd-field` div, and the actual input styling lives in a `.bd-field input` descendant selector.
 Applying `.bd-field` straight to the `<input>` meant that descendant selector never matched, so the

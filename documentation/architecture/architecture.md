@@ -37,11 +37,34 @@ Domain events
   not the heavier `@angular/animations` package — distinct from the Three.js scene-animation layer
   covered in the Base Camp planning docs.
 
+## API operational contract
+
+Three cross-cutting behaviors apply to every backend endpoint:
+
+- **Validation** — a global `ValidationPipe` (`whitelist` + `transform`) rejects unknown properties
+  rather than silently accepting them.
+- **One error shape** — `ApiExceptionFilter` (`apps/backend/src/common/`) returns
+  `{ statusCode, message, error, requestId, path, timestamp }` for every failure, plus `details[]` for
+  field-level validation errors. `message` is always a string (never an array), because the frontend
+  reads it directly to surface real, user-actionable failures. Unhandled errors never expose their own
+  message — that can carry connection strings, SQL, or file paths — and are logged server-side with the
+  `requestId` instead. Only 5xx logs at error level; a 4xx means the API rejected bad input correctly.
+- **Request correlation** — every response carries an `x-request-id`, honoring an inbound one when a
+  caller or proxy supplies it. `RequestIdInterceptor` covers successes, the exception filter covers
+  failures, so nothing leaves without one.
+
+`GET /api/health` (unauthenticated, so probes can reach it) reports liveness plus dependency
+readiness, running a real database round trip rather than trusting connection state — Prisma connects
+once at startup, so a client that has since lost Postgres would otherwise still look connected. It
+answers **503**, not 500, when a dependency is down: the API is working, it just can't serve traffic.
+
 ## Unified event logging
 
-An interceptor-driven logger (NestJS interceptors backend, Angular interceptors frontend) captures a
-**single unified stream** of both domain/game events (quest completions, level-ups, role switches,
-Ember autonomy decisions) and technical events (API requests/errors, auth events) — one stream,
+Still to build. Today the backend uses Nest's default `Logger` with correlation ids (above), not a
+structured JSON stream. The intended design: an interceptor-driven logger (NestJS interceptors backend,
+Angular interceptors frontend) capturing a **single unified stream** of both domain/game events (quest
+completions, level-ups, role switches, Ember autonomy decisions) and technical events (API
+requests/errors, auth events) — one stream,
 filterable by category, not two separate systems. It serves **both** admin observability and
 user-facing features (activity feed, audit trail) — the schema is designed for both audiences from the
 start. The WebSocket-first real-time strategy above lets the same captured events be broadcast live to

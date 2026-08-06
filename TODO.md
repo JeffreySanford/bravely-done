@@ -18,22 +18,54 @@ This is the root status dashboard. Detailed acceptance criteria live in `plannin
 
 ## Next: stabilize the foundation
 
-- [ ] Add root scripts: `serve:dev`, `serve:mobile`, `serve:api`, `db:up`, `db:down`, `db:migrate`, `api:generate`, `quality`.
-- [ ] Add `.env.example` entries for database, auth, CORS, and frontend API URL.
-- [ ] Add database health check and backend `/api/health` endpoint.
-- [ ] Add consistent validation pipe, exception filter, logging, and request correlation.
-- [ ] Add authentication endpoints and tests around the current User/Session schema.
-- [ ] Add CI workflow running format, lint, typecheck, unit, coverage, build, and e2e.
-- [ ] Resolve or formally defer Storybook builder compatibility.
+- [x] Add root scripts: `serve:api`, `serve:web`, `serve:apps`, `db:up`, `db:down`, `db:generate`,
+      `db:migrate`, `api:generate`, `quality`, `e2e`. `pnpm quality` runs exactly what CI gates on
+      (`nx format:check --base=origin/master` then typecheck/lint/test/build across every project), so
+      "will CI pass?" is one local command — it caught unformatted files on its very first run.
+      `serve:mobile` is deliberately absent until Capacitor exists — see [Plan 06](planning/
+      06-mobile-platforms.md).
+- [x] Add `.env.example` entries for database, auth, CORS, and frontend API URL. It previously listed
+      only the GitHub MCP token, which made it actively misleading: `DATABASE_URL`, `JWT_SECRET`, and
+      `FRONTEND_ORIGIN` are all genuinely required (CI sets each by hand), and a missing one surfaces as
+      a confusing startup failure rather than a clear "not configured" message.
+- [x] Add database health check and backend `/api/health` endpoint (`apps/backend/src/health/`).
+      Returns `{ status, database, checkedAt }` — 200 when reachable, **503** (not 500) when not, which
+      is what lets a probe pull an instance from rotation without treating it as a crash. The database
+      check runs a real `SELECT 1` rather than inspecting connection state: Prisma connects once at
+      module init, so a client that has since lost Postgres would otherwise still _look_ connected.
+      Verified live by stopping the Postgres container mid-run — the endpoint flipped to 503
+      `database: "error"` without throwing, then recovered on its own when the container came back.
+- [x] Add consistent validation pipe, exception filter, logging, and request correlation. The global
+      `ValidationPipe` (whitelist + transform) was already in place; added `ApiExceptionFilter` so every
+      error returns one shape (`statusCode`/`message`/`error`/`requestId`/`path`/`timestamp`, plus
+      `details` for field-level validation failures) and a `RequestIdInterceptor` so successes carry the
+      id too. `message` is deliberately always a string — the frontend reads it directly to surface real
+      failures like "Not enough coins for the next workbench upgrade" — while validation's individual
+      messages survive in `details`. Unhandled errors never leak their own message (connection strings,
+      SQL, paths); the real one is logged with the `requestId` for lookup. Only 5xx logs at error level,
+      since a 4xx is the API working correctly.
+- [x] Add authentication endpoints and tests around the current User/Session schema — done in the
+      character-select milestone below (JWT + DB-backed revocable refresh sessions).
+- [x] Add CI workflow running format, lint, typecheck, unit, build, and e2e
+      (`.github/workflows/ci.yml`, against a real Postgres service container, covering both the backend
+      integration tier and the 3-engine Playwright suite). A **coverage gate is still not wired** —
+      `documentation/quality-gates/testing-gate.md` states 98%, and nothing enforces it yet.
+- [x] Formally defer Storybook. `apps/frontend/.storybook/` exists with `@storybook/angular`
+      installed and **zero** `.stories.*` files, so it is configuration with nothing behind it. Deferred
+      rather than resolved because the thing it would most plausibly serve — pushing this component
+      library into Claude Design — turned out to be impossible: that tool's rendering runtime is
+      React-specific and cannot consume Angular components. Revisit only if a real need for isolated
+      component development appears; until then the accessible-primitives work below is the better
+      investment.
 - [ ] Add documentation-link validation and TODO consistency checks.
 
 ## Next: application shell
 
-- [x] Add NgRx Store and Effects using feature boundaries — two real slices now:
-      `apps/frontend/src/app/state/quests/` and `apps/frontend/src/app/state/camp/` (firewood/resource
-      state), each with its own actions, reducer, and effects backed by real APIs, not local component
-      signals. Other domains (encounters, sprints) aren't in the store yet — this establishes the
-      pattern, not full coverage.
+- [x] Add NgRx Store and Effects using feature boundaries — four real slices now:
+      `apps/frontend/src/app/state/quests/`, `.../camp/` (firewood/forage/workbench), `.../sprints/`,
+      and `.../encounters/`, each with its own actions, reducer, and effects backed by real APIs, not
+      local component signals. The quests reducer is the single source of truth for `xp`/`coins` and
+      cross-syncs from the other three features' success actions rather than duplicating the values.
 - [x] Define durable domain state separately from render state — quests, construction-stage, and
       firewood now live in the NgRx store (durable), while scene rendering state (camera, mesh
       references) stays local to `base-camp-scene.ts`, never mixed into the store.
@@ -68,8 +100,9 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [x] Add ambient animation and full/reduced/minimal motion modes (reuses the character-select scene's
       motion-mode plumbing).
 - [x] Add a minimal animation director (`AnimationDirector`/`AnimationSequence`) driven by domain
-      events — arrival, quest-completion, tree-chopping, and foraging are wired; more events (quest
-      accepted, sprint states, loot) are still open.
+      events — arrival, quest-completion, tree-chopping, foraging, companion upkeep, workbench upgrades,
+      and sprint focus (a calm halo while any sprint runs) are wired; more events (quest accepted, loot
+      reveal) are still open.
 - [x] Gate the tent-erect animation to a character's true first-ever arrival: backend
       `Character.hasArrivedAtCamp` (`POST /characters/:id/arrive`) is the source of truth, not client
       state — verified live (arrive, reload, confirm no replay).
@@ -110,8 +143,8 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       idle timers. Verified live via direct API calls (including backdating a real Postgres row to prove
       the success path, not just the rejection path) and a 3-engine Playwright e2e run covering the
       full start/pause/resume flow with "Finish sprint" asserted disabled throughout.
-- [x] Resolve complete, continue, retreat, or split — four of five resolutions are real (`POST /quests/
-      :id/complete`, `POST /quests/:id/continue`, `POST /quests/:id/retreat`, `POST /quests/:id/split`),
+- [x] Resolve complete, continue, retreat, or split — four of five resolutions are real
+      (`POST /quests/:id/complete`, `.../continue`, `.../retreat`, `.../split`),
       all accepting a quest from `OPEN` or `IN_PROGRESS`; "call party" (needs the social system) is still
       open. Continue stamps `Quest.lastContinuedAt` (re-stamped on every call, not just the first) and
       leaves the quest `IN_PROGRESS` with no reward — same reward-free precedent as retreat, durable
@@ -155,7 +188,7 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
       one-click-per-grant actions, not a passive/timer-based reward. Verified live at levels 0/1/3
       confirming the exact yield at each.
 - [x] Let players track their own quests as a real in-game Kanban board (Backlog/In Progress/Done/
-      Retreated), not just a flat list — a first honest step toward "typing this project's own Agile
+      Split/Retreated), not just a flat list — a first honest step toward "typing this project's own Agile
       process back into the game" for the player, not just the dev team. Added a real
       `QuestStatus.IN_PROGRESS` and `POST /quests/:id/start` (idempotent, same pattern as complete/
       retreat) so "in progress" is a real backend state, not a display grouping. Verified live via
@@ -186,9 +219,9 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 
 - [x] Build the Daily half of the reward loop (rewards-retention.md's Daily cadence — see
       [Plan 04](planning/04-rewards-retention.md)): a **First Brave Step** bonus (10 XP / 5 coins)
-      granted on the first quest a character *completes* each UTC day (`Character.firstBraveStepDay`),
-      and **Today's Three** — up to 3 player-designated quests per UTC day (`POST`/`DELETE
-      /quests/:id/todays-three`, `Quest.todaysThreeDay`), each granting 10 XP / 5 coins on top of the
+      granted on the first quest a character _completes_ each UTC day (`Character.firstBraveStepDay`),
+      and **Today's Three** — up to 3 player-designated quests per UTC day
+      (`POST`/`DELETE /quests/:id/todays-three`, `Quest.todaysThreeDay`), each granting 10 XP / 5 coins on top of the
       normal reward when completed. Both stack, both ride the existing transactional reward path, and
       neither is grantable by `split()` or by idling — they fire only on a real completion, keeping
       the idle-timer-resistance rule intact. A star toggle on Backlog/In Progress Kanban cards drives
@@ -213,5 +246,5 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [ ] Coverage exceptions are recorded in `documentation/quality-gates/testing-exceptions.md`.
 - [ ] Motion has reduced and minimal equivalents.
 - [ ] The core quest/sprint loop must not require AI, a network, or social participation — this scopes
-      to *basic productivity*, not a ban on Ember: Ember (the companion) is a deliberately remote,
+      to _basic productivity_, not a ban on Ember: Ember (the companion) is a deliberately remote,
       network-dependent service by design, and enhances the loop rather than gating it.

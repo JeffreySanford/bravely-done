@@ -173,8 +173,9 @@ Plan 16 is complete — see [Plan 16](planning/16-character-select.md).
 - [x] Verify quest creation, completion, retreat, split, and reward persistence through unit,
       integration, and Playwright tests (backend + NgRx unit tests including the idempotency-key
       dedupe and the celebration `lastReward` delta; a real API integration tier in `apps/backend-e2e`
-      hitting the actual running backend + Postgres, not mocked Prisma; a 3-engine e2e run that retreats
-      one quest, splits another, completes three, and confirms XP/coins/level survive a reload).
+      hitting the actual running backend + Postgres, not mocked Prisma; and a 3-engine Playwright
+      suite — `quest-loop.spec.ts` covers create → start → complete ×3 plus a reload, with
+      `quest-resolutions.spec.ts` covering retreat, split, and continue as separately-named tests).
 - [x] Give coins a real sink: workbench upgrades (`POST /characters/:id/upgrade-workbench`, capped at
       `WORKBENCH_MAX_LEVEL`, costs in `WORKBENCH_UPGRADE_COSTS`) — see [Plan 02](planning/
       02-base-camp-animations.md) for the scene wiring. Verified live: affordable/unaffordable/

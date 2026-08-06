@@ -20,9 +20,9 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
   - Storybook 9.x/10.x — dropped direct-CLI Angular builds entirely (`AngularLegacyBuildOptionsError`);
     requires a full `angular.json` with an explicit `@storybook/angular:build-storybook` builder
     target, which an esbuild-application/project.json-based Nx workspace doesn't have.
-  All three combinations were tried directly (2026-08-03) and failed for the reasons above. This is a
-  genuine, current gap in the Nx + Angular(esbuild) + Storybook ecosystem, not a local misconfiguration.
-- **Mitigation**: Component *logic* is still covered via Jest unit tests (`nx test frontend`) at the
+    All three combinations were tried directly (2026-08-03) and failed for the reasons above. This is a
+    genuine, current gap in the Nx + Angular(esbuild) + Storybook ecosystem, not a local misconfiguration.
+- **Mitigation**: Component _logic_ is still covered via Jest unit tests (`nx test frontend`) at the
   98% bar. What's missing is Storybook's story-driven interaction/visual coverage specifically — a real
   but bounded gap, not an untested-component gap.
 - **Reviewed by / date**: Claude (scaffolding session), 2026-08-03.
@@ -54,7 +54,7 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
 - **Reviewed by / date**: Claude (scaffolding session), 2026-08-03; extended to the auth module the same
   day, and again to the character module — both times recurring exactly as predicted.
 - **Pipeline-swap investigated and rejected (2026-08-03)**: Tried `coverageProvider: 'v8'` as the
-  reopen condition suggested. It did *not* fix the synthetic branches, and made overall coverage
+  reopen condition suggested. It did _not_ fix the synthetic branches, and made overall coverage
   reporting measurably worse — several previously-100% files (bare interfaces, simple DTOs) dropped to
   0-40% because v8's bytecode-level instrumentation counts decorator/interface scaffolding differently
   than istanbul does. Reverted. Per-file overrides remain the right tool for this project; not
@@ -84,20 +84,22 @@ Format per entry: **Area** · **Reason** · **Mitigation** · **Reviewed by / da
 
 - **Area**: `apps/frontend/src/app/game-rendering/renderer-lifecycle.ts` (real `THREE.WebGLRenderer`,
   `ResizeObserver`, render-loop construction), `apps/frontend/src/app/pages/character-list/
-  character-select-scene.ts`, and `apps/frontend/src/app/pages/base-camp/base-camp-scene.ts` (real
+character-select-scene.ts`, and `apps/frontend/src/app/pages/base-camp/base-camp-scene.ts` (real
   Three.js scene-graph object construction: geometries, materials, lights).
 - **Reason**: jsdom has no WebGL implementation. Constructing a real `THREE.WebGLRenderer` against a
   jsdom canvas either throws or silently no-ops depending on the mock shape, and there's no way to
   meaningfully assert "the scene looks right" without an actual GPU-backed rendering context. Everything
-  *around* this — motion-mode detection, WebGL-availability detection, and the component-level wiring
+  _around_ this — motion-mode detection, WebGL-availability detection, and the component-level wiring
   that constructs `RendererLifecycle` and calls `.start()`/`.dispose()` — **is** unit-tested (via
   `jest.mock` on these modules; see `character-list.webgl-available.spec.ts` and `base-camp
-  .webgl-available.spec.ts`). Only the actual WebGL/Three.js internals are excluded.
+.webgl-available.spec.ts`). Only the actual WebGL/Three.js internals are excluded.
 - **Mitigation**: Real, automated compensating evidence, not just a documented gap — `apps/frontend-e2e/
-  src/character-select.spec.ts` runs a full signup → character-creation → Base Camp → character-select
+src/onboarding.spec.ts` runs a full signup → character-creation → Base Camp → character-select
   → Base Camp journey through three actual browser engines (Chromium, Firefox, WebKit), asserting that
   whichever rendering path the app takes (WebGL canvas or the CSS grid-veil fallback) mounts correctly
-  on both scenes and that no unexpected console errors occur. This is the same "e2e for what can't be meaningfully faked with
+  on both scenes and that no unexpected console errors occur. The shared `expectSceneMounted` helper
+  lives in `src/support/journey.ts` and is reused by the other specs, so every e2e test exercises a
+  real scene mount rather than only this one. This is the same "e2e for what can't be meaningfully faked with
   mocks" principle the testing gate already states, applied to rendering specifically. Per-file
   `jest.config.cts` overrides set to the files' actual achievable percentage (the wiring code coverage
   that leaks through from other tests), not zero.

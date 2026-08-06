@@ -47,6 +47,6 @@ decision this plan implements: character select, not Base Camp, is the app's lan
 - [x] Character select is visually polished **with Three.js** — verified live in a real browser
       (signup → character creation → character select), confirming the WebGL canvas actually mounts
       (not the CSS fallback) and real character cards remain interactive above it. Compensating
-      automated evidence is `apps/frontend-e2e/src/character-select.spec.ts`, which runs the same
+      automated evidence is `apps/frontend-e2e/src/onboarding.spec.ts`, which runs the same
       journey across Chromium, Firefox, and WebKit. This plan is complete; Base Camp is next
       (see [Plan 02](02-base-camp-animations.md) and [Plan 10](10-now-base-camp.md)).

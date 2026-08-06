@@ -23,16 +23,18 @@ const baseURL = process.env['BASE_URL'] || 'http://localhost:4200';
  */
 export default defineConfig({
   ...nxE2EPreset(import.meta.dirname, { testDir: './src' }),
-  /* character-select.spec.ts is one long vertical-slice journey by design —
-   * signup through character creation, Base Camp, five quests, encounters, a
-   * full sprint pause/resume round trip, all four quest resolutions, the
-   * daily reward loop, a workbench upgrade, and two reloads — rather than
-   * many short tests, because what it's really proving is that state
-   * survives every step in sequence. That takes ~20s on a fast dev machine
-   * with 2 workers, which fits Playwright's 30s default; on a shared CI
-   * runner with 6 workers contending it does not, and the failure surfaces
-   * as an unhelpful mid-journey `locator.click` timeout. Raised with real
-   * headroom so a slow runner doesn't produce a false failure. */
+  /* Each spec here is scoped to one behavior and starts from its own fresh
+   * signup, so a failure names the feature that broke instead of surfacing
+   * as an opaque mid-journey `locator.click` timeout — which is exactly
+   * what the previous single 375-line journey produced. quest-loop.spec.ts
+   * stays deliberately sequential (create → start → complete ×3 → reload),
+   * because the property *it* proves is that state survives every step in
+   * order; the rest were extracted around it.
+   *
+   * Still generous: every test does a real signup, character creation, and
+   * WebGL scene mount before its actual assertions, and on a shared CI
+   * runner with workers contending that setup alone can eat Playwright's
+   * 30s default. */
   timeout: 120_000,
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {

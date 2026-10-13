@@ -57,7 +57,7 @@
     "jest-preset-angular": "~17.0.0",
     "jest-util": "~30.3.0",
     "ng-openapi-gen": "^1.0.5",
-    "nx": "23.1.1",
+    "nx": "23.2.1",
     "prettier": "^3.8.1",
     "storybook": "^9.1.20",
     "ts-jest": "^29.4.7",
